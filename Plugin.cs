@@ -28,20 +28,37 @@ public sealed class Plugin : BaseUnityPlugin {
         return false;
     }
 
-    private static int n = 6;
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(UIKinoko), nameof(UIKinoko.SetEnableLR))]
+    public static void DontDisableRotationVisually(ref bool value) {
+        value = true;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.Update))]
+    public static void OnSelectOuji(KinokoItokoSelector __instance) {
+        if (!__instance.IsOnePlayer) return;
+        if (oujiId == UIKinoko.selectCharacter1Player) return;
+        oujiId = UIKinoko.selectCharacter1Player;
+        ReplaceInMenu(FindObjectOfType<StartsMover>());
+    }
+
+    // TODO: stash this in the save file
+    private static int oujiId = 1;
 
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), "Start")]
-    public static void Awake(Player __instance) {
-        //__instance.oujiNo = GlobalWork.Instance.selectCharacter[__instance.playerNo];
-        __instance.oujiNo = n;
+    [HarmonyPatch(typeof(Player), nameof(Player.Start))]
+    public static void ReplaceInGameplay(Player __instance) {
+        // TODO: don't actually override versus mode?
+        // Or does this running as a prefix get overruled by that anyway?
+        __instance.oujiNo = oujiId;
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start))]
     public static void ReplaceInTitle(Title3Manager __instance) {
         var old = __instance._animator_ouji.gameObject;
-        var ouji = ReplaceOuji(old, n);
+        var ouji = ReplaceOuji(old, oujiId);
         var animator = ouji.GetComponent<Animator>();
         __instance._animator_ouji = animator;
         ouji.SetActive(old.activeSelf);
@@ -55,7 +72,7 @@ public sealed class Plugin : BaseUnityPlugin {
         Animator animator;
 
         old = __instance._oujiStarCharacter._animator_ouji.gameObject;
-        ouji = ReplaceOuji(old, n);
+        ouji = ReplaceOuji(old, oujiId, __instance);
         animator = ouji.GetComponent<Animator>();
         __instance._oujiStarCharacter._animator_ouji = animator;
         __instance._oujiStarRotator._animator_ouji = animator;
@@ -64,14 +81,14 @@ public sealed class Plugin : BaseUnityPlugin {
         Destroy(old);
 
         old = __instance._animator_oujiInner.gameObject;
-        ouji = ReplaceOuji(old, n);
+        ouji = ReplaceOuji(old, oujiId, __instance);
         animator = ouji.GetComponent<Animator>();
         __instance._animator_oujiInner = animator;
         ouji.SetActive(old.activeSelf);
         Destroy(old);
 
         old = __instance._earchRotator._animator_ouji.gameObject;
-        ouji = ReplaceOuji(old, n);
+        ouji = ReplaceOuji(old, oujiId, __instance);
         animator = ouji.GetComponent<Animator>();
         __instance._tran_earchLandingPosition = ouji.transform;
         __instance._earchRotator._animator_ouji = animator;
@@ -83,7 +100,7 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.Awake))]
     public static void ReplaceInLecture(SelectManager __instance) {
         var old = __instance._uiMonoCamera._go_ouji;
-        var ouji = ReplaceOuji(old, n);
+        var ouji = ReplaceOuji(old, oujiId);
         __instance._uiMonoCamera._go_ouji = ouji;
         ouji.SetActive(old.activeSelf);
         Destroy(old);
@@ -95,7 +112,9 @@ public sealed class Plugin : BaseUnityPlugin {
         isMouse = false;
     }
 
-    private static GameObject ReplaceOuji(GameObject old, int idx) {
+    private const int JUNGLE = 23;
+
+    private static GameObject ReplaceOuji(GameObject old, int idx, StartsMover? sm = null) {
         var oujiName = $"OUJI{idx:D2}";
         var prefab = AssetBundleSimulator.Instance.LoadAsset<GameObject>(oujiName, oujiName);
 
@@ -115,6 +134,18 @@ public sealed class Plugin : BaseUnityPlugin {
         var animator = ouji.GetComponent<Animator>();
         var oldAnimator = old.GetComponent<Animator>();
         animator.runtimeAnimatorController = oldAnimator.runtimeAnimatorController;
+
+        if (idx == JUNGLE && sm != null) {
+            // TODO: this doesn't work on the title screen and it's a bit too dependent on certain things existing
+            var billboard = Instantiate(sm._kinokoRatator.objBillboard);
+            billboard.transform.SetParent(ouji.transform, worldPositionStays: false);
+            foreach (var renderer in ouji.GetComponentsInChildren<SkinnedMeshRenderer>()) {
+                if (renderer?.name is "head_tawara_m" or "body01_m" or "hand_m") {
+                    var matJungle = AssetBundleSimulator.instance.LoadAsset<Material>("JungleBody", "JungleBody");
+                    renderer.material = new Material(sm._kinokoRatator.matJungle);
+                }
+            }
+        }
 
         return ouji;
     }
