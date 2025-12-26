@@ -10,17 +10,20 @@ using System;
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
+using Coroutine = System.Collections.IEnumerator;
 
 namespace KatamariDama60;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
     public void Awake() {
-        Harmony.CreateAndPatchAll(typeof(Plugin));
-        Harmony.CreateAndPatchAll(typeof(SkipIntro));
         if (Environment.CommandLine.Contains("--skip-steam")) {
             Harmony.CreateAndPatchAll(typeof(SkipSteam));
         }
+        Harmony.CreateAndPatchAll(typeof(SkipIntro));
+        Harmony.CreateAndPatchAll(this.GetType());
     }
 
     [HarmonyPrefix]
@@ -75,8 +78,8 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start))]
     public static void ReplaceInTitle(Title3Manager __instance) {
-        ReplaceOuji(__instance._animator_ouji.gameObject, OujiId, (ouji, animator) => {
-            __instance._animator_ouji = animator;
+        ReplaceOuji(__instance._animator_ouji, OujiId, o => {
+            __instance._animator_ouji = o.animator;
         });
     }
 
@@ -85,35 +88,48 @@ public sealed class Plugin : BaseUnityPlugin {
     public static void ReplaceInMenu(StartsMover __instance) {
         var sm = __instance;
 
-        ReplaceOuji(sm._oujiStarCharacter._animator_ouji.gameObject, OujiId, sm, (ouji, animator) => {
-            sm._oujiStarCharacter._animator_ouji = animator;
-            sm._oujiStarRotator._animator_ouji = animator;
-            sm._tran_oujiStarLandingPosition = ouji.transform;
+        ReplaceOuji(sm._oujiStarCharacter._animator_ouji, OujiId, sm, o => {
+            sm._oujiStarCharacter._animator_ouji = o.animator;
+            sm._oujiStarRotator._animator_ouji = o.animator;
+            sm._tran_oujiStarLandingPosition = o.transform;
         });
 
-        ReplaceOuji(sm._animator_oujiInner.gameObject, OujiId, sm, (ouji, animator) => {
-            sm._animator_oujiInner = animator;
+        ReplaceOuji(sm._animator_oujiInner, OujiId, sm, o => {
+            sm._animator_oujiInner = o.animator;
         });
 
-        ReplaceOuji(sm._earchRotator._animator_ouji.gameObject, OujiId, sm, (ouji, animator) => {
-            sm._earchRotator._animator_ouji = animator;
-            sm._tran_earchLandingPosition = ouji.transform;
+        ReplaceOuji(sm._earchRotator._animator_ouji, OujiId, sm, o => {
+            sm._earchRotator._animator_ouji = o.animator;
+            sm._tran_earchLandingPosition = o.transform;
+        });
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(OujiStarCharacter), nameof(OujiStarCharacter.OnEnable))]
+    public static void ReplaceInPresentSelect(OujiStarCharacter __instance) {
+        var osc = __instance;
+        ReplaceOuji(osc._uiMonoCamera._go_ouji, OujiId, o => {
+            osc._uiMonoCamera._go_ouji = o.ouji;
+            var uiPresent = osc._uiOujiStarPresent;
+            uiPresent._animator_ouji = o.animator;
+            uiPresent._uiOujiWear = o.wear;
+            uiPresent._go_oujiPresentParent = o.presents;
         });
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.Awake))]
     public static void ReplaceInLecture(SelectManager __instance) {
-        ReplaceOuji(__instance._uiMonoCamera._go_ouji, OujiId, (ouji, animator) => {
-            __instance._uiMonoCamera._go_ouji = ouji;
+        ReplaceOuji(__instance._uiMonoCamera._go_ouji, OujiId, o => {
+            __instance._uiMonoCamera._go_ouji = o.ouji;
         });
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameEndManager), nameof(GameEndManager.Start))]
     public static void ReplaceInFarewell(GameEndManager __instance) {
-        ReplaceOuji(__instance._animator_ouji.gameObject, OujiId, (ouji, animator) => {
-            __instance._animator_ouji = animator;
+        ReplaceOuji(__instance._animator_ouji, OujiId, o => {
+            __instance._animator_ouji = o.animator;
         });
     }
 
@@ -126,13 +142,30 @@ public sealed class Plugin : BaseUnityPlugin {
 
     private const int JUNGLE = 23;
 
-    private delegate void OujiCallback(GameObject ouji, Animator animator);
+    private class OujiRefs(GameObject Obj) {
+        public readonly GameObject ouji = Obj;
+        public Transform transform = Obj.transform;
+        public Animator animator = Obj.GetComponent<Animator>();
+        public UIOujiWear wear = Obj.GetComponent<UIOujiWear>();
+        public GameObject presents = Obj.GetComponent<UIOujiWear>()._go_oujiPresentParent;
+    }
+
+    private delegate void OujiCallback(OujiRefs o);
 
     private static void ReplaceOuji(GameObject old, int idx, OujiCallback func) {
         ReplaceOuji(old, idx, null, func);
     }
 
+    private static void ReplaceOuji(Animator old, int idx, OujiCallback func) {
+        ReplaceOuji(old.gameObject, idx, null, func);
+    }
+
+    private static void ReplaceOuji(Animator old, int idx, StartsMover? sm, OujiCallback func) {
+        ReplaceOuji(old.gameObject, idx, sm, func);
+    }
+
     private static void ReplaceOuji(GameObject old, int idx, StartsMover? sm, OujiCallback func) {
+        //Console.WriteLine($"old: {old} in {old.scene.name} on {old.layer} under {old.transform.parent?.name}");
         var oujiName = $"OUJI{idx:D2}";
         if (oujiName == old.name) return;
 
@@ -146,10 +179,17 @@ public sealed class Plugin : BaseUnityPlugin {
         ouji.SetActive(false);
         ouji.name = oujiName;
 
-        ouji.transform.SetParent(old.transform.parent, worldPositionStays: false);
+        if (old.transform.parent != null) {
+            ouji.transform.SetParent(old.transform.parent, worldPositionStays: false);
+        } else {
+            SceneManager.MoveGameObjectToScene(ouji, old.scene);
+        }
+
         ouji.transform.localRotation = old.transform.localRotation;
         ouji.transform.localPosition = old.transform.localPosition;
         ouji.transform.localScale = old.transform.localScale;
+
+        ouji.SetLayer(old.layer, true);
 
         var presentRoot = old.transform.Find("pre_root").gameObject;
         TransferPresents(ouji, presentRoot);
@@ -167,7 +207,11 @@ public sealed class Plugin : BaseUnityPlugin {
             }
         }
 
-        func(ouji, animator);
+        try {
+            func(new OujiRefs(ouji));
+        } catch (Exception e) {
+            e.LogDetailed();
+        }
         ouji.SetActive(old.activeSelf);
         Destroy(old);
     }
