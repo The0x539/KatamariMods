@@ -145,7 +145,7 @@ public sealed class Plugin : BaseUnityPlugin {
         ouji.SetActive(false);
         ouji.name = oujiName;
 
-        ouji.transform.SetParent(old.transform.parent, false);
+        ouji.transform.SetParent(old.transform.parent, worldPositionStays: false);
         ouji.transform.localRotation = old.transform.localRotation;
         ouji.transform.localPosition = old.transform.localPosition;
         ouji.transform.localScale = old.transform.localScale;
@@ -162,7 +162,9 @@ public sealed class Plugin : BaseUnityPlugin {
             try {
                 // TODO: this doesn't work on the title screen and it's a bit too dependent on certain things existing
                 var billboard = Instantiate(sm._kinokoRatator.objBillboard);
+                billboard.name = "JungleBoardEnding";
                 billboard.transform.SetParent(ouji.transform, worldPositionStays: false);
+                billboard.AddComponent<LookAtCamera>().camera = sm._cameraMain;
                 foreach (var renderer in ouji.GetComponentsInChildren<SkinnedMeshRenderer>()) {
                     if (renderer?.name is "head_tawara_m" or "body01_m" or "hand_m") {
                         var matJungle = AssetBundleSimulator.instance.LoadAsset<Material>("JungleBody", "JungleBody");
