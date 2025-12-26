@@ -2,6 +2,8 @@
 
 using HarmonyLib;
 
+using MyGame;
+
 using System;
 using System.Collections.Generic;
 
@@ -26,7 +28,7 @@ public sealed class Plugin : BaseUnityPlugin {
         return false;
     }
 
-    private static int n = 2;
+    private static int n = 6;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "Start")]
@@ -36,23 +38,75 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(OujiStarCharacter), "OnEnable")]
-    public static void Qux(OujiStarCharacter __instance) {
-        n++;
-        if (n > 24) n = 2;
+    [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start))]
+    public static void ReplaceInTitle(Title3Manager __instance) {
+        var old = __instance._animator_ouji.gameObject;
+        var ouji = ReplaceOuji(old, n);
+        var animator = ouji.GetComponent<Animator>();
+        __instance._animator_ouji = animator;
+        ouji.SetActive(old.activeSelf);
+        Destroy(old);
+    }
 
-        var oujiName = $"OUJI{n:D2}";
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(StartsMover), nameof(StartsMover.Awake))]
+    public static void ReplaceInMenu(StartsMover __instance) {
+        GameObject old, ouji;
+        Animator animator;
+
+        old = __instance._oujiStarCharacter._animator_ouji.gameObject;
+        ouji = ReplaceOuji(old, n);
+        animator = ouji.GetComponent<Animator>();
+        __instance._oujiStarCharacter._animator_ouji = animator;
+        __instance._oujiStarRotator._animator_ouji = animator;
+        __instance._tran_oujiStarLandingPosition = ouji.transform;
+        ouji.SetActive(old.activeSelf);
+        Destroy(old);
+
+        old = __instance._animator_oujiInner.gameObject;
+        ouji = ReplaceOuji(old, n);
+        animator = ouji.GetComponent<Animator>();
+        __instance._animator_oujiInner = animator;
+        ouji.SetActive(old.activeSelf);
+        Destroy(old);
+
+        old = __instance._earchRotator._animator_ouji.gameObject;
+        ouji = ReplaceOuji(old, n);
+        animator = ouji.GetComponent<Animator>();
+        __instance._tran_earchLandingPosition = ouji.transform;
+        __instance._earchRotator._animator_ouji = animator;
+        ouji.SetActive(old.activeSelf);
+        Destroy(old);
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.Awake))]
+    public static void ReplaceInLecture(SelectManager __instance) {
+        var old = __instance._uiMonoCamera._go_ouji;
+        var ouji = ReplaceOuji(old, n);
+        __instance._uiMonoCamera._go_ouji = ouji;
+        ouji.SetActive(old.activeSelf);
+        Destroy(old);
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(InputController), nameof(InputController.IsSelectDown))]
+    public static void NoClick(ref bool isMouse) {
+        isMouse = false;
+    }
+
+    private static GameObject ReplaceOuji(GameObject old, int idx) {
+        var oujiName = $"OUJI{idx:D2}";
         var prefab = AssetBundleSimulator.Instance.LoadAsset<GameObject>(oujiName, oujiName);
 
         var ouji = Instantiate(prefab);
         ouji.SetActive(false);
         ouji.name = oujiName;
 
-        var old = __instance._animator_ouji.gameObject;
-
         ouji.transform.SetParent(old.transform.parent, false);
         ouji.transform.localRotation = old.transform.localRotation;
         ouji.transform.localPosition = old.transform.localPosition;
+        ouji.transform.localScale = old.transform.localScale;
 
         var presentRoot = old.transform.Find("pre_root").gameObject;
         TransferPresents(ouji, presentRoot);
@@ -61,12 +115,8 @@ public sealed class Plugin : BaseUnityPlugin {
         var animator = ouji.GetComponent<Animator>();
         var oldAnimator = old.GetComponent<Animator>();
         animator.runtimeAnimatorController = oldAnimator.runtimeAnimatorController;
-        __instance._animator_ouji = animator;
-        __instance._oujiStarRotator._animator_ouji = animator;
-        __instance._starMover._tran_oujiStarLandingPosition = ouji.transform;
 
-        Destroy(old);
-        ouji.SetActive(true);
+        return ouji;
     }
 
     private static void TransferPresents(GameObject ouji, GameObject presentRoot) {
