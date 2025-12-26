@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Katamari Damacy": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Katamari Damacy REROLL\\katamari.exe",
+      "commandLineArgs": "--enable-console true --skip-steam"
+    }
+  }
+}

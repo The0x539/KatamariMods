@@ -1,0 +1,44 @@
+﻿using HarmonyLib;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+using UnityEngine.SceneManagement;
+
+namespace KatamariDama60;
+
+public static class SkipIntro {
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SplashScreenManager), nameof(SplashScreenManager.StartSplash), MethodType.Enumerator)]
+    public static bool SkipIntroPart1(SplashScreenManager __instance) {
+        SceneManager.LoadSceneAsync("Title2");
+        return false;
+    }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(Title2Manager), nameof(Title2Manager.ChangeAlphaNamco), MethodType.Enumerator)]
+    public static IEnumerable<CodeInstruction> AccelerateIntroPart2(IEnumerable<CodeInstruction> instructions) {
+        var instrs = instructions.ToList();
+        foreach (var instr in instrs) {
+            if (instr.LoadsConstant()) {
+                if (instr.OperandIs(0.5f) || instr.OperandIs(0.8f)) {
+                    instr.operand = 100.0f;
+                } else if (instr.OperandIs(3f)) {
+                    instr.operand = 0f;
+                }
+            }
+        }
+        return instrs;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SteamManager), nameof(SteamManager.Awake))]
+    public static bool SkipSteam() {
+        Console.WriteLine(System.Environment.CommandLine);
+        if (System.Environment.CommandLine.Contains("--skip-steam")) {
+            return false;
+        }
+        return true;
+    }
+}
