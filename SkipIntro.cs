@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 using UnityEngine.SceneManagement;
 
@@ -19,8 +18,7 @@ public static class SkipIntro {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Title2Manager), nameof(Title2Manager.ChangeAlphaNamco), MethodType.Enumerator)]
     public static IEnumerable<CodeInstruction> AccelerateIntroPart2(IEnumerable<CodeInstruction> instructions) {
-        var instrs = instructions.ToList();
-        foreach (var instr in instrs) {
+        foreach (var instr in instructions) {
             if (instr.LoadsConstant()) {
                 if (instr.OperandIs(0.5f) || instr.OperandIs(0.8f)) {
                     instr.operand = 100.0f;
@@ -28,15 +26,16 @@ public static class SkipIntro {
                     instr.operand = 0f;
                 }
             }
+
+            yield return instr;
         }
-        return instrs;
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SteamManager), nameof(SteamManager.Awake))]
     public static bool SkipSteam() {
         Console.WriteLine(System.Environment.CommandLine);
-        if (System.Environment.CommandLine.Contains("--skip-steam")) {
+        if (Environment.CommandLine.Contains("--skip-steam")) {
             return false;
         }
         return true;
