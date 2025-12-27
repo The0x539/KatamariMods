@@ -24,6 +24,12 @@ public sealed class Plugin : BaseUnityPlugin {
         }
         Harmony.CreateAndPatchAll(typeof(SkipIntro));
         Harmony.CreateAndPatchAll(this.GetType());
+
+        SceneManager.sceneLoaded += (scene, mode) => {
+            if (scene.name == "Result2") {
+                ReplaceOuji(GameObject.Find("OUJI01"), OujiId, o => { });
+            }
+        };
     }
 
     [HarmonyPrefix]
@@ -105,8 +111,8 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(OujiStarCharacter), nameof(OujiStarCharacter.OnEnable))]
-    public static void ReplaceInPresentSelect(OujiStarCharacter __instance) {
+    [HarmonyPatch(typeof(OujiStarCharacter), nameof(OujiStarCharacter.EnableMainMenu))]
+    public static void ReplaceInHomePlanetMenus(OujiStarCharacter __instance) {
         var osc = __instance;
         ReplaceOuji(osc._uiMonoCamera._go_ouji, OujiId, o => {
             osc._uiMonoCamera._go_ouji = o.ouji;
@@ -114,6 +120,14 @@ public sealed class Plugin : BaseUnityPlugin {
             uiPresent._animator_ouji = o.animator;
             uiPresent._uiOujiWear = o.wear;
             uiPresent._go_oujiPresentParent = o.presents;
+        });
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(StarSky), nameof(StarSky.Start))]
+    public static void ReplaceInConstellationView(StarSky __instance) {
+        ReplaceOuji(__instance._animator_ouji, OujiId, o => {
+            __instance._animator_ouji = o.animator;
         });
     }
 
