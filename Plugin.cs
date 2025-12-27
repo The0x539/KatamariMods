@@ -8,6 +8,7 @@ using MyGame;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -19,6 +20,8 @@ namespace KatamariDama60;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
     public void Awake() {
+        this.StartCoroutine(Jungle.Init());
+
         if (Environment.CommandLine.Contains("--skip-steam")) {
             Harmony.CreateAndPatchAll(typeof(SkipSteam));
         }
@@ -96,17 +99,17 @@ public sealed class Plugin : BaseUnityPlugin {
     public static void ReplaceInMenu(StartsMover __instance) {
         var sm = __instance;
 
-        ReplaceOuji(sm._oujiStarCharacter._animator_ouji, OujiId, sm, o => {
+        ReplaceOuji(sm._oujiStarCharacter._animator_ouji, OujiId, o => {
             sm._oujiStarCharacter._animator_ouji = o.animator;
             sm._oujiStarRotator._animator_ouji = o.animator;
             sm._tran_oujiStarLandingPosition = o.transform;
         });
 
-        ReplaceOuji(sm._animator_oujiInner, OujiId, sm, o => {
+        ReplaceOuji(sm._animator_oujiInner, OujiId, o => {
             sm._animator_oujiInner = o.animator;
         });
 
-        ReplaceOuji(sm._earchRotator._animator_ouji, OujiId, sm, o => {
+        ReplaceOuji(sm._earchRotator._animator_ouji, OujiId, o => {
             sm._earchRotator._animator_ouji = o.animator;
             sm._tran_earchLandingPosition = o.transform;
         });
@@ -168,19 +171,11 @@ public sealed class Plugin : BaseUnityPlugin {
 
     private delegate void OujiCallback(OujiRefs o);
 
-    private static void ReplaceOuji(GameObject old, int idx, OujiCallback func) {
-        ReplaceOuji(old, idx, null, func);
-    }
-
     private static void ReplaceOuji(Animator old, int idx, OujiCallback func) {
-        ReplaceOuji(old.gameObject, idx, null, func);
+        ReplaceOuji(old.gameObject, idx, func);
     }
 
-    private static void ReplaceOuji(Animator old, int idx, StartsMover? sm, OujiCallback func) {
-        ReplaceOuji(old.gameObject, idx, sm, func);
-    }
-
-    private static void ReplaceOuji(GameObject old, int idx, StartsMover? sm, OujiCallback func) {
+    private static void ReplaceOuji(GameObject old, int idx, OujiCallback func) {
         //Console.WriteLine($"old: {old} in {old.scene.name} on {old.layer} under {old.transform.parent?.name}");
         var oujiName = $"OUJI{idx:D2}";
         if (oujiName == old.name) return;
@@ -215,9 +210,9 @@ public sealed class Plugin : BaseUnityPlugin {
         var oldAnimator = old.GetComponent<Animator>();
         animator.runtimeAnimatorController = oldAnimator.runtimeAnimatorController;
 
-        if (idx == JUNGLE && sm != null) {
+        if (idx == JUNGLE) {
             try {
-                InitJungle(ouji, sm);
+                Jungle.Dress(ouji);
             } catch (Exception e) {
                 e.LogDetailed();
             }
@@ -230,21 +225,6 @@ public sealed class Plugin : BaseUnityPlugin {
         }
         ouji.SetActive(old.activeSelf);
         Destroy(old);
-    }
-
-    // TODO: this doesn't work on the title screen and it's a bit too dependent on certain things existing
-    private static void InitJungle(GameObject ouji, StartsMover sm) {
-        Console.WriteLine(GameObject.Find("JungleBoardEnding"));
-        var billboard = Instantiate(sm._kinokoRatator.objBillboard);
-        billboard.name = "JungleBoardEnding";
-        billboard.transform.SetParent(ouji.transform, worldPositionStays: false);
-        billboard.AddComponent<LookAtCamera>().camera = sm._cameraMain;
-        foreach (var renderer in ouji.GetComponentsInChildren<SkinnedMeshRenderer>()) {
-            if (renderer?.name is "head_tawara_m" or "body01_m" or "hand_m") {
-                var matJungle = AssetBundleSimulator.instance.LoadAsset<Material>("JungleBody", "JungleBody");
-                renderer.material = new Material(sm._kinokoRatator.matJungle);
-            }
-        }
     }
 
     private static void TransferPresents(GameObject ouji, GameObject presentRoot) {
