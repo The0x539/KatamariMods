@@ -54,7 +54,9 @@ public sealed class Plugin : BaseUnityPlugin {
 
         if (OujiId == selection) return;
         OujiId = selection;
-        ReplaceInMenu(FindObjectOfType<StartsMover>());
+        var sm = FindObjectOfType<StartsMover>();
+        ReplaceInMenu(sm);
+        ReplaceInHomePlanetMenus(sm._oujiStarCharacter);
     }
 
     // One of many unused spots in the save file.
@@ -232,6 +234,7 @@ public sealed class Plugin : BaseUnityPlugin {
 
     // TODO: this doesn't work on the title screen and it's a bit too dependent on certain things existing
     private static void InitJungle(GameObject ouji, StartsMover sm) {
+        Console.WriteLine(GameObject.Find("JungleBoardEnding"));
         var billboard = Instantiate(sm._kinokoRatator.objBillboard);
         billboard.name = "JungleBoardEnding";
         billboard.transform.SetParent(ouji.transform, worldPositionStays: false);
@@ -257,7 +260,12 @@ public sealed class Plugin : BaseUnityPlugin {
             // For some reason, this seems to only work properly if I replace the entire array.
             var newBones = new Transform[renderer.bones.Length];
             for (var i = 0; i < renderer.bones.Length; i++) {
-                newBones[i] = bones[renderer.bones[i].name].transform;
+                var name = renderer.bones[i].name;
+                if (bones.TryGetValue(name, out var bone)) {
+                    newBones[i] = bone.transform;
+                } else {
+                    Console.WriteLine($"Could not find bone: {name}");
+                }
             }
             renderer.bones = newBones;
         }
