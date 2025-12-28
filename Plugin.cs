@@ -8,23 +8,21 @@ using MyGame;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-using Coroutine = System.Collections.IEnumerator;
 
 namespace KatamariDama60;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
+    private static Plugin self = null!;
+
     public void Awake() {
+        self = this;
+
         this.StartCoroutine(Jungle.Init());
 
-        if (Environment.CommandLine.Contains("--skip-steam")) {
-            Harmony.CreateAndPatchAll(typeof(SkipSteam));
-        }
         Harmony.CreateAndPatchAll(typeof(SkipIntro));
         Harmony.CreateAndPatchAll(this.GetType());
 
@@ -32,6 +30,20 @@ public sealed class Plugin : BaseUnityPlugin {
             if (scene.name == "Result2") {
                 ReplaceOuji(GameObject.Find("OUJI01"), OujiId, o => { });
             }
+
+            if (mode == LoadSceneMode.Single) {
+                Console.WriteLine($"Loaded {scene.name} singly");
+            } else {
+                Console.WriteLine($"Loaded {scene.name} additively");
+            }
+        };
+
+        SceneManager.activeSceneChanged += (current, next) => {
+            Console.WriteLine($"Scene change: {current.name} -> {next.name}");
+        };
+
+        SceneManager.sceneUnloaded += (scene) => {
+            Console.WriteLine($"Unloaded {scene.name}");
         };
     }
 
@@ -200,8 +212,6 @@ public sealed class Plugin : BaseUnityPlugin {
         ouji.transform.localPosition = old.transform.localPosition;
         ouji.transform.localScale = old.transform.localScale;
 
-        ouji.SetLayer(old.layer, true);
-
         var presentRoot = old.transform.Find("pre_root").gameObject;
         TransferPresents(ouji, presentRoot);
         ouji.AddComponent<UIOujiWear>()._go_oujiPresentParent = presentRoot;
@@ -223,6 +233,9 @@ public sealed class Plugin : BaseUnityPlugin {
         } catch (Exception e) {
             e.LogDetailed();
         }
+
+        ouji.SetLayer(old.layer, true);
+
         ouji.SetActive(old.activeSelf);
         Destroy(old);
     }

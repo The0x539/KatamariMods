@@ -1,8 +1,6 @@
-﻿using HarmonyLib;
-
-using System;
+﻿using System;
 using System.Collections;
-using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,56 +16,86 @@ public static class Jungle {
     }
 
     public static IEnumerator Init() {
-        var load = SceneManager.LoadSceneAsync("UI_MainMenu", LoadSceneMode.Additive);
+        const string sceneName = "UI_MainMenu";
+
+        var load = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
         //load.allowSceneActivation = false;
         yield return load;
 
-        var scene = SceneManager.GetSceneByName("UI_MainMenu");
+        var scene = SceneManager.GetSceneByName(sceneName);
 
-        foreach (var obj in scene.GetRootGameObjects()) {
-            if (obj.name != "go_kinokoRotator") continue;
-            var kinoko = obj.GetComponent<KinokoRotator>();
-            Prefabs.billboard = kinoko.jungleBoard;
-            Prefabs.material = kinoko.matJungle;
-            break;
-        }
+        var kinoko = scene.GetRootGameObjects()
+            .First(obj => obj.name == "go_kinokoRotator")
+            .GetComponent<KinokoRotator>();
 
-        yield return SceneManager.UnloadSceneAsync(scene);
+        Prefabs.billboard = Object.Instantiate(kinoko.jungleBoard);
+        Prefabs.billboard.name = "JungleBillboardPrefab";
+        Prefabs.material = Object.Instantiate(kinoko.matJungle);
+        Prefabs.material.name = "JungleMaterialPrefab";
+        Object.DontDestroyOnLoad(Prefabs.billboard);
+        Object.DontDestroyOnLoad(Prefabs.material);
+
+        yield return SceneManager.UnloadSceneAsync(sceneName);
     }
 
     public static void Dress(GameObject ouji) {
+        Console.WriteLine($"Trying to dress {ouji.name}, child of {ouji.transform.root.gameObject.name}, in scene {ouji.scene.name}");
+
+        if (Prefabs.billboard == null) {
+            Console.WriteLine("Oh no, billboard is null");
+            return;
+        } else if (Prefabs.material == null) {
+            Console.WriteLine("Oh no, material is null");
+            return;
+        }
+
         var billboard = Object.Instantiate(Prefabs.billboard);
-        var material = new Material(Prefabs.material);
+        //var material = new Material(Prefabs.material);
 
         billboard.name = "JungleBoardEnding";
         billboard.transform.SetParent(ouji.transform, worldPositionStays: false);
-        billboard.transform.localScale = Vector3.one * 5;
+        billboard.layer = ouji.layer;
+        billboard.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Default");
 
-        billboard.AddComponent<FaceCamera>();
-
-        foreach (var renderer in ouji.GetComponentsInChildren<SkinnedMeshRenderer>()) {
+        foreach (var renderer in ouji.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
             if (renderer?.name is "head_tawara_m" or "body01_m" or "hand_m") {
-                renderer.material = material;
+                renderer.material = new Material(Prefabs.material);
             }
         }
+
+        billboard.transform.localScale = Vector3.one * 5;
+        billboard.AddComponent<FaceCamera>();
     }
 
     public sealed class FaceCamera : MonoBehaviour {
         private Camera? camera = null;
 
-        public void OnEnable() {
+        private Camera? DetermineCamera() {
             var sceneName = this.gameObject.scene.name;
-            this.camera = sceneName switch {
+            var rootName = this.gameObject.transform.root.name;
+
+            if (rootName == "GO_ouji_motion") return Camera.main;
+
+            return sceneName switch {
                 "Title3" => Camera.main,
-                "UI_MainMenu" => FindObjectOfType<UIMonoCamera>()?._camera,
+                "UI_MainMenu" or "UI_OujiStar" => Camera.main,
+                "UI_Star" => FindObjectOfType<UIMonoCamera>()?._camera,
+                //"UI_MainMenu" or "UI_OujiStar" => FindObjectOfType<UIMonoCamera>()?._camera,
                 //"UI_OujiStar" => Resources.FindObjectsOfTypeAll<KinokoRotator>()[0]._camera,
                 //"UI_OujiStar" => Resources.FindObjectsOfTypeAll<StartsMover>()[0]._cameraMain,
-                _ => null,
+                _ => Camera.main,
             };
+        }
+
+        public void OnEnable() {
+            var sceneName = this.gameObject.scene.name;
+            var rootName = this.gameObject.transform.root.name;
+
+            this.camera = this.DetermineCamera();
             var name = this.camera?.gameObject.name;
             if (name == null) name = "null";
             if (name == "") name = "no-name";
-            Console.WriteLine($"Camera for {sceneName}: {name}");
+            Console.WriteLine($"Camera for {sceneName}::{rootName}: {name}");
         }
 
         public void Update() {

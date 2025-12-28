@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 
-using System;
 using System.Collections.Generic;
 
 using UnityEngine.SceneManagement;
@@ -31,13 +30,10 @@ public static class SkipIntro {
         }
     }
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(SteamManager), nameof(SteamManager.Awake))]
-    public static bool SkipSteam() {
-        Console.WriteLine(System.Environment.CommandLine);
-        if (Environment.CommandLine.Contains("--skip-steam")) {
-            return false;
-        }
-        return true;
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Title2Manager), nameof(Title2Manager.SetupSelectedSlot))]
+    public static void Foo(Title2Manager __instance) {
+        __instance._corocoro._rlIndex = 0;
+        __instance.StartCoroutine(__instance.GoToNextScene());
     }
 }
