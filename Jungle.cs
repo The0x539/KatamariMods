@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
@@ -39,7 +40,8 @@ public static class Jungle {
     }
 
     public static void Dress(GameObject ouji) {
-        Console.WriteLine($"Trying to dress {ouji.name}, child of {ouji.transform.root.gameObject.name}, in scene {ouji.scene.name}");
+        var sceneName = ouji.scene.name;
+        Console.WriteLine($"Trying to dress {ouji.name}, child of {ouji.transform.root.gameObject.name}, in scene {sceneName}");
 
         if (Prefabs.billboard == null) {
             Console.WriteLine("Oh no, billboard is null");
@@ -50,57 +52,46 @@ public static class Jungle {
         }
 
         var billboard = Object.Instantiate(Prefabs.billboard);
-        //var material = new Material(Prefabs.material);
+        var material = new Material(Prefabs.material);
 
         billboard.name = "JungleBoardEnding";
         billboard.transform.SetParent(ouji.transform, worldPositionStays: false);
         billboard.layer = ouji.layer;
         billboard.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Default");
 
+        var hackPending = new List<GameObject>();
+
         foreach (var renderer in ouji.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
             if (renderer?.name is "head_tawara_m" or "body01_m" or "hand_m") {
-                renderer.material = new Material(Prefabs.material);
+                if (sceneName == "Result2") {
+                    hackPending.Add(renderer.gameObject);
+                } else {
+                    renderer.material = material;
+                }
             }
         }
 
         billboard.transform.localScale = Vector3.one * 5;
         billboard.AddComponent<FaceCamera>();
+
+        if (sceneName == "Result2") {
+            foreach (var obj in hackPending) {
+                var copy = Object.Instantiate(obj);
+                copy.name = obj.name;
+                obj.name += " (Jungle Depth Buffer Hack)";
+                copy.transform.parent = obj.transform.parent;
+                copy.GetComponent<SkinnedMeshRenderer>().material = material;
+            }
+
+            billboard.transform.localScale = Vector3.one * 2.5f;
+            billboard.transform.localPosition = new Vector3(0f, 0.55f, 0f);
+        }
     }
 
     public sealed class FaceCamera : MonoBehaviour {
-        private Camera? camera = null;
-
-        private Camera? DetermineCamera() {
-            var sceneName = this.gameObject.scene.name;
-            var rootName = this.gameObject.transform.root.name;
-
-            if (rootName == "GO_ouji_motion") return Camera.main;
-
-            return sceneName switch {
-                "Title3" => Camera.main,
-                "UI_MainMenu" or "UI_OujiStar" => Camera.main,
-                "UI_Star" => FindObjectOfType<UIMonoCamera>()?._camera,
-                //"UI_MainMenu" or "UI_OujiStar" => FindObjectOfType<UIMonoCamera>()?._camera,
-                //"UI_OujiStar" => Resources.FindObjectsOfTypeAll<KinokoRotator>()[0]._camera,
-                //"UI_OujiStar" => Resources.FindObjectsOfTypeAll<StartsMover>()[0]._cameraMain,
-                _ => Camera.main,
-            };
-        }
-
-        public void OnEnable() {
-            var sceneName = this.gameObject.scene.name;
-            var rootName = this.gameObject.transform.root.name;
-
-            this.camera = this.DetermineCamera();
-            var name = this.camera?.gameObject.name;
-            if (name == null) name = "null";
-            if (name == "") name = "no-name";
-            Console.WriteLine($"Camera for {sceneName}::{rootName}: {name}");
-        }
-
         public void Update() {
-            if (this.camera != null) {
-                this.transform.LookAt(this.camera.transform);
+            if (Camera.main != null) {
+                this.transform.LookAt(Camera.main.transform);
             }
         }
     }
