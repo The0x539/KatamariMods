@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="FramerateUncap/FramerateUncap.csproj" />
   <Project Path="KatamariDama60.csproj" />
   <Project Path="RenderDocHook/RenderDocHook.csproj" />
 </Solution>
