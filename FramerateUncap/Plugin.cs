@@ -2,8 +2,6 @@
 
 using HarmonyLib;
 
-using MonoMod.Utils;
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -14,6 +12,7 @@ namespace FramerateUncap;
 public sealed class Plugin : BaseUnityPlugin {
     public void Awake() {
         Harmony.CreateAndPatchAll(this.GetType());
+        Harmony.CreateAndPatchAll(typeof(TimerPatches));
         Kernel32.LoadLibrary("katamari_ffi");
     }
 
