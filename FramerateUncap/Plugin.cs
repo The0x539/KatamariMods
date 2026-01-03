@@ -10,10 +10,18 @@ namespace FramerateUncap;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
+    public const float TARGET_FPS = 150;
+
     public void Awake() {
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(TimerPatches));
-        Kernel32.LoadLibrary("katamari_ffi");
+        KatamariFfi.InstallHooks();
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SimulationNativeMethods), nameof(SimulationNativeMethods.Tick))]
+    public static void OnTick(float delta) {
+        KatamariFfi.SetDeltaTime(delta);
     }
 
     [HarmonyTranspiler]
@@ -26,23 +34,20 @@ public sealed class Plugin : BaseUnityPlugin {
         foreach (var instr in instructions) {
             if (instr.LoadsConstant()) {
                 if (instr.OperandIs(0.03333333f) || instr.OperandIs(0.01666667f)) {
-                    instr.operand = 1.0f / 180.0f;
-                    //instr.operand = 0.0083333333333333f;
-                    //instr.operand = 0.01666667f;
+                    instr.operand = 1.0f / TARGET_FPS;
                 }
             }
 
             yield return instr;
         }
     }
+
 }
 
-internal static class Kernel32 {
-    [DllImport("kernel32", SetLastError = true)]
-    public static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
+internal static class KatamariFfi {
+    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void InstallHooks();
 
-    [DllImport("kernel32", SetLastError = true)]
-    public static extern bool LoadLibrary(string lpLibFileName);
-
-    public const uint LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
+    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void SetDeltaTime(float delta);
 }
