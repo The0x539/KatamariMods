@@ -14,18 +14,26 @@ namespace FramerateUncap;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
-    public const float TARGET_FPS = 150;
+    public const float TARGET_FPS = 180;
 
     public void Awake() {
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(TimerPatches));
         KatamariFfi.InstallHooks();
+        Application.runInBackground = true;
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SimulationNativeMethods), nameof(SimulationNativeMethods.Tick))]
     public static void OnTick(float delta) {
         KatamariFfi.SetDeltaTime(delta);
+        KatamariFfi.PreTick();
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(SimulationNativeMethods), nameof(SimulationNativeMethods.Tick))]
+    public static void AfterTick() {
+        KatamariFfi.PostTick();
     }
 
     [HarmonyTranspiler]
@@ -97,4 +105,10 @@ internal static class KatamariFfi {
 
     [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
     public static extern void SetDeltaTime(float delta);
+
+    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void PreTick();
+
+    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void PostTick();
 }
