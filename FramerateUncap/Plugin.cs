@@ -18,19 +18,16 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(this.GetType());
         KatamariFfi.InstallHooks();
         Application.runInBackground = true;
+
+        var clicky = new GameObject("Clicky");
+        clicky.AddComponent<Clicky>();
+        DontDestroyOnLoad(clicky);
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SimulationNativeMethods), nameof(SimulationNativeMethods.Tick))]
     public static void OnTick(float delta) {
         KatamariFfi.SetDeltaTime(delta);
-        KatamariFfi.PreTick();
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(SimulationNativeMethods), nameof(SimulationNativeMethods.Tick))]
-    public static void AfterTick() {
-        KatamariFfi.PostTick();
     }
 
     [HarmonyTranspiler]
@@ -246,8 +243,8 @@ internal static class KatamariFfi {
     public static extern void SetDeltaTime(float delta);
 
     [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void PreTick();
+    public static extern void UpdateUI();
 
     [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void PostTick();
+    public static extern void PickThing(ushort idx);
 }
