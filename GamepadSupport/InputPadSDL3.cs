@@ -8,7 +8,7 @@ namespace GamepadSupport;
 public sealed class InputPadSDL3 : InputPadBase {
     private SDL.Gamepad inner;
 
-    private readonly float[] axes = new float[(int)SDL.GamepadAxis.Count];
+    private readonly float[] axes = new float[(int)SDL.GamepadAxis.COUNT];
     private uint buttons;
 
     public void Start() {
@@ -30,25 +30,25 @@ public sealed class InputPadSDL3 : InputPadBase {
         SDL.GamepadButton.Start,
         SDL.GamepadButton.LeftStick,
         SDL.GamepadButton.RightStick,
-        SDL.GamepadButton.Count, // left trigger
-        SDL.GamepadButton.Count, // right trigger
-        SDL.GamepadButton.Count, // home
-        SDL.GamepadButton.Count, // left joycon, left shoulder
-        SDL.GamepadButton.Count, // left joycon, right shoulder
-        SDL.GamepadButton.Count, // right joycon, left shoulder
-        SDL.GamepadButton.Count, // right joycon, right shoulder
+        SDL.GamepadButton.COUNT, // left trigger
+        SDL.GamepadButton.COUNT, // right trigger
+        SDL.GamepadButton.COUNT, // home
+        SDL.GamepadButton.COUNT, // left joycon, left shoulder
+        SDL.GamepadButton.COUNT, // left joycon, right shoulder
+        SDL.GamepadButton.COUNT, // right joycon, left shoulder
+        SDL.GamepadButton.COUNT, // right joycon, right shoulder
         SDL.GamepadButton.DpadLeft,
         SDL.GamepadButton.DpadRight,
         SDL.GamepadButton.DpadUp,
         SDL.GamepadButton.DpadDown,
-        SDL.GamepadButton.Count, // left stick, left
-        SDL.GamepadButton.Count, // left stick, right
-        SDL.GamepadButton.Count, // left stick, up
-        SDL.GamepadButton.Count, // left stick, down
-        SDL.GamepadButton.Count, // right stick, left
-        SDL.GamepadButton.Count, // right stick, right
-        SDL.GamepadButton.Count, // right stick, up
-        SDL.GamepadButton.Count, // right stick, down
+        SDL.GamepadButton.COUNT, // left stick, left
+        SDL.GamepadButton.COUNT, // left stick, right
+        SDL.GamepadButton.COUNT, // left stick, up
+        SDL.GamepadButton.COUNT, // left stick, down
+        SDL.GamepadButton.COUNT, // right stick, left
+        SDL.GamepadButton.COUNT, // right stick, right
+        SDL.GamepadButton.COUNT, // right stick, up
+        SDL.GamepadButton.COUNT, // right stick, down
         // After this is the eight directions (four per stick). TBD if they, or anything past this point, is necessary.
     ];
 
@@ -92,20 +92,21 @@ public sealed class InputPadSDL3 : InputPadBase {
         _ => IconType.PC,
     };
 
-    // WIP: I can't even get the game to allow enabling vibration yet
     public override void Vibration(float time) {
-        this.inner.Rumble(0x7FFF, 0, (uint)(time * 1000));
+        var a = (ushort)(this.motorStrengthS << 8);
+        var b = (ushort)(this.motorStrengthL << 8);
+        this.inner.Rumble(a, b, (uint)(time * 1000));
     }
 
     private float GetAxis(SDL.GamepadAxis axis) => this.axes[(int)axis];
 
     private void ReadAxes() {
-        for (var axis = (SDL.GamepadAxis)0; axis < SDL.GamepadAxis.Count; axis++) {
+        for (var axis = (SDL.GamepadAxis)0; axis < SDL.GamepadAxis.COUNT; axis++) {
             this.axes[(int)axis] = this.inner.GetAxis(axis) switch {
                 0 => 0f,
                 32767 => 1f,
                 -32768 => -1f,
-                > -768 and < 768 => 0, // deadzone
+                > -1000 and < 1000 => 0, // deadzone
                 short n => n / 32767f,
             };
         }
@@ -141,7 +142,6 @@ public sealed class InputPadSDL3 : InputPadBase {
     public override void Tick() {
         if (!this.Enabled) return;
 
-        SDL.Gamepad.Update();
         this.ReadAxes();
         this.ReadButtons();
 

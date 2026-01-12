@@ -22,6 +22,10 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(this.GetType());
     }
 
+    public void Update() {
+        while (SDL.SDLEvent.Poll() is not null) { }
+    }
+
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(InputController), nameof(InputController.Setup))]
     public static IEnumerable<CodeInstruction> UseMyGuy(IEnumerable<CodeInstruction> instructions) {

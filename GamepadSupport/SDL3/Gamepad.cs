@@ -7,7 +7,6 @@ internal partial struct RawGamepad { }
 public enum JoystickID : uint;
 
 public unsafe class Gamepad : IDisposable {
-    private readonly JoystickID instanceId;
     private readonly RawGamepad* ptr;
     private bool isDisposed;
 
@@ -18,7 +17,6 @@ public unsafe class Gamepad : IDisposable {
     }
 
     public Gamepad(JoystickID instanceId) {
-        this.instanceId = instanceId;
         this.ptr = RawBindings.SDL_OpenGamepad(instanceId);
     }
 
@@ -27,10 +25,6 @@ public unsafe class Gamepad : IDisposable {
         if (this.isDisposed) return;
         this.isDisposed = true;
         RawBindings.SDL_CloseGamepad(this.ptr);
-    }
-
-    public static void Update() {
-        RawBindings.SDL_UpdateGamepads();
     }
 
     public bool IsConnected => RawBindings.SDL_GamepadConnected(this.ptr);
@@ -56,7 +50,7 @@ public unsafe class Gamepad : IDisposable {
 
     public short GetAxis(GamepadAxis axis) => RawBindings.SDL_GetGamepadAxis(this.ptr, axis);
     public bool GetButton(GamepadButton button) => RawBindings.SDL_GetGamepadButton(this.ptr, button);
-    public bool Rumble(ushort lo, ushort hi, uint duration) => RawBindings.SDL_RumbleGamepad(lo, hi, duration);
+    public void Rumble(ushort lo, ushort hi, uint duration) => RawBindings.SDL_RumbleGamepad(this.ptr, lo, hi, duration).ThrowIfFalse();
 
     public int PlayerIndex {
         get => RawBindings.SDL_GetGamepadPlayerIndex(this.ptr);

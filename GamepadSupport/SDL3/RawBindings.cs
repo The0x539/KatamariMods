@@ -6,6 +6,7 @@ namespace GamepadSupport.SDL3;
 public static unsafe partial class SDL {
     public static void Free(void* mem) => RawBindings.SDL_free(mem);
     public static bool InitSubSystem(InitFlags flags) => RawBindings.SDL_InitSubSystem(flags);
+    public static string GetError() => Marshal.PtrToStringAnsi((nint)RawBindings.SDL_GetError());
 }
 
 internal static unsafe partial class RawBindings {
@@ -16,13 +17,25 @@ internal static unsafe partial class RawBindings {
     public static extern void SDL_free(void* mem);
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern void* SDL_malloc(nuint size);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern void* SDL_calloc(nuint nmemb, nuint size);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern byte* SDL_GetError();
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern void SDL_ClearError();
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern SDLBool SDL_PollEvent(void* ev);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern JoystickID* SDL_GetGamepads(int* count);
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static unsafe extern byte** SDL_GetGamepadMappings(int* count);
-
-    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-    public static extern GamepadBinding** SDL_GetGamepadBindings(RawGamepad* gamepad, int* count);
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern JoystickID* SDL_GetJoysticks(int* count);
@@ -55,7 +68,10 @@ internal static unsafe partial class RawBindings {
     public static extern void SDL_UpdateGamepads();
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-    public static extern SDLBool SDL_RumbleGamepad(ushort lowFrequencyRumble, ushort highFrequencyRumble, uint durationMs);
+    public static extern void SDL_UpdateJoysticks();
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern SDLBool SDL_RumbleGamepad(RawGamepad* gamepad, ushort lowFrequencyRumble, ushort highFrequencyRumble, uint durationMs);
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern int SDL_GetGamepadPlayerIndex(RawGamepad* gamepad);
@@ -97,4 +113,6 @@ public readonly record struct SDLBool {
 
     public bool Equals(SDLBool other) => (bool)other == (bool)this;
     public override int GetHashCode() => ((bool)this).GetHashCode();
+
+    public readonly void ThrowIfFalse() => SDLException.ThrowIfFalse(this);
 }
