@@ -31,10 +31,16 @@ internal static unsafe partial class RawBindings {
     public static extern RawGamepad* SDL_OpenGamepad(JoystickID instance_id);
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern void SDL_CloseGamepad(RawGamepad* gamepad);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern SDLBool SDL_GamepadConnected(RawGamepad* gamepad);
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern byte* SDL_GetGamepadName(RawGamepad* gamepad);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern byte* SDL_GetGamepadNameForID(JoystickID instanceId);
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern GamepadType SDL_GetGamepadType(RawGamepad* gamepad);
@@ -50,6 +56,15 @@ internal static unsafe partial class RawBindings {
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern SDLBool SDL_RumbleGamepad(ushort lowFrequencyRumble, ushort highFrequencyRumble, uint durationMs);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern int SDL_GetGamepadPlayerIndex(RawGamepad* gamepad);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern int SDL_GetGamepadPlayerIndexForID(JoystickID instanceId);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern SDLBool SDL_SetGamepadPlayerIndex(RawGamepad* gamepad, int playerIndex);
 }
 
 [Flags]

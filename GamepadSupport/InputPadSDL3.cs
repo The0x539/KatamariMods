@@ -54,7 +54,7 @@ public sealed class InputPadSDL3 : InputPadBase {
 
     public override bool IsKeybord => false;
     public override bool IsConnectPad => inner.IsConnected;
-    public override int ConnectCount => inner.IsConnected ? 0 : 1;
+    public override int ConnectCount => 1;
 
     public override PadType PadType => this.inner.GamepadType switch {
         SDL.GamepadType.PS3 or

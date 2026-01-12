@@ -28,8 +28,9 @@ public sealed unsafe class SDLArray<T> : IEnumerable<T>, IDisposable {
         }
     }
 
+    ~SDLArray() => this.Dispose();
     public void Dispose() {
-        if (isDisposed) return;
+        if (this.isDisposed) return;
         this.isDisposed = true;
         SDL.Free(this.array);
     }
@@ -77,8 +78,9 @@ public sealed unsafe class SDLPointerArray<T> : IEnumerable<T>, IDisposable {
         }
     }
 
+    ~SDLPointerArray() => this.Dispose();
     public void Dispose() {
-        if (isDisposed) return;
+        if (this.isDisposed) return;
         this.isDisposed = true;
         SDL.Free(array);
     }
