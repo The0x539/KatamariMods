@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net45</TargetFramework>
+		<TargetFramework>netstandard2.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<AssemblyName>RenderDocHook</AssemblyName>
 		<LangVersion>latest</LangVersion>
@@ -11,18 +11,16 @@
 			https://nuget.samboy.dev/v3/index.json
 		</RestoreAdditionalProjectSources>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Mono.Cecil" Version="0.11.6" />
 	</ItemGroup>
-	
-	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
-	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="copy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\patchers&quot;" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\plugins" />
 	</Target>
+
 </Project>

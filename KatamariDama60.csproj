@@ -7,46 +7,50 @@
 		<LangVersion>latest</LangVersion>
 		<RestoreAdditionalProjectSources>
 			https://api.nuget.org/v3/index.json;
-			https://nuget.bepinex.dev/v3/index.json
+			https://nuget.bepinex.dev/v3/index.json;
+			https://nuget.samboy.dev/v3/index.json
 		</RestoreAdditionalProjectSources>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 	</PropertyGroup>
 
+	<!-- TODO: just restructure this mod into its own directory like I should have a while ago -->
 	<ItemGroup>
 	  <Compile Remove="FramerateUncap\**" />
+	  <Compile Remove="GamepadSupport\**" />
 	  <Compile Remove="RenderDocHook\**" />
 	  <EmbeddedResource Remove="FramerateUncap\**" />
+	  <EmbeddedResource Remove="GamepadSupport\**" />
 	  <EmbeddedResource Remove="RenderDocHook\**" />
 	  <None Remove="FramerateUncap\**" />
+	  <None Remove="GamepadSupport\**" />
 	  <None Remove="RenderDocHook\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+		<PackageReference Include="BepInEx.Analyzers" Version="1.*" />
 		<PackageReference Include="BepInEx.Core" Version="5.*" />
 		<PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
-		<PackageReference Include="UnityEngine.Modules" Version="2018.1.9" IncludeAssets="compile" />
-		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" PrivateAssets="all" />
-		<PackageReference Include="IsExternalInit" Version="1.*" PrivateAssets="all" />
-	</ItemGroup>
+		<PackageReference Include="UnityEngine.Modules" Version="2018.1.9" />
+		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" />
+		<PackageReference Include="IsExternalInit" Version="1.*" />
 
-	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
-	</ItemGroup>
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
 
-	<ItemGroup>
 		<Reference Include="Katamari">
 			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\katamari_Data\Managed\Assembly-CSharp.dll</HintPath>
-			<Private>False</Private>
 			<Publicize>True</Publicize>
 		</Reference>
 		<Reference Include="firstpass">
 			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\katamari_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
-			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="copy &quot;$(TargetPath)&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\Plugins&quot;" />
+		<ItemGroup>
+			<BuildOutputs Include="$(TargetPath)" />
+		</ItemGroup>
+		<Copy SourceFiles="@(BuildOutputs)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\plugins" />
 	</Target>
+
 </Project>
