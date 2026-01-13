@@ -23,8 +23,12 @@ public sealed class Plugin : BaseUnityPlugin {
 
         this.StartCoroutine(Jungle.Init());
 
-        Harmony.CreateAndPatchAll(typeof(SkipIntro));
-        Harmony.CreateAndPatchAll(this.GetType());
+        // I would like to just do the usual thing here,
+        // but that causes Harmony to see Jungle.Init,
+        // which for some reason makes it panic due to IteratorStateMachineAttribute.
+        var h = new Harmony(MyPluginInfo.PLUGIN_NAME);
+        h.PatchAll(this.GetType());
+        h.PatchAll(typeof(SkipIntro));
 
         SceneManager.sceneLoaded += (scene, mode) => {
             if (scene.name == "Result2") {

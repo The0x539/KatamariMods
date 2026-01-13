@@ -17,6 +17,8 @@ public static class SkipIntro {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Title2Manager), nameof(Title2Manager.ChangeAlphaNamco), MethodType.Enumerator)]
     public static IEnumerable<CodeInstruction> AccelerateIntroPart2(IEnumerable<CodeInstruction> instructions) {
+        var ret = new List<CodeInstruction>();
+
         foreach (var instr in instructions) {
             if (instr.LoadsConstant()) {
                 if (instr.OperandIs(0.5f) || instr.OperandIs(0.8f)) {
@@ -26,8 +28,10 @@ public static class SkipIntro {
                 }
             }
 
-            yield return instr;
+            ret.Add(instr);
         }
+
+        return ret;
     }
 
     [HarmonyPostfix]

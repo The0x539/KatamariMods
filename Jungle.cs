@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -25,9 +24,13 @@ public static class Jungle {
 
         var scene = SceneManager.GetSceneByName(sceneName);
 
-        var kinoko = scene.GetRootGameObjects()
-            .First(obj => obj.name == "go_kinokoRotator")
-            .GetComponent<KinokoRotator>();
+        KinokoRotator? kinoko = null;
+        foreach (var obj in scene.GetRootGameObjects()) {
+            if (obj.name == "go_kinokoRotator") {
+                kinoko = obj.GetComponent<KinokoRotator>();
+            }
+        }
+        if (kinoko is null) yield break;
 
         Prefabs.billboard = Object.Instantiate(kinoko.jungleBoard);
         Prefabs.billboard.name = "JungleBillboardPrefab";
