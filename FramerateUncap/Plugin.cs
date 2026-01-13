@@ -3,7 +3,6 @@
 using HarmonyLib;
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
@@ -193,45 +192,37 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
     public static IEnumerable<CodeInstruction> DeltaTimePropUpdates(IEnumerable<CodeInstruction> instructions) {
-        var input = instructions.ToArray();
+        var deltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
 
-        static FieldInfo field(string name, BindingFlags flags = BindingFlags.Public) => typeof(AttachableProp).GetField(name, flags | BindingFlags.Instance);
+        List<object> timers = [
+            AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait)),
+            AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait2)),
+            AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.s16EscapeTimer)),
+        ];
+        var storesTimer = new CodeMatch(OpCodes.Stfld) { operands = timers };
+        var loadsTimer = new CodeMatch(OpCodes.Ldfld) { operands = timers };
 
-        var checkSimpleWait = field(nameof(AttachableProp.checkSimpleWait));
-        var checkSimpleWait2 = field(nameof(AttachableProp.checkSimpleWait2));
-        var s16EscapeTimer = field(nameof(AttachableProp.s16EscapeTimer), BindingFlags.NonPublic);
-        var deltaTime = typeof(Time).GetProperty(nameof(Time.deltaTime)).GetGetMethod();
-
-        for (var i = 0; i < input.Length; i++) {
-            var instr = input[i];
-
-            if (instr.LoadsConstant(30)) {
-                var next = input[i + 1];
-                if (next.StoresField(checkSimpleWait) || next.StoresField(checkSimpleWait2)) {
-                    instr.operand = 1000;
-                }
-            } else if (instr.LoadsField(checkSimpleWait) || instr.LoadsField(checkSimpleWait2) || instr.LoadsField(s16EscapeTimer)) {
-                CodeInstruction next = input[i + 1], next2 = input[i + 2];
-
-                if (next.opcode == OpCodes.Ldc_I4_1 && next2.opcode == OpCodes.Sub) {
-                    yield return instr;
-
-                    // Before: this.$field -= 1;
-                    // After: this.$field -= (int)(Time.deltaTime * 1000f;
-                    // TODO: Track microsecond rounding error like in the native-code equivalent?
-                    // Getting the lifecycle timing right might be tricky.
-                    yield return new(OpCodes.Call, deltaTime);
-                    yield return new(OpCodes.Ldc_R4, 1000f);
-                    yield return new(OpCodes.Mul);
-                    yield return new(OpCodes.Conv_I4);
-                    i++; // That stuff replaces LDC.I4.1. (The SUB stays intact.)
-
-                    continue;
-                }
-            }
-
-            yield return instr;
-        }
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldc_I4_S, 30),
+                          storesTimer)
+            .Repeat(cm => cm
+                .SetInstructionAndAdvance(new(OpCodes.Ldc_I4, 1000)))
+            .Start()
+            // Replace: this.(timer)--;
+            // With: this.(timer) -= (int)(Time.deltaTime * 1000f);
+            .MatchForward(false,
+                          loadsTimer,
+                          new(OpCodes.Ldc_I4_1),
+                          new(OpCodes.Sub))
+            .Repeat(cm => cm
+                .Advance(1)                                     // Keep the LDFLD
+                .RemoveInstruction()                            // Remove the LDC.I4.1
+                .InsertAndAdvance(new(OpCodes.Call, deltaTime), // Replace it with (int)(Time.deltaTime * 1000f)
+                                  new(OpCodes.Ldc_R4, 1000f),
+                                  new(OpCodes.Mul),
+                                  new(OpCodes.Conv_I4)))
+            .Instructions();
     }
 }
 
