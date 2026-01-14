@@ -78,6 +78,8 @@ public static class Jungle {
         billboard.AddComponent<FaceCamera>();
 
         if (sceneName == "Result2") {
+            // It would be nice to find a better way to do this, but as long as it works, honestly whatever.
+            // At least this was easier to figure out than the wrong-pixel-format thing.
             foreach (var obj in hackPending) {
                 var copy = Object.Instantiate(obj);
                 copy.name = obj.name;

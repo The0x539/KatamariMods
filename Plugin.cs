@@ -8,6 +8,7 @@ using MyGame;
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -158,6 +159,23 @@ public sealed class Plugin : BaseUnityPlugin {
         ReplaceOuji(__instance._uiMonoCamera._go_ouji, OujiId, o => {
             __instance._uiMonoCamera._go_ouji = o.ouji;
         });
+    }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.Start))]
+    [HarmonyPatch(typeof(StarSky), nameof(StarSky.Start))]
+    public static IEnumerable<CodeInstruction> FixJungleInLecture(IEnumerable<CodeInstruction> instructions) {
+        var newRenderTexture = AccessTools.Constructor(typeof(RenderTexture), [typeof(int), typeof(int), typeof(int)]);
+
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldc_I4),
+                          new(OpCodes.Ldc_I4),
+                          new(OpCodes.Ldc_I4_S, (sbyte)16),
+                          new(OpCodes.Newobj, newRenderTexture))
+            .Advance(2)
+            .SetOperandAndAdvance((sbyte)24)
+            .Instructions();
     }
 
     [HarmonyPrefix]

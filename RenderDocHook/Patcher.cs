@@ -14,7 +14,7 @@ public static class Patcher {
     }
 
     // Needed for the BepInEx 5 preloader to detect this assembly as something worth running
-    public static IEnumerable<string> TargetDLLs => [];
+    public static IEnumerable<string> TargetDLLs => new string[] { };
     public static void Patch(Mono.Cecil.AssemblyDefinition assembly) { }
 }
 
