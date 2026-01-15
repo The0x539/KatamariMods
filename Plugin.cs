@@ -28,7 +28,7 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(SkipIntro));
 
         SceneManager.sceneLoaded += (scene, mode) => {
-            if (scene.name == "Result2") {
+            if (scene.name is "Result2" or "UI_Moon") {
                 ReplaceOuji(GameObject.Find("OUJI01"), OujiId, o => { });
             }
 
@@ -125,6 +125,10 @@ public sealed class Plugin : BaseUnityPlugin {
         ReplaceOuji(sm._earchRotator._animator_ouji, OujiId, o => {
             sm._earchRotator._animator_ouji = o.animator;
             sm._tran_earchLandingPosition = o.transform;
+        });
+
+        ReplaceOuji(sm._earchRotator._goToMoonAnimator._animator_ouji, OujiId, o => {
+            sm._earchRotator._goToMoonAnimator._animator_ouji = o.animator;
         });
     }
 

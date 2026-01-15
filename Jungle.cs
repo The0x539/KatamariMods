@@ -126,6 +126,7 @@ public static class Jungle {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.Start))]
     [HarmonyPatch(typeof(StarSky), nameof(StarSky.Start))]
+    [HarmonyPatch(typeof(MoonMovieSelector), nameof(MoonMovieSelector.Start), MethodType.Enumerator)]
     public static IEnumerable<CodeInstruction> FixJungleInLecture(IEnumerable<CodeInstruction> instructions) {
         var newRenderTexture = AccessTools.Constructor(typeof(RenderTexture), [typeof(int), typeof(int), typeof(int)]);
 
