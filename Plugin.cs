@@ -8,7 +8,6 @@ using MyGame;
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Emit;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,12 +23,9 @@ public sealed class Plugin : BaseUnityPlugin {
 
         this.StartCoroutine(Jungle.Init());
 
-        // I would like to just do the usual thing here,
-        // but that causes Harmony to see Jungle.Init,
-        // which for some reason makes it panic due to IteratorStateMachineAttribute.
-        var h = new Harmony(MyPluginInfo.PLUGIN_NAME);
-        h.PatchAll(this.GetType());
-        h.PatchAll(typeof(SkipIntro));
+        Harmony.CreateAndPatchAll(this.GetType());
+        Harmony.CreateAndPatchAll(typeof(Jungle));
+        Harmony.CreateAndPatchAll(typeof(SkipIntro));
 
         SceneManager.sceneLoaded += (scene, mode) => {
             if (scene.name == "Result2") {
@@ -150,6 +146,7 @@ public sealed class Plugin : BaseUnityPlugin {
     public static void ReplaceInConstellationView(StarSky __instance) {
         ReplaceOuji(__instance._animator_ouji, OujiId, o => {
             __instance._animator_ouji = o.animator;
+            __instance._uiMonoCamera._go_ouji = o.ouji;
         });
     }
 
@@ -159,23 +156,6 @@ public sealed class Plugin : BaseUnityPlugin {
         ReplaceOuji(__instance._uiMonoCamera._go_ouji, OujiId, o => {
             __instance._uiMonoCamera._go_ouji = o.ouji;
         });
-    }
-
-    [HarmonyTranspiler]
-    [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.Start))]
-    [HarmonyPatch(typeof(StarSky), nameof(StarSky.Start))]
-    public static IEnumerable<CodeInstruction> FixJungleInLecture(IEnumerable<CodeInstruction> instructions) {
-        var newRenderTexture = AccessTools.Constructor(typeof(RenderTexture), [typeof(int), typeof(int), typeof(int)]);
-
-        return new CodeMatcher(instructions)
-            .MatchForward(false,
-                          new(OpCodes.Ldc_I4),
-                          new(OpCodes.Ldc_I4),
-                          new(OpCodes.Ldc_I4_S, (sbyte)16),
-                          new(OpCodes.Newobj, newRenderTexture))
-            .Advance(2)
-            .SetOperandAndAdvance((sbyte)24)
-            .Instructions();
     }
 
     [HarmonyPrefix]
