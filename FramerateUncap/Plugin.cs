@@ -224,6 +224,26 @@ public sealed class Plugin : BaseUnityPlugin {
                                   new(OpCodes.Conv_I4)))
             .Instructions();
     }
+
+    // It seems like there was a latent bug in the vanilla game, where PauseProc calls these two functions in *the wrong order*.
+    // With the other patches active, this resulted in being unable to exit first-person view using the left trigger/bumper,
+    // as the single-frame suppression of the triggers doesn't properly take effect.
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.PauseProc))]
+    public static IEnumerable<CodeInstruction> FixExitingPrinceView(IEnumerable<CodeInstruction> instructions) {
+        var m = new CodeMatcher(instructions);
+
+        var triggerClear = AccessTools.Method(typeof(Player), nameof(Player.TriggerClear));
+        var doPS2ControllerSimulation = AccessTools.Method(typeof(Player), nameof(Player.DoPS2ControllerSimulation));
+
+        var secondCall = m.MatchForward(false, new CodeMatch(OpCodes.Callvirt, triggerClear)).Instruction;
+        var firstCall = m.MatchBack(false, new CodeMatch(OpCodes.Callvirt, doPS2ControllerSimulation)).Instruction;
+
+        firstCall.operand = triggerClear;
+        secondCall.operand = doPS2ControllerSimulation;
+
+        return m.Instructions();
+    }
 }
 
 internal static class KatamariFfi {
