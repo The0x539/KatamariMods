@@ -99,6 +99,27 @@ public sealed class Plugin : BaseUnityPlugin {
         __instance.oujiNo = OujiId;
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), nameof(Player.Start))]
+    public static void GivePresents(Player __instance) {
+        if (OujiId == 01) return;
+        if (__instance.gWork.u8GameInfoMode == DefineEnum.GAMEINFO_MODE.GAMEINFO_MODE_VS) return;
+
+        var thePrincePrefab = AssetBundleSimulator.Instance.LoadAsset<GameObject>("ouji01", "ouji01");
+        var thePrince = Instantiate(thePrincePrefab);
+        var preRoot = thePrince.transform.Find("pre_root").gameObject;
+
+        __instance.objPresent = preRoot.GetChildren();
+
+        preRoot.SetActive(true);
+        foreach (var present in __instance.objPresent) present.SetActive(false);
+
+        TransferPresents(__instance.objOuji, preRoot);
+
+        __instance.objHUDPresent = new GameObject[__instance.objPresent.Length];
+        Destroy(thePrince);
+    }
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start))]
     public static void ReplaceInTitle(Title3Manager __instance) {
