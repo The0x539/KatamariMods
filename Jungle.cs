@@ -29,9 +29,12 @@ public static class Jungle {
             if (obj.name == "GO_MonoScene") {
                 monoScene = obj.GetComponent<MonoScene>();
             }
+            // Prevent the menu from briefly showing up on screen while the game is loading.
+            // Ideally we could just directly get the two prefabs we actually care about,
+            // but I have yet to figure out a working way to do that.
+            obj.gameObject.SetActive(false);
         }
         if (monoScene is null) return;
-        monoScene.enabled = false; // Prevents 
 
         Prefabs.billboard = Object.Instantiate(monoScene.jungleBoard);
         Prefabs.billboard.name = "JungleBillboardPrefab";
