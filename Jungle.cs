@@ -1,7 +1,5 @@
 ﻿using HarmonyLib;
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
@@ -19,44 +17,34 @@ public static class Jungle {
         public static Material material = null!;
     }
 
-    internal static IEnumerator Init() {
-        const string sceneName = "UI_MainMenu";
-
+    public static void Init() {
+        const string sceneName = "UI_Collection_Mono";
         var load = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
-        //load.allowSceneActivation = false;
-        yield return load;
+        load.completed += _ => SetupPrefabs(SceneManager.GetSceneByName(sceneName));
+    }
 
-        var scene = SceneManager.GetSceneByName(sceneName);
-
-        KinokoRotator? kinoko = null;
+    private static void SetupPrefabs(Scene scene) {
+        MonoScene? monoScene = null;
         foreach (var obj in scene.GetRootGameObjects()) {
-            if (obj.name == "go_kinokoRotator") {
-                kinoko = obj.GetComponent<KinokoRotator>();
+            if (obj.name == "GO_MonoScene") {
+                monoScene = obj.GetComponent<MonoScene>();
             }
         }
-        if (kinoko is null) yield break;
+        if (monoScene is null) return;
+        monoScene.enabled = false; // Prevents 
 
-        Prefabs.billboard = Object.Instantiate(kinoko.jungleBoard);
+        Prefabs.billboard = Object.Instantiate(monoScene.jungleBoard);
         Prefabs.billboard.name = "JungleBillboardPrefab";
-        Prefabs.material = Object.Instantiate(kinoko.matJungle);
+        Prefabs.material = Object.Instantiate(monoScene.matJungle);
         Prefabs.material.name = "JungleMaterialPrefab";
         Object.DontDestroyOnLoad(Prefabs.billboard);
         Object.DontDestroyOnLoad(Prefabs.material);
 
-        yield return SceneManager.UnloadSceneAsync(sceneName);
+        SceneManager.UnloadSceneAsync(scene);
     }
 
     public static void Dress(GameObject ouji) {
-        var sceneName = ouji.scene.name;
-        Console.WriteLine($"Trying to dress {ouji.name}, child of {ouji.transform.root.gameObject.name}, in scene {sceneName}");
-
-        if (Prefabs.billboard == null) {
-            Console.WriteLine("Oh no, billboard is null");
-            return;
-        } else if (Prefabs.material == null) {
-            Console.WriteLine("Oh no, material is null");
-            return;
-        }
+        if (Prefabs.billboard == null || Prefabs.material == null) return;
 
         var billboard = Object.Instantiate(Prefabs.billboard);
         var material = new Material(Prefabs.material);
@@ -66,32 +54,36 @@ public static class Jungle {
         billboard.layer = ouji.layer;
         billboard.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Default");
 
-        var hackPending = new List<GameObject>();
+        var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
+                .Where(r => r?.name is "head_tawara_m" or "body01_m" or "hand_m");
 
-        foreach (var renderer in ouji.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
-            if (renderer?.name is "head_tawara_m" or "body01_m" or "hand_m") {
-                if (sceneName == "Result2") {
-                    hackPending.Add(renderer.gameObject);
-                } else {
-                    renderer.material = material;
-                }
+        var sceneName = ouji.scene.name;
+        if (sceneName == "Result2") {
+            // On the results screen, there's a weird issue where the Jungle material setup
+            // doesn't write to the depth buffer, so it fails to overdraw the background.
+            // One way to fix this is to have two copies of the affected body parts:
+            // one with Jungle's special material, one with the standard material.
+            // The standard one comes first and is responsible for writing to the depth buffer.
+            //
+            // It would be nice to find a better way to do this, but as long as it works, honestly whatever.
+            // At least this was easier to figure out than the wrong-pixel-format thing.
+            foreach (var renderer in bodyParts) {
+                var standard = renderer.gameObject;
+                var special = Object.Instantiate(standard);
+
+                special.name = standard.name;
+                renderer.name += " (Jungle Depth Buffer Hack)";
+                special.transform.parent = renderer.transform.parent;
+                special.GetComponent<SkinnedMeshRenderer>().material = material;
+            }
+        } else {
+            foreach (var renderer in bodyParts) {
+                renderer.material = material;
             }
         }
 
         billboard.transform.localScale = Vector3.one * 5;
         var faceCamera = billboard.AddComponent<FaceCamera>();
-
-        if (sceneName == "Result2") {
-            // It would be nice to find a better way to do this, but as long as it works, honestly whatever.
-            // At least this was easier to figure out than the wrong-pixel-format thing.
-            foreach (var obj in hackPending) {
-                var copy = Object.Instantiate(obj);
-                copy.name = obj.name;
-                obj.name += " (Jungle Depth Buffer Hack)";
-                copy.transform.parent = obj.transform.parent;
-                copy.GetComponent<SkinnedMeshRenderer>().material = material;
-            }
-        }
 
         // Are there any scenes where this is *not* desirable?
         // TBD, but for everything I've checked it seems close to ideal
@@ -108,7 +100,7 @@ public static class Jungle {
         }
 
         if (sceneName is "UI_Star" or "Select") {
-            faceCamera.target = Camera.allCameras.First(c => c.name == "GO_uiMonoCamera");
+            faceCamera.target = Camera.allCameras.FirstOrDefault(c => c.name == "GO_uiMonoCamera");
         }
     }
 

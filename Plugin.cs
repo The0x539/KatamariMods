@@ -21,7 +21,7 @@ public sealed class Plugin : BaseUnityPlugin {
     public void Awake() {
         self = this;
 
-        this.StartCoroutine(Jungle.Init());
+        Jungle.Init();
 
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(Jungle));
