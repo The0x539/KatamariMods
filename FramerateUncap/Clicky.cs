@@ -23,12 +23,16 @@ public sealed class Clicky : MonoBehaviour {
         var fromWorld = hit.collider.gameObject.GetComponentInParent<AttachableProp>();
         if (fromWorld != null) return fromWorld;
 
+        if (GlobalWork.instance == null) return null;
+
         foreach (var prop in GlobalWork.instance.listProp) {
-            if (!prop.IsAttachedToKatamari) continue;
+            if (prop == null || !prop.IsAttachedToKatamari) continue;
             foreach (var collider in prop.mMeshColliders) {
-                if (collider.Raycast(ray, out _, 1000f)) {
-                    return prop;
-                }
+                if (collider == null) continue;
+                collider.enabled = true;
+                var didHit = collider.Raycast(ray, out _, 1000f);
+                collider.enabled = false;
+                if (didHit) return prop;
             }
         }
 
