@@ -31,20 +31,6 @@ public sealed class Plugin : BaseUnityPlugin {
             if (scene.name is "Result2" or "UI_Moon") {
                 ReplaceOuji(GameObject.Find("OUJI01"), OujiId, o => { });
             }
-
-            if (mode == LoadSceneMode.Single) {
-                Console.WriteLine($"Loaded {scene.name} singly");
-            } else {
-                Console.WriteLine($"Loaded {scene.name} additively");
-            }
-        };
-
-        SceneManager.activeSceneChanged += (current, next) => {
-            Console.WriteLine($"Scene change: {current.name} -> {next.name}");
-        };
-
-        SceneManager.sceneUnloaded += (scene) => {
-            Console.WriteLine($"Unloaded {scene.name}");
         };
     }
 
