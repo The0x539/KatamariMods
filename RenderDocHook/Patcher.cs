@@ -6,7 +6,9 @@ namespace RenderDocHook;
 
 [PatcherPluginInfo(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Patcher : BasePatcher {
-    static Patcher() {
+    public override void Initialize() {
+        if (!this.Config.Bind("Main", "Enable", true).Value) return;
+
         unsafe {
             var options = new CaptureOptions();
             RenderDoc.SetCaptureOptions(options);

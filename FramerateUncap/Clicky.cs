@@ -3,6 +3,12 @@
 namespace FramerateUncap;
 
 public sealed class Clicky : MonoBehaviour {
+    public static void Init() {
+        var obj = new GameObject("PS2 Inspector");
+        obj.AddComponent<Clicky>();
+        DontDestroyOnLoad(obj);
+    }
+
     public void Update() {
         KatamariFfi.UpdateUI();
 
@@ -23,7 +29,7 @@ public sealed class Clicky : MonoBehaviour {
         var fromWorld = hit.collider.gameObject.GetComponentInParent<AttachableProp>();
         if (fromWorld != null) return fromWorld;
 
-        if (GlobalWork.instance == null) return null;
+        if (GlobalWork.instance?.listProp == null) return null;
 
         foreach (var prop in GlobalWork.instance.listProp) {
             if (prop == null || !prop.IsAttachedToKatamari) continue;

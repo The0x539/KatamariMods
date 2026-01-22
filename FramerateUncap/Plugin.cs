@@ -15,13 +15,13 @@ namespace FramerateUncap;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
     public void Awake() {
+        if (!this.Config.Bind("Main", "Enable", true).Value) return;
+
         Harmony.CreateAndPatchAll(this.GetType());
         KatamariFfi.InstallHooks();
         Application.runInBackground = true;
 
-        var clicky = new GameObject("Clicky");
-        clicky.AddComponent<Clicky>();
-        DontDestroyOnLoad(clicky);
+        if (this.Config.Bind("Inspector", "Enable", true).Value) Clicky.Init();
     }
 
     [HarmonyPrefix]
