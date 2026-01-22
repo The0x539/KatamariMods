@@ -1,6 +1,10 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
   <Project Path="FramerateUncap/FramerateUncap.csproj" />
   <Project Path="GamepadSupport/GamepadSupport.csproj" />
-  <Project Path="SingleplayerCousins/SingleplayerCousins.csproj" />
   <Project Path="RenderDocHook/RenderDocHook.csproj" />
+  <Project Path="SingleplayerCousins/SingleplayerCousins.csproj" />
 </Solution>
