@@ -14,7 +14,6 @@
 		<PackageVersion Include="UnityEngine.Modules" Version="2018.1.9" />
 		<PackageVersion Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" />
 		<PackageVersion Include="Mono.Cecil" Version="0.11.6" />
-		<PackageVersion Include="IsExternalInit" Version="1.0.3" />
 
 		<Reference Include="Katamari">
 			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\katamari_Data\Managed\Assembly-CSharp.dll</HintPath>

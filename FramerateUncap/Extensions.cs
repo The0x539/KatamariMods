@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 
+using System;
 using System.Reflection.Emit;
 
 namespace FramerateUncap;
@@ -15,7 +16,10 @@ internal static class Extensions {
     }
 
     public static CodeMatcher AssertPos(this CodeMatcher m, int pos) {
-        return m.ThrowIfFalse($"Wrong position: expected {pos}, got {m.Pos}", m => m.Pos == pos);
+        if (m.Pos != pos) {
+            throw new InvalidOperationException($"Wrong instruction position: expected {pos}, got {m.Pos}");
+        }
+        return m;
     }
 
     public static int ConstInt(this CodeInstruction i) {

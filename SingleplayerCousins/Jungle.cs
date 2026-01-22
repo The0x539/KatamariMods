@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 
 using UnityEngine;
@@ -15,36 +15,37 @@ public static class Jungle {
     private static class Prefabs {
         public static GameObject billboard = null!;
         public static Material material = null!;
-    }
 
-    public static void Init() {
-        const string sceneName = "UI_Collection_Mono";
-        var load = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
-        load.completed += _ => SetupPrefabs(SceneManager.GetSceneByName(sceneName));
-    }
+        internal static IEnumerator Init() {
+            const string sceneName = "UI_Collection_Mono";
+            yield return SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
 
-    private static void SetupPrefabs(Scene scene) {
-        MonoScene? monoScene = null;
-        foreach (var obj in scene.GetRootGameObjects()) {
-            if (obj.name == "GO_MonoScene") {
-                monoScene = obj.GetComponent<MonoScene>();
-            }
+            var scene = SceneManager.GetSceneByName(sceneName);
+
+            var roots = scene.GetRootGameObjects();
+
             // Prevent the menu from briefly showing up on screen while the game is loading.
             // Ideally we could just directly get the two prefabs we actually care about,
             // but I have yet to figure out a working way to do that.
-            obj.gameObject.SetActive(false);
+            foreach (var obj in roots) obj.gameObject.SetActive(false);
+
+            var monoScene = roots.FirstWithName("GO_MonoScene")?.GetComponent<MonoScene>();
+            if (monoScene is null) yield break;
+
+            billboard = Object.Instantiate(monoScene.jungleBoard);
+            billboard.name = "JungleBillboardPrefab";
+            material = Object.Instantiate(monoScene.matJungle);
+            material.name = "JungleMaterialPrefab";
+            Object.DontDestroyOnLoad(billboard);
+            Object.DontDestroyOnLoad(material);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
         }
-        if (monoScene is null) return;
-
-        Prefabs.billboard = Object.Instantiate(monoScene.jungleBoard);
-        Prefabs.billboard.name = "JungleBillboardPrefab";
-        Prefabs.material = Object.Instantiate(monoScene.matJungle);
-        Prefabs.material.name = "JungleMaterialPrefab";
-        Object.DontDestroyOnLoad(Prefabs.billboard);
-        Object.DontDestroyOnLoad(Prefabs.material);
-
-        SceneManager.UnloadSceneAsync(scene);
     }
+
+    // For some reason, BepInEx freaks out if it sees a coroutine in a class it's scanning for patches,
+    // so as a workaround, stick the actual yielding method elsewhere.
+    internal static IEnumerator LoadPrefabs() => Prefabs.Init();
 
     public static void Dress(GameObject ouji) {
         if (Prefabs.billboard == null || Prefabs.material == null) return;
@@ -58,7 +59,7 @@ public static class Jungle {
         billboard.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Default");
 
         var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
-                .Where(r => r?.name is "head_tawara_m" or "body01_m" or "hand_m");
+            .AllWithNames("head_tawara_m", "body01_m", "hand_m");
 
         var sceneName = ouji.scene.name;
         if (sceneName == "Result2") {
@@ -103,7 +104,7 @@ public static class Jungle {
         }
 
         if (sceneName is "UI_Star" or "Select") {
-            faceCamera.target = Camera.allCameras.FirstOrDefault(c => c.name == "GO_uiMonoCamera");
+            faceCamera.target = Camera.allCameras.FirstWithName("GO_uiMonoCamera");
         }
     }
 

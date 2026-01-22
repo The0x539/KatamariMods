@@ -17,12 +17,8 @@ namespace SingleplayerCousins;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
-    private static Plugin self = null!;
-
     public void Awake() {
-        self = this;
-
-        Jungle.Init();
+        this.StartCoroutine(Jungle.LoadPrefabs());
 
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(Jungle));
