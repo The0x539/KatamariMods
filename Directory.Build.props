@@ -1,14 +1,16 @@
 <Project>
 	<PropertyGroup>
 		<LangVersion>latest</LangVersion>
-		<RestoreAdditionalProjectSources>
-			https://api.nuget.org/v3/index.json;
-			https://nuget.bepinex.dev/v3/index.json;
-			https://nuget.samboy.dev/v3/index.json
-		</RestoreAdditionalProjectSources>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 		<Nullable>enable</Nullable>
+
+		<!--
+			This analyzer is broken in these prerelease builds,
+			because	it checks for BepInEx.BaseUnityPlugin
+			instead of BepInEx.Unity.Mono.BaseUnityPlugin.
+		-->
+		<NoWarn>BepInEx002</NoWarn>
 	</PropertyGroup>
 </Project>

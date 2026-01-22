@@ -1,12 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netstandard2.0</TargetFramework>
+		<TargetFramework>net481</TargetFramework>
 		<AssemblyName>RenderDocHook</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Mono.Cecil" />
+		<PackageReference Include="BepInEx.PluginInfoProps" />
+		<PackageReference Include="BepInEx.Preloader.Core" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

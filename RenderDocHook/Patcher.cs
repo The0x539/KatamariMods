@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using BepInEx.Preloader.Core.Patching;
+
 using System.Runtime.InteropServices;
 
 namespace RenderDocHook;
 
-public static class Patcher {
+[PatcherPluginInfo(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+public sealed class Patcher : BasePatcher {
     static Patcher() {
         unsafe {
             var options = new CaptureOptions();
@@ -12,10 +14,6 @@ public static class Patcher {
             //RenderDoc.SetDebugLogFile("./renderdoc.debug.log");
         }
     }
-
-    // Needed for the BepInEx 5 preloader to detect this assembly as something worth running
-    public static IEnumerable<string> TargetDLLs => new string[] { };
-    public static void Patch(Mono.Cecil.AssemblyDefinition assembly) { }
 }
 
 [StructLayout(LayoutKind.Sequential, Size = 20)]

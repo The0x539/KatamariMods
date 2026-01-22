@@ -7,18 +7,14 @@
 
 	<ItemGroup>
 		<PackageReference Include="BepInEx.Analyzers" />
-		<PackageReference Include="BepInEx.Core" />
+		<PackageReference Include="BepInEx.Unity.Mono" />
 		<PackageReference Include="BepInEx.PluginInfoProps" />
 		<PackageReference Include="UnityEngine.Modules" />
 		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<ItemGroup>
-			<BuildOutputs Include="$(TargetPath)" />
-			<BuildOutputs Include="$(MSBuildExtensionsPath)\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\netstandard.dll" />
-		</ItemGroup>
-		<Copy SourceFiles="@(BuildOutputs)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\plugins" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\plugins" />
 	</Target>
 
 </Project>

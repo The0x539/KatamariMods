@@ -1,17 +1,20 @@
 <Project>
 	<PropertyGroup>
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-		<CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
+		<RestoreAdditionalProjectSources>
+			https://nuget.bepinex.dev/v3/index.json
+		</RestoreAdditionalProjectSources>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageVersion Include="BepInEx.Analyzers" Version="1.*" />
-		<PackageVersion Include="BepInEx.Core" Version="5.*" />
-		<PackageVersion Include="BepInEx.PluginInfoProps" Version="2.*" />
+		<PackageVersion Include="BepInEx.Analyzers" Version="1.0.8" />
+		<PackageVersion Include="BepInEx.Unity.Mono" Version="6.0.0-be.752" />
+		<PackageVersion Include="BepInEx.Preloader.Core" Version="6.0.0-pre.1" />
+		<PackageVersion Include="BepInEx.PluginInfoProps" Version="2.1.0" />
 		<PackageVersion Include="UnityEngine.Modules" Version="2018.1.9" />
-		<PackageVersion Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" />
+		<PackageVersion Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" />
 		<PackageVersion Include="Mono.Cecil" Version="0.11.6" />
-		<PackageVersion Include="IsExternalInit" Version="1.*" />
+		<PackageVersion Include="IsExternalInit" Version="1.0.3" />
 
 		<Reference Include="Katamari">
 			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\katamari_Data\Managed\Assembly-CSharp.dll</HintPath>
