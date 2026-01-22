@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 
 using Object = UnityEngine.Object;
 
-namespace KatamariDama60;
+namespace SingleplayerCousins;
 
 public static class Jungle {
     private static class Prefabs {

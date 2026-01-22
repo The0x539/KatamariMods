@@ -1,6 +1,6 @@
 <Solution>
   <Project Path="FramerateUncap/FramerateUncap.csproj" />
   <Project Path="GamepadSupport/GamepadSupport.csproj" />
-  <Project Path="KatamariDama60.csproj" />
+  <Project Path="SingleplayerCousins/SingleplayerCousins.csproj" />
   <Project Path="RenderDocHook/RenderDocHook.csproj" />
 </Solution>

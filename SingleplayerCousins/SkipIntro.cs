@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 using UnityEngine.SceneManagement;
 
-namespace KatamariDama60;
+namespace SingleplayerCousins;
 
 public static class SkipIntro {
     [HarmonyPrefix]

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace KatamariDama60;
+namespace SingleplayerCousins;
 
 internal static class Extensions {
     public static GameObject[] GetChildren(this GameObject parent) {

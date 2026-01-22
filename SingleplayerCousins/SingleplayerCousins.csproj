@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net35</TargetFramework>
 		<Nullable>enable</Nullable>
-		<AssemblyName>KatamariDama60</AssemblyName>
+		<AssemblyName>SingleplayerCousins</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<RestoreAdditionalProjectSources>
 			https://api.nuget.org/v3/index.json;
@@ -13,19 +13,6 @@
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 	</PropertyGroup>
-
-	<!-- TODO: just restructure this mod into its own directory like I should have a while ago -->
-	<ItemGroup>
-	  <Compile Remove="FramerateUncap\**" />
-	  <Compile Remove="GamepadSupport\**" />
-	  <Compile Remove="RenderDocHook\**" />
-	  <EmbeddedResource Remove="FramerateUncap\**" />
-	  <EmbeddedResource Remove="GamepadSupport\**" />
-	  <EmbeddedResource Remove="RenderDocHook\**" />
-	  <None Remove="FramerateUncap\**" />
-	  <None Remove="GamepadSupport\**" />
-	  <None Remove="RenderDocHook\**" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="BepInEx.Analyzers" Version="1.*" />
