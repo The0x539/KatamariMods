@@ -7,4 +7,5 @@
   <Project Path="GamepadSupport/GamepadSupport.csproj" />
   <Project Path="RenderDocHook/RenderDocHook.csproj" />
   <Project Path="SingleplayerCousins/SingleplayerCousins.csproj" />
+  <Project Path="StartupDummy/StartupDummy.csproj" />
 </Solution>
