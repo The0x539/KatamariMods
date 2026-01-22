@@ -7,14 +7,16 @@ namespace RenderDocHook;
 [PatcherPluginInfo(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Patcher : BasePatcher {
     public override void Initialize() {
-        if (!this.Config.Bind("Main", "Enable", true).Value) return;
+        if (this.Config.Bind("Main", "Enable", true).Value) Load();
+    }
 
-        unsafe {
-            var options = new CaptureOptions();
-            RenderDoc.SetCaptureOptions(options);
-            //RenderDoc.SetCaptureFile("./renderdoc.cap");
-            //RenderDoc.SetDebugLogFile("./renderdoc.debug.log");
-        }
+    // If this isn't a separate function, then the runtime loads the DLL whether or not we actually reach the SetCaptureOptions call.
+    // Loading renderdoc.dll seems to be the important part, more so than calling SetCaptureOptions.
+    private static unsafe void Load() {
+        var options = new CaptureOptions();
+        RenderDoc.SetCaptureOptions(options);
+        //RenderDoc.SetCaptureFile("./renderdoc.cap");
+        //RenderDoc.SetDebugLogFile("./renderdoc.debug.log");
     }
 }
 
