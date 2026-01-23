@@ -19,7 +19,6 @@ public sealed class Plugin : BaseUnityPlugin {
 
         Harmony.CreateAndPatchAll(this.GetType());
         KatamariFfi.InstallHooks();
-        Application.runInBackground = true;
 
         if (this.Config.Bind("Inspector", "Enable", true).Value) Clicky.Init();
     }

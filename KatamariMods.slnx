@@ -3,6 +3,7 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
   </Folder>
+  <Project Path="DevUtils/DevUtils.csproj" />
   <Project Path="FramerateUncap/FramerateUncap.csproj" />
   <Project Path="GamepadSupport/GamepadSupport.csproj" />
   <Project Path="RenderDocHook/RenderDocHook.csproj" />

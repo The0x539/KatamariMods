@@ -22,7 +22,6 @@ public sealed class Plugin : BaseUnityPlugin {
 
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(Jungle));
-        Harmony.CreateAndPatchAll(typeof(SkipIntro));
 
         SceneManager.sceneLoaded += (scene, mode) => {
             if (scene.name is "Result2" or "UI_Moon") {
