@@ -15,6 +15,8 @@ public static class SkipIntro {
     }
 
     private static void LoadSaveFile(SaveManager2.Slot slot) {
+        GlobalWork.Instance.InitObjMessage();
+
         var sys = new SystemSaveData();
         if (SaveManager2.ExistSystemData() && !SaveManager2.SystemLoad(ref sys)) {
             throw new System.Exception("System save seems corrrupt?");
