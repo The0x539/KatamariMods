@@ -173,12 +173,6 @@ public sealed class Plugin : BaseUnityPlugin {
         });
     }
 
-    // TODO: this doesn't really belong in shipped builds, at least not without being a proper feature
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(InputController), nameof(InputController.IsSelectDown))]
-    public static void NoClick(ref bool isMouse) {
-        isMouse = false;
-    }
 
     private const int JUNGLE = 23;
 
@@ -258,6 +252,7 @@ public sealed class Plugin : BaseUnityPlugin {
         }
 
         foreach (var renderer in presentRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
+            renderer.gameObject.AddComponent<PresentAdjuster>();
             renderer.rootBone = bones[renderer.rootBone.name].transform;
             // For some reason, this seems to only work properly if I replace the entire array.
             var newBones = new Transform[renderer.bones.Length];
