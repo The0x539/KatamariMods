@@ -173,9 +173,6 @@ public sealed class Plugin : BaseUnityPlugin {
         });
     }
 
-
-    private const int JUNGLE = 23;
-
     private class OujiRefs(GameObject Obj) {
         public readonly GameObject ouji = Obj;
         public Transform transform = Obj.transform;
@@ -223,7 +220,7 @@ public sealed class Plugin : BaseUnityPlugin {
         var oldAnimator = old.GetComponent<Animator>();
         animator.runtimeAnimatorController = oldAnimator.runtimeAnimatorController;
 
-        if (idx == JUNGLE) {
+        if (idx == (int)Cousin.Jungle) {
             try {
                 Jungle.Dress(ouji);
             } catch (Exception e) {
@@ -252,12 +249,16 @@ public sealed class Plugin : BaseUnityPlugin {
         }
 
         foreach (var renderer in presentRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true)) {
-            renderer.gameObject.AddComponent<PresentAdjuster>();
             renderer.rootBone = bones[renderer.rootBone.name].transform;
             // For some reason, this seems to only work properly if I replace the entire array.
             var newBones = new Transform[renderer.bones.Length];
             for (var i = 0; i < renderer.bones.Length; i++) {
                 var name = renderer.bones[i].name;
+
+                if (name.StartsWith("PRE_") && !bones.ContainsKey(name)) {
+                    name = renderer.bones[i].parent.name;
+                }
+
                 if (bones.TryGetValue(name, out var bone)) {
                     newBones[i] = bone.transform;
                 } else {
@@ -265,6 +266,8 @@ public sealed class Plugin : BaseUnityPlugin {
                 }
             }
             renderer.bones = newBones;
+
+            renderer.gameObject.AddComponent<PresentAdjuster>().Setup();
         }
     }
 }
