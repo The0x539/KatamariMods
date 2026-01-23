@@ -29,10 +29,12 @@ public unsafe class Gamepad : IDisposable {
 
     public bool IsConnected => RawBindings.SDL_GamepadConnected(this.ptr);
 
-    public static string NameForID(JoystickID instanceId) => ConvertName(RawBindings.SDL_GetGamepadNameForID(instanceId));
+    public JoystickID ID => RawBindings.SDL_GetGamepadID(this.ptr);
+
+    public static string? NameForID(JoystickID instanceId) => ConvertName(RawBindings.SDL_GetGamepadNameForID(instanceId));
     public static int PlayerIndexForID(JoystickID instanceId) => RawBindings.SDL_GetGamepadPlayerIndexForID(instanceId);
 
-    private static string ConvertName(byte* ptr) {
+    private static string? ConvertName(byte* ptr) {
         if (ptr == null) return null;
         // Frustratingly, PtrToStringUTF8 is not available on this framework version.
         // Everything just sucks.
@@ -40,10 +42,10 @@ public unsafe class Gamepad : IDisposable {
         return string.Intern(name);
     }
 
-    private string GetName() => ConvertName(RawBindings.SDL_GetGamepadName(this.ptr));
+    private string? GetName() => ConvertName(RawBindings.SDL_GetGamepadName(this.ptr));
 
-    private string _name = null;
-    public string Name => this._name ??= this.GetName();
+    private string? _name = null;
+    public string? Name => this._name ??= this.GetName();
 
     private GamepadType? _gamepadType = null;
     public GamepadType GamepadType => this._gamepadType ??= RawBindings.SDL_GetGamepadType(this.ptr);

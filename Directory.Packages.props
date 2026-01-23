@@ -25,5 +25,8 @@
 		<Reference Include="UnityEngine.UI">
 			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\katamari_Data\Managed\UnityEngine.UI.dll</HintPath>
 		</Reference>
+		<Reference Include="Rewired_Core">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\katamari_Data\Managed\Rewired_Core.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 </Project>

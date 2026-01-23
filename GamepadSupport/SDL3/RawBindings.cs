@@ -81,6 +81,12 @@ internal static unsafe partial class RawBindings {
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern SDLBool SDL_SetGamepadPlayerIndex(RawGamepad* gamepad, int playerIndex);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern JoystickID SDL_GetGamepadID(RawGamepad* gamepad);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern RawGamepad* SDL_GetGamepadFromPlayerIndex(int playerIndex);
 }
 
 [Flags]

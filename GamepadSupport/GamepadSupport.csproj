@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net481</TargetFramework>
-		<Nullable>disable</Nullable>
+		<TargetFramework>net35</TargetFramework>
 		<AssemblyName>GamepadSupport</AssemblyName>
 	</PropertyGroup>
 

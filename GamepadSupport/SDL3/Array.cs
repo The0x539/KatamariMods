@@ -52,7 +52,7 @@ public sealed unsafe class SDLArray<T> : IEnumerable<T>, IDisposable {
 
         public readonly T Current => this.array[this.index];
 
-        readonly object System.Collections.IEnumerator.Current => this.array[this.index];
+        readonly object? System.Collections.IEnumerator.Current => this.array[this.index];
         readonly void IDisposable.Dispose() { }
     }
 }
@@ -102,7 +102,7 @@ public sealed unsafe class SDLPointerArray<T> : IEnumerable<T>, IDisposable {
 
         public readonly T Current => this.array[this.index];
 
-        readonly object System.Collections.IEnumerator.Current => this.array[this.index];
+        readonly object? System.Collections.IEnumerator.Current => this.array[this.index];
         readonly void IDisposable.Dispose() { }
     }
 }

@@ -1,21 +1,26 @@
 ﻿using MyGame;
 using MyGame.InputStatus;
 
+using System;
+
 using SDL = GamepadSupport.SDL3;
 
 namespace GamepadSupport;
 
 public sealed class InputPadSDL3 : InputPadBase {
-    private SDL.Gamepad inner;
+    private SDL.Gamepad? inner;
 
     private readonly float[] axes = new float[(int)SDL.GamepadAxis.COUNT];
     private uint buttons;
 
     public void Start() {
-        // TODO: Properly handle hotplugging and figure out the deal with multiplayer
-        // SDL_GetGamepadFromPlayerIndex seems relevant
-        this.inner = new SDL.Gamepad((SDL.JoystickID)this.ID + 1);
         this.Enabled = true;
+    }
+
+    public void Connect(SDL.JoystickID id) {
+        this.inner = new SDL.Gamepad(id);
+        this.inner.PlayerIndex = this.ID;
+        Console.WriteLine($"Connected {this.inner.Name} for player {this.ID}");
     }
 
     // Corresponds to MyGame.InputStatus.KeyMap
@@ -52,11 +57,12 @@ public sealed class InputPadSDL3 : InputPadBase {
         // After this is the eight directions (four per stick). TBD if they, or anything past this point, is necessary.
     ];
 
-    public override bool IsKeybord => false;
-    public override bool IsConnectPad => inner.IsConnected;
-    public override int ConnectCount => 1;
+    // TODO: properly bring back keyboard input?
+    public override bool IsKeybord => this.inner == null;
+    public override bool IsConnectPad => this.inner != null;
+    public override int ConnectCount => this.IsConnectPad ? 1 : 0;
 
-    public override PadType PadType => this.inner.GamepadType switch {
+    public override PadType PadType => this.inner?.GamepadType switch {
         SDL.GamepadType.PS3 or
         SDL.GamepadType.PS4 or
         SDL.GamepadType.PS5 => PadType.PS4,
@@ -72,14 +78,14 @@ public sealed class InputPadSDL3 : InputPadBase {
         _ => PadType.Steam,
     };
 
-    public override PadMode PadMode => this.inner.GamepadType switch {
+    public override PadMode PadMode => this.inner?.GamepadType switch {
         SDL.GamepadType.SwitchJoyConPair => PadMode.Dual,
         SDL.GamepadType.SwitchJoyConLeft or
         SDL.GamepadType.SwitchJoyConRight => PadMode.Half,
         _ => PadMode.Single,
     };
 
-    public override IconType IconType => this.inner.GamepadType switch {
+    public override IconType IconType => this.inner?.GamepadType switch {
         SDL.GamepadType.PS3 or
         SDL.GamepadType.PS4 or
         SDL.GamepadType.PS5 => IconType.PS4,
@@ -95,12 +101,23 @@ public sealed class InputPadSDL3 : InputPadBase {
     public override void Vibration(float time) {
         var a = (ushort)(this.motorStrengthS << 8);
         var b = (ushort)(this.motorStrengthL << 8);
-        this.inner.Rumble(a, b, (uint)(time * 1000));
+        this.inner?.Rumble(a, b, (uint)(time * 1000));
     }
 
     private float GetAxis(SDL.GamepadAxis axis) => this.axes[(int)axis];
 
+    public void Update() {
+        if (this.inner != null && !this.inner.IsConnected) {
+            this.inner = null;
+        }
+    }
+
     private void ReadAxes() {
+        if (this.inner is null) {
+            for (var axis = 0; axis < (int)SDL.GamepadAxis.COUNT; axis++) this.axes[axis] = 0f;
+            return;
+        }
+
         for (var axis = (SDL.GamepadAxis)0; axis < SDL.GamepadAxis.COUNT; axis++) {
             this.axes[(int)axis] = this.inner.GetAxis(axis) switch {
                 0 => 0f,
@@ -113,6 +130,11 @@ public sealed class InputPadSDL3 : InputPadBase {
     }
 
     private void ReadButtons() {
+        if (this.inner is null) {
+            this.buttons = 0;
+            return;
+        }
+
         var buttons = 0u;
         for (var i = 0; i < buttonSequence.Length; i++) {
             var b = buttonSequence[i];

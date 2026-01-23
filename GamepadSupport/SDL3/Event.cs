@@ -1,13 +1,14 @@
 ﻿namespace GamepadSupport.SDL3;
 
+#pragma warning disable CS8500 // the target runtime doesn't know what "unmanaged" is
+
 public unsafe class SDLEvent {
     private readonly CommonEvent* buffer;
 
     public SDLEvent() => this.buffer = (CommonEvent*)RawBindings.SDL_calloc(1, 128);
     ~SDLEvent() => SDL.Free(this.buffer);
 
-    // TODO: Investigate if I can turn nullable annotations back on now that I've gotten the basics working
-    public static SDLEvent Poll() {
+    public static SDLEvent? Poll() {
         var ev = new SDLEvent();
         bool gotEvent = RawBindings.SDL_PollEvent(ev.buffer);
         return gotEvent ? ev : null;
@@ -18,7 +19,7 @@ public unsafe class SDLEvent {
 
     public CommonEvent AsCommon() => *this.buffer;
 
-    private T As<T>() where T : unmanaged => *(T*)this.buffer;
+    private T As<T>() where T : struct => *(T*)this.buffer;
 
     public object Dispatch() => this.EventType switch {
         EventType.GamepadAdded or
