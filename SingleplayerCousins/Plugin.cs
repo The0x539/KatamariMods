@@ -306,7 +306,11 @@ public sealed class Plugin : BaseUnityPlugin {
             }
             renderer.bones = newBones;
 
-            renderer.gameObject.AddComponent<PresentAdjuster>().Setup();
+            if (renderer.gameObject.GetComponent<PresentAdjuster>() is PresentAdjuster existing) {
+                existing.Setup();
+            } else {
+                renderer.gameObject.AddComponent<PresentAdjuster>().Setup();
+            }
         }
     }
 }
