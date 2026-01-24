@@ -115,7 +115,7 @@ public sealed class PresentAdjuster : MonoBehaviour {
             = new() { position = new(0, 0.07f, 0) },
 
         [Cousin.Nik, Present.Headphones]
-            = new() { position = new(0, 0.025f, 0) },
+            = new() { position = new(0, 0.052f, 0), scale = new(1.125f, 1, 1) },
 
         [Cousin.Nik, Present.ChampBelt]
             = new() { scale = new(1.4f, 1, 1.25f), position = new(0, 0, 0.01f) },
@@ -144,7 +144,7 @@ public sealed class PresentAdjuster : MonoBehaviour {
             = new() { scale = new(1.25f, 1.5f, 1), position = new(0, 0.01f, 0.005f) },
 
         [Cousin.Nik, Present.Camera]
-            = new() { scale = new(1.3f, 1.3f, 1.3f) },
+            = new() { scale = new(1.3f, 1.3f, 1), position = new(0, 0, 0.05f) },
 
         [Cousin.Nik, Present.Ducky]
             = new() { scale = new(1.35f, 1, 1.3f) },
@@ -153,7 +153,7 @@ public sealed class PresentAdjuster : MonoBehaviour {
             = new() { scale = new(1.3f, 1, 1.3f) },
 
         [Cousin.Nik, Present.Snorkel]
-            = new() { scale = new(1, 1.25f, 1.25f), rotation = Quaternion.Euler(-20, 0, 0) },
+            = new() { position = new(0, 0.01f, 0), scale = new(1, 1.25f, 1.25f), rotation = Quaternion.Euler(-20, 0, 0) },
 
         [Cousin.Johnson, Present.ChefHat, Present.Crown]
             = new() { position = new(0, 0.05f, 0) },
@@ -231,7 +231,7 @@ public sealed class PresentAdjuster : MonoBehaviour {
             = new() { position = new(0, 0.1f, -0.07f), rotation = Quaternion.Euler(-5, 0, 0) },
 
         [Cousin.Peso, Present.Headphones]
-            = new() { position = new(0, 0.04f, 0), scale = new(0.75f, 0, 0) },
+            = new() { position = new(0, 0.04f, 0), scale = new(0.75f, 1, 1) },
 
         [Cousin.Peso, Present.Wig]
             = new() { position = new(0, 0.1f, 0.05f), rotation = Quaternion.Euler(50, 0, 0) },
@@ -353,7 +353,7 @@ public sealed class PresentAdjuster : MonoBehaviour {
             = new() {
                 scale = new(1, 1, 1.1f),
                 overrides = new() {
-                    ["JNT_spine_02"] = new() { position = new(1, 1, 1.2f) },
+                    ["JNT_spine_02"] = new() { scale = new(1, 1, 1.2f) },
                 },
             },
 
