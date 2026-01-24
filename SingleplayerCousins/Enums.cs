@@ -44,6 +44,6 @@ public enum Present {
     Ducky = 14,
     WinterScarf = 15,
 
-    Scuba = 16,
+    Snorkel = 16,
     HeldCamera = 17,
 }

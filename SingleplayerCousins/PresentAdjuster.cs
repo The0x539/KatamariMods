@@ -36,9 +36,11 @@ public sealed class PresentAdjuster : MonoBehaviour {
             child.transform.SetParent(parent, worldPositionStays: false);
             child.name = $"PRE_{present}_{parent.name}";
 
-            if (adjustment.position is Vector3 pos) child.transform.localPosition = pos;
-            if (adjustment.rotation is Quaternion rot) child.transform.localRotation = rot;
-            if (adjustment.scale is Vector3 scale) child.transform.localScale = scale;
+            adjustment.ApplyTo(child.transform);
+
+            if (adjustment.overrides?.TryGetValue(parent.name, out var ov) ?? false) {
+                ov.ApplyTo(child.transform);
+            }
 
             bones[idx] = child.transform;
         }
@@ -66,6 +68,14 @@ public sealed class PresentAdjuster : MonoBehaviour {
         public Vector3? position;
         public Vector3? scale;
         public Quaternion? rotation;
+
+        public Dictionary<string, Adjustment>? overrides;
+
+        public readonly void ApplyTo(Transform t) {
+            if (this.position is Vector3 pos) t.localPosition = pos;
+            if (this.rotation is Quaternion rot) t.localRotation = rot;
+            if (this.scale is Vector3 scale) t.localScale = scale;
+        }
     }
 
     private readonly record struct Combination(Cousin Cousin, Present Present);
@@ -80,6 +90,82 @@ public sealed class PresentAdjuster : MonoBehaviour {
     }
 
     private static readonly Adjustments adjustments = new() {
+        [Cousin.Nik, Present.Apron]
+            = new() { scale = new(2, 1, 1.75f) },
+
+        [Cousin.Nik, Present.RunningTop]
+            = new() {
+                scale = new(1.5f, 1, 1.75f),
+                overrides = new() {
+                    // unfortunately this gives Nik some moobs, but at this point whatever
+                    ["JNT_spine_01"] = new() { scale = new(1.75f, 1, 3f) },
+                }
+            },
+
+        [Cousin.Nik, Present.Mawashi]
+            = new() { scale = new(1.25f, 1, 1.125f) },
+
+        [Cousin.Nik, Present.CoolMask]
+            = new() { position = new(0, 0.05f, 0) },
+
+        [Cousin.Nik, Present.ChefHat, Present.Crown]
+            = new() { position = new(0, 0.07f, 0) },
+
+        [Cousin.Nik, Present.Headphones]
+            = new() { position = new(0, 0.025f, 0) },
+
+        [Cousin.Nik, Present.ChampBelt]
+            = new() { scale = new(1.4f, 1, 1.25f), position = new(0, 0, 0.01f) },
+
+        [Cousin.Nik, Present.WhiteGuitar]
+            = new() {
+                overrides = new() {
+                    ["JNT_waist"] = new() { position = new(-0.1f, 0, 0), scale = new(3, 1, 1.5f) },
+                    ["JNT_spine_01"] = new() { position = new(0.3f, 0.2f, 0), scale = new(1, 1, 2) },
+                }
+            },
+
+        [Cousin.Nik, Present.AlohaSet]
+            = new() {
+                scale = new(1.4f, 1, 1.3f),
+                position = new(0, 0, 0.01f),
+                overrides = new() {
+                    ["JNT_spine_01"] = new() { scale = new(1, 1, 1.4f) },
+                },
+            },
+
+        [Cousin.Nik, Present.SuperheroScarf]
+            = new() { scale = new(1.6f, 1, 1.25f) },
+
+        [Cousin.Nik, Present.Wig]
+            = new() { scale = new(1.25f, 1.5f, 1), position = new(0, 0.01f, 0.005f) },
+
+        [Cousin.Nik, Present.Camera]
+            = new() { scale = new(1.3f, 1.3f, 1.3f) },
+
+        [Cousin.Nik, Present.Ducky]
+            = new() { scale = new(1.35f, 1, 1.3f) },
+
+        [Cousin.Nik, Present.WinterScarf]
+            = new() { scale = new(1.3f, 1, 1.3f) },
+
+        [Cousin.Nik, Present.Snorkel]
+            = new() { scale = new(1, 1.25f, 1.25f), rotation = Quaternion.Euler(-20, 0, 0) },
+
+        [Cousin.Johnson, Present.ChefHat, Present.Crown]
+            = new() { position = new(0, 0.05f, 0) },
+
+        [Cousin.Johnson, Present.CoolMask]
+            = new() { position = new(0, 0, 0.3f) },
+
+        // Not even going to attempt the wig on Johnson. His face is circular!
+
+        [Cousin.Johnson, Present.Headphones]
+            = new() { scale = new(0.6f, 1, 1) },
+
+        [Cousin.Johnson, Present.Snorkel]
+            = new() { scale = new(0.8f, 1, 0.5f), position = new(0, 0, 0.35f), rotation = Quaternion.Euler(15, 0, 0) },
+
         [Cousin.Odeko, Present.Crown, Present.ChefHat]
             = new() { position = new(0, 0.79f, 0) },
 
