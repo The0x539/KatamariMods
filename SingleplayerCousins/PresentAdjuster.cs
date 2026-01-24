@@ -166,6 +166,52 @@ public sealed class PresentAdjuster : MonoBehaviour {
         [Cousin.Johnson, Present.Snorkel]
             = new() { scale = new(0.8f, 1, 0.5f), position = new(0, 0, 0.35f), rotation = Quaternion.Euler(15, 0, 0) },
 
+        [Cousin.Velvet, Present.Apron]
+            = new() { scale = new(1, 1, 1.65f) },
+
+        [Cousin.Velvet, Present.RunningTop]
+            = new() {
+                overrides = new() {
+                    ["JNT_waist"] = new() { scale = new(1.2f, 1, 1.5f) },
+                    ["JNT_spine_01"] = new() { scale = new(1, 1, 1.1f) },
+                },
+            },
+
+        [Cousin.Velvet, Present.Mawashi]
+            = new() { position = new(0, -0.08f, 0), scale = new(1.5f, 1, 1.8f), },
+
+        [Cousin.Velvet, Present.ChampBelt]
+            = new() { position = new(0, 0.07f, 0), scale = new(0.9f, 1, 1) },
+
+        [Cousin.Velvet, Present.AlohaSet]
+            = new() {
+                overrides = new() {
+                    ["JNT_waist"] = new() { position = new(0, -0.12f, 0), scale = new(1.6f, 1, 2.1f) },
+                }
+            },
+
+        [Cousin.Velvet, Present.WhiteGuitar]
+            = new() {
+                overrides = new() {
+                    ["JNT_spine_02"] = new() { scale = new(1, 1, 1.2f), rotation = Quaternion.Euler(15, 0, 0) },
+                },
+            },
+
+        [Cousin.Fujio, Present.CoolMask]
+            = new() { position = new(0, -0.05f, 0.05f) },
+
+        [Cousin.Fujio, Present.ChefHat, Present.Crown]
+            = new() { position = new(0, 0.25f, 0.01f), scale = new(1.05f, 1, 1.05f) },
+
+        [Cousin.Fujio, Present.Headphones]
+            = new() { position = new(0.05f, 0.14f, 0.05f), scale = new(0.5f, 0.5f, 0.5f), rotation = Quaternion.Euler(-55, 30, 0) },
+
+        [Cousin.Fujio, Present.Wig]
+            = new() { position = new(0, 0.035f, 0.05f), rotation = Quaternion.Euler(40, 0, 0) },
+
+        [Cousin.Fujio, Present.Snorkel]
+            = new() { position = new(0, -0.04f, 0.16f), scale = new(1, 1.14f, 0.5f), rotation = Quaternion.Euler(-5, 0, 0) },
+
         [Cousin.Odeko, Present.Crown, Present.ChefHat]
             = new() { position = new(0, 0.79f, 0) },
 
