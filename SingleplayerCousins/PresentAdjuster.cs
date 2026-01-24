@@ -36,6 +36,10 @@ public sealed class PresentAdjuster : MonoBehaviour {
             child.transform.SetParent(parent, worldPositionStays: false);
             child.name = $"PRE_{present}_{parent.name}";
 
+            if (cousin == Cousin.Nickel && present == Present.Camera) {
+                child.transform.parent = parent.parent;
+            }
+
             adjustment.ApplyTo(child.transform);
 
             if (adjustment.overrides?.TryGetValue(parent.name, out var ov) ?? false) {
@@ -95,10 +99,9 @@ public sealed class PresentAdjuster : MonoBehaviour {
 
         [Cousin.Nik, Present.RunningTop]
             = new() {
-                scale = new(1.5f, 1, 1.75f),
+                scale = new(1.6f, 1, 1.5f),
                 overrides = new() {
-                    // unfortunately this gives Nik some moobs, but at this point whatever
-                    ["JNT_spine_01"] = new() { scale = new(1.75f, 1, 3f) },
+                    ["JNT_waist"] = new() { scale = new(1.4f, 1, 1.3f) },
                 }
             },
 
@@ -256,7 +259,134 @@ public sealed class PresentAdjuster : MonoBehaviour {
         [Cousin.Odeko, Present.Crown, Present.ChefHat]
             = new() { position = new(0, 0.79f, 0) },
 
+        [Cousin.Odeko, Present.CoolMask]
+            = new() { position = new(0, 0.08f, 0.02f), rotation = Quaternion.Euler(30, 0, 0) },
+
+        [Cousin.Odeko, Present.Headphones]
+            = new() { scale = new(0.62f, 1, 1), rotation = Quaternion.Euler(30, 0, 0) },
+
         [Cousin.Odeko, Present.Wig] // this one just sucks basically unavoidably, and many will, due to differing face contours
             = new() { position = new(0, 0.1f, 0.04f), rotation = Quaternion.Euler(55f, 0, 0), scale = new(1.1f, 1.1f, 1f) },
+
+        [Cousin.Odeko, Present.Snorkel]
+            = new() { position = new(0, 0.05f, 0.06f), rotation = Quaternion.Euler(25, 0, 0) },
+
+        [Cousin.Honey, Present.Headphones]
+            = new() { scale = new(1.4f, 1, 1) },
+
+        // Marny is just a disaster, and for some reason his animations are broken outside of gameplay.
+
+        [Cousin.Foomin, Present.Headphones]
+            = new() { scale = new(1.2f, 1, 1), rotation = Quaternion.Euler(-30, 0, 0) },
+
+        [Cousin.Colombo, Present.Apron, Present.ChampBelt, Present.AlohaSet]
+            = new() { scale = new(1.1f, 1, 1.2f) },
+
+        [Cousin.Colombo, Present.RunningTop]
+            = new() {
+                scale = new(1.2f, 1, 1.3f),
+                overrides = new() {
+                    ["JNT_spine_01"] = new() { scale = new(1.1f, 1, 1.5f) },
+                    ["JNT_spine_02"] = new() { scale = new(1.2f, 1, 1.2f) },
+                },
+            },
+
+        [Cousin.Opeo, Present.RunningTop]
+            = new() { scale = new(1, 1, 1.1f) },
+
+        [Cousin.Nickel, Present.Apron]
+            = new() { scale = new(1.2f, 1, 1.7f) },
+
+        [Cousin.Nickel, Present.RunningTop]
+            = new() {
+                overrides = new() {
+                    ["JNT_waist"] = new() { scale = new(1, 1, 1.2f) },
+                    ["JNT_spine_01"] = new() { scale = new(1.3f, 1, 1.3f) },
+                    ["JNT_spine_02"] = new() { scale = new(1.2f, 1, 1.7f) },
+                },
+            },
+
+        [Cousin.Nickel, Present.CoolMask]
+            = new() { position = new(0, 0.08f, 0), rotation = Quaternion.Euler(30, 0, 0) },
+
+        [Cousin.Nickel, Present.Headphones]
+            = new() { scale = new(1.2f, 1, 1) },
+
+        [Cousin.Nickel, Present.ChampBelt]
+            = new() { scale = new(1, 1, 1.2f) },
+
+        [Cousin.Nickel, Present.WhiteGuitar]
+            = new() {
+                overrides = new() {
+                    ["JNT_spine_01"] = new() { position = new(0, 0, 0.1f) },
+                    ["JNT_spine_02"] = new() { position = new(0, 0, 0.03f), scale = new(1, 1, 1.3f) },
+                },
+            },
+
+        [Cousin.Nickel, Present.AlohaSet]
+            = new() {
+                overrides = new() {
+                    ["JNT_waist"] = new() { scale = new(1.1f, 1, 1.4f) },
+                    ["JNT_spine_02"] = new() { scale = new(1, 1, 1.5f) },
+                },
+            },
+
+        [Cousin.Nickel, Present.SuperheroScarf]
+            = new() { scale = new(1.3f, 1, 1.5f) },
+
+        [Cousin.Nickel, Present.WinterScarf]
+            = new() { scale = new(1.3f, 1, 1.5f) },
+
+        [Cousin.Nickel, Present.Wig]
+            = new() { position = new(0, 0.008f, 0.1f), rotation = Quaternion.Euler(-30, 0, 0) },
+
+        [Cousin.Nickel, Present.Camera]
+            = new() { position = new(0.02f, 0.14f, -0.15f), scale = new(1, 1, 1.5f) },
+
+        [Cousin.Nickel, Present.Snorkel]
+            = new() { position = new(0, 0.1f, 0.04f), rotation = Quaternion.Euler(40, 0, 0) },
+
+        [Cousin.Miso, Present.Apron]
+            = new() { position = new(0, 0, 0.01f), scale = new(1.1f, 1, 1.2f) },
+
+        [Cousin.Miso, Present.RunningTop]
+            = new() {
+                scale = new(1, 1, 1.1f),
+                overrides = new() {
+                    ["JNT_spine_02"] = new() { position = new(1, 1, 1.2f) },
+                },
+            },
+
+        [Cousin.Miso, Present.CoolMask]
+            = new() { position = new(0, 0.15f, 0.15f), rotation = Quaternion.Euler(30, 0, 0) },
+
+        [Cousin.Miso, Present.ChefHat]
+            = new() { position = new(-0.2f, 0.1f, -0.1f), rotation = Quaternion.Euler(75, 35, 0) },
+
+        [Cousin.Miso, Present.Headphones]
+            = new() { position = new(0, 0.1f, 0), scale = new(0.5f, 0.5f, 0.5f), rotation = Quaternion.Euler(70, 100, 20) },
+
+        [Cousin.Miso, Present.WhiteGuitar]
+            = new() {
+                overrides = new() {
+                    ["JNT_spine_01"] = new() { scale = new(1, 1, 1.2f) },
+                },
+            },
+
+        [Cousin.Miso, Present.AlohaSet]
+            = new() {
+                overrides = new() {
+                    ["JNT_waist"] = new() { scale = new(1, 1, 1.3f) },
+                },
+            },
+
+        [Cousin.Miso, Present.Wig]
+            = new() { position = new(0, 0.16f, 0.172f), scale = new(1.1f, 1, 1), rotation = Quaternion.Euler(60, 0, 0) },
+
+        [Cousin.Miso, Present.Camera]
+            = new() { position = new(0, 0, 0.05f), scale = new(1, 1, 0.7f) },
+
+        [Cousin.Miso, Present.Snorkel]
+            = new() { position = new(0, 0.12f, 0.18f), rotation = Quaternion.Euler(35, 0, 0) },
     };
 }
