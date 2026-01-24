@@ -5,8 +5,6 @@ using HarmonyLib;
 
 using MonoMod.Utils;
 
-using MyGame;
-
 using System;
 using System.Collections.Generic;
 
@@ -26,6 +24,15 @@ public sealed class Plugin : BaseUnityPlugin {
         SceneManager.sceneLoaded += (scene, mode) => {
             if (scene.name is "Result2" or "UI_Moon") {
                 ReplaceOuji(GameObject.Find("OUJI01"), OujiId, o => { });
+            }
+
+            if (scene.name == "UI_Moon") {
+                var cam = FindObjectOfType<UIMonoCamera>();
+                ScaleCamera(cam);
+                if ((Cousin)OujiId is Cousin.Odeko or Cousin.Fujio) {
+                    cam.fvMinMax = -150f;
+                    cam.radius = 17;
+                }
             }
         };
     }
@@ -145,6 +152,7 @@ public sealed class Plugin : BaseUnityPlugin {
             uiPresent._animator_ouji = o.animator;
             uiPresent._uiOujiWear = o.wear;
             uiPresent._go_oujiPresentParent = o.presents;
+            ScaleCamera(osc._uiMonoCamera);
         });
     }
 
@@ -154,6 +162,7 @@ public sealed class Plugin : BaseUnityPlugin {
         ReplaceOuji(__instance._animator_ouji, OujiId, o => {
             __instance._animator_ouji = o.animator;
             __instance._uiMonoCamera._go_ouji = o.ouji;
+            ScaleCamera(__instance._uiMonoCamera);
         });
     }
 
@@ -162,6 +171,7 @@ public sealed class Plugin : BaseUnityPlugin {
     public static void ReplaceInLecture(SelectManager __instance) {
         ReplaceOuji(__instance._uiMonoCamera._go_ouji, OujiId, o => {
             __instance._uiMonoCamera._go_ouji = o.ouji;
+            ScaleCamera(__instance._uiMonoCamera);
         });
     }
 
@@ -172,6 +182,27 @@ public sealed class Plugin : BaseUnityPlugin {
             __instance._animator_ouji = o.animator;
         });
     }
+
+    public static void ScaleCamera(UIMonoCamera c) {
+        if (originalCameraValues.TryGetValue(c.GetInstanceID(), out var original)) {
+            c.fvMinMax = original[0];
+            c.radius = original[1];
+        }
+
+        if (cameraFactors.TryGetValue((Cousin)OujiId, out var factors)) {
+            originalCameraValues[c.GetInstanceID()] = [c.fvMinMax, c.radius];
+            c.fvMinMax *= factors[0];
+            c.radius *= factors[1];
+        }
+    }
+
+    private static readonly Dictionary<int, float[]> originalCameraValues = new();
+    private static readonly Dictionary<Cousin, float[]> cameraFactors = new() {
+        [Cousin.Odeko] = [1.72f, 1.74f],
+        [Cousin.Havana] = [1.15f, 1.41f],
+        [Cousin.Fujio] = [1.3f, 1.3f],
+        [Cousin.Foomin] = [1.2f, 1.2f],
+    };
 
     private class OujiRefs(GameObject Obj) {
         public readonly GameObject ouji = Obj;
