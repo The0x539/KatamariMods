@@ -212,16 +212,51 @@ public sealed class PresentAdjuster : MonoBehaviour {
         [Cousin.Fujio, Present.Snorkel]
             = new() { position = new(0, -0.04f, 0.16f), scale = new(1, 1.14f, 0.5f), rotation = Quaternion.Euler(-5, 0, 0) },
 
-        [Cousin.Odeko, Present.Crown, Present.ChefHat]
-            = new() { position = new(0, 0.79f, 0) },
-
-        [Cousin.Odeko, Present.Wig] // this one just sucks basically unavoidably, and many will, due to differing face contours
-            = new() { position = new(0, 0.1f, 0.04f), rotation = Quaternion.Euler(55f, 0, 0), scale = new(1.1f, 1.1f, 1f) },
-
         [Cousin.Havana, Present.Wig]
             = new() { scale = new(1.5f, 1, 1) },
 
         [Cousin.Havana, Present.Headphones]
             = new() { scale = new(1.75f, 1, 1) },
+
+        [Cousin.Peso, Present.CoolMask]
+            = new() { position = new(0, 0.08f, 0), rotation = Quaternion.Euler(15, 0, 0) },
+
+        [Cousin.Peso, Present.Crown]
+            = new() { position = new(0, 0.15f, 0.03f), scale = new(0.7f, 0.7f, 0.7f), rotation = Quaternion.Euler(15, 0, 0) },
+
+        [Cousin.Peso, Present.ChefHat]
+            = new() { position = new(0, 0.1f, -0.07f), rotation = Quaternion.Euler(-5, 0, 0) },
+
+        [Cousin.Peso, Present.Headphones]
+            = new() { position = new(0, 0.04f, 0), scale = new(0.75f, 0, 0) },
+
+        [Cousin.Peso, Present.Wig]
+            = new() { position = new(0, 0.1f, 0.05f), rotation = Quaternion.Euler(50, 0, 0) },
+
+        [Cousin.Peso, Present.Snorkel]
+            = new() { position = new(0, 0.06f, 0.06f), rotation = Quaternion.Euler(20, 0, 0) },
+
+        [Cousin.Shikao, Present.CoolMask]
+            = new() { position = new(0, 0.04f, 0.04f), rotation = Quaternion.Euler(20, 0, 0) },
+
+        [Cousin.Shikao, Present.ChefHat]
+            = new() { position = new(0, 0.1f, 0), scale = new(1.9f, 1, 1.9f), rotation = Quaternion.Euler(8, 0, 0) },
+
+        [Cousin.Shikao, Present.Headphones]
+            = new() { scale = new(0.55f, 1, 1), position = new(0, 0.05f, 0), rotation = Quaternion.Euler(0, 45, 0) },
+
+        [Cousin.Shikao, Present.Crown]
+            = new() { position = new(0, 0.1f, 0) },
+
+        // again, not doing the wig
+
+        [Cousin.Shikao, Present.Snorkel]
+            = new() { position = new(0, 0.1f, 0.1f), rotation = Quaternion.Euler(35, 0, 0) },
+
+        [Cousin.Odeko, Present.Crown, Present.ChefHat]
+            = new() { position = new(0, 0.79f, 0) },
+
+        [Cousin.Odeko, Present.Wig] // this one just sucks basically unavoidably, and many will, due to differing face contours
+            = new() { position = new(0, 0.1f, 0.04f), rotation = Quaternion.Euler(55f, 0, 0), scale = new(1.1f, 1.1f, 1f) },
     };
 }

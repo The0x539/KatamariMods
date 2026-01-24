@@ -286,8 +286,16 @@ public sealed class Plugin : BaseUnityPlugin {
             for (var i = 0; i < renderer.bones.Length; i++) {
                 var name = renderer.bones[i].name;
 
-                if (name.StartsWith("PRE_") && !bones.ContainsKey(name)) {
-                    name = renderer.bones[i].parent.name;
+
+                if (!bones.ContainsKey(name)) {
+                    if (name.StartsWith("PRE_")) {
+                        name = renderer.bones[i].parent.name;
+                    } else if (name == "JNT_antenna") {
+                        // Fix for e.g. Shikao and Foomin, who have two antennae
+                        name = "JNT_antenna_L";
+                    } else if (name is "JNT_antenna_L" or "JNT_antenna_R") {
+                        name = "JNT_antenna";
+                    }
                 }
 
                 if (bones.TryGetValue(name, out var bone)) {
