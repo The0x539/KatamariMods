@@ -2,6 +2,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Emit;
 
 using UnityEngine;
@@ -157,5 +158,47 @@ public static class Jungle {
             var z = __instance.HUDCamera.transform.position.z;
             billboard.LookAt(billboard.position with { z = z });
         }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KinokoRotator), nameof(KinokoRotator.CloneItoko))]
+    public static void TweakVanillaBillboardPosition(KinokoRotator __instance) {
+        if (__instance.objBillboard == null) return;
+        __instance.objBillboard.transform.localScale = Vector3.one * 2.5f;
+        __instance.objBillboard.transform.localPosition = Vector3.up * 0.55f;
+    }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.Update))]
+    public static IEnumerable<CodeInstruction> TweakVanillaBillboardRotation(IEnumerable<CodeInstruction> instructions) {
+        MemberInfo
+            objBillboard = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.objBillboard)),
+            getObjectTransform = AccessTools.PropertyGetter(typeof(GameObject), nameof(GameObject.transform)),
+            getComponentTransform = AccessTools.PropertyGetter(typeof(Component), nameof(Component.transform)),
+            getZero = AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.zero)),
+            euler = AccessTools.Method(typeof(Quaternion), nameof(Quaternion.Euler), [typeof(Vector3)]),
+            setRotation = AccessTools.PropertySetter(typeof(Transform), nameof(Transform.rotation)),
+            cameraPlayer = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector._cameraPlayer)),
+            lookAt = AccessTools.Method(typeof(Transform), nameof(Transform.LookAt), [typeof(Transform)]);
+
+        return new CodeMatcher(instructions)
+            // Find: this.objBillboard.transform.rotation = Quaternion.Euler(Vector3.zero);
+            .MatchForward(false,
+                          new(OpCodes.Ldarg_0),
+                          new(OpCodes.Ldfld, objBillboard),
+                          new(OpCodes.Callvirt, getObjectTransform),
+                          new(OpCodes.Call, getZero),
+                          new(OpCodes.Call, euler),
+                          new(OpCodes.Callvirt, setRotation))
+            // Keep: this.objBillboard.transform
+            .Advance(3)
+            // Remove: .rotation = Quaternion.Euler(Vector3.zero);
+            .RemoveInstructions(3)
+            // Insert: .LookAt(this._cameraPlayer.transform);
+            .InsertAndAdvance(new(OpCodes.Ldarg_0),
+                              new(OpCodes.Ldfld, cameraPlayer),
+                              new(OpCodes.Call, getComponentTransform),
+                              new(OpCodes.Call, lookAt))
+            .Instructions();
     }
 }
