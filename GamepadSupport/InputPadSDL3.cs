@@ -31,7 +31,7 @@ public sealed class InputPadSDL3 : InputPadBase {
         SDL.GamepadButton.North,
         SDL.GamepadButton.LeftShoulder,
         SDL.GamepadButton.RightShoulder,
-        SDL.GamepadButton.Guide,
+        SDL.GamepadButton.Back,
         SDL.GamepadButton.Start,
         SDL.GamepadButton.LeftStick,
         SDL.GamepadButton.RightStick,
