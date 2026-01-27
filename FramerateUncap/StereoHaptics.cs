@@ -4,6 +4,8 @@ using MyGame;
 
 using System.Runtime.InteropServices;
 
+using UnityEngine;
+
 namespace FramerateUncap;
 
 public static class StereoHaptics {
@@ -31,8 +33,8 @@ public static class StereoHaptics {
             var bias = KatamariFfi.GetRumbleBias(i);
             // bias represents the fraction of the initially-equal strength
             // that gets transferred from one side to the other
-            var left = qv.Ratio * (1f - bias) * 255f;
-            var right = qv.Ratio * (1f + bias) * 255f;
+            var left = Mathf.Clamp01(qv.Ratio * (1f - bias)) * 255f;
+            var right = Mathf.Clamp01(qv.Ratio * (1f + bias)) * 255f;
 
             var pad = InputController.Instance.Pad((int)i);
             pad.MotorStrengthL = (int)left;
