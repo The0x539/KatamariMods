@@ -104,6 +104,7 @@ public sealed class Plugin : BaseUnityPlugin {
         foreach (var present in __instance.objPresent) present.SetActive(false);
 
         TransferPresents(__instance.objOuji, preRoot);
+        preRoot.SetLayer(__instance.objOuji.layer, true);
 
         __instance.objHUDPresent = new GameObject[__instance.objPresent.Length];
         Destroy(thePrince);
