@@ -54,7 +54,7 @@ public sealed class InputPadSDL3 : InputPadBase {
         SDL.GamepadButton.COUNT, // right stick, right
         SDL.GamepadButton.COUNT, // right stick, up
         SDL.GamepadButton.COUNT, // right stick, down
-        // After this is the eight directions (four per stick). TBD if they, or anything past this point, is necessary.
+        // Things past this point don't seem to be necessary.
     ];
 
     // TODO: properly bring back keyboard input?
@@ -99,9 +99,9 @@ public sealed class InputPadSDL3 : InputPadBase {
     };
 
     public override void Vibration(float time) {
-        var a = (ushort)(this.motorStrengthS << 8);
-        var b = (ushort)(this.motorStrengthL << 8);
-        this.inner?.Rumble(a, b, (uint)(time * 1000));
+        var low = (ushort)(this.motorStrengthL << 8);  // "L(ong)" wavelength = "low" frequency ("left" motor, practically)
+        var high = (ushort)(this.motorStrengthS << 8); // "S(hort)" wavelength = "high" frequency ("right" motor, practically)
+        this.inner?.Rumble(low, high, (uint)(time * 1000));
     }
 
     private float GetAxis(SDL.GamepadAxis axis) => this.axes[(int)axis];

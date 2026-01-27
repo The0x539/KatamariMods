@@ -21,6 +21,8 @@ public sealed class Plugin : BaseUnityPlugin {
         KatamariFfi.InstallHooks();
 
         if (this.Config.Bind("Inspector", "Enable", true).Value) Clicky.Init();
+
+        Harmony.CreateAndPatchAll(typeof(StereoHaptics));
     }
 
     [HarmonyPrefix]
@@ -246,16 +248,10 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 }
 
-internal static class KatamariFfi {
+internal static partial class KatamariFfi {
     [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
     public static extern void InstallHooks();
 
     [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
     public static extern void SetDeltaTime(float delta);
-
-    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UpdateUI();
-
-    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void PickThing(ushort idx);
 }

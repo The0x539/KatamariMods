@@ -10,6 +10,7 @@
 		<PackageReference Include="BepInEx.Unity.Mono" />
 		<PackageReference Include="BepInEx.PluginInfoProps" />
 		<PackageReference Include="UnityEngine.Modules" />
+		<PackageReference Include="IsExternalInit" />
 		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" />
 	</ItemGroup>
 

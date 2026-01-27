@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Runtime.InteropServices;
+
+using UnityEngine;
 
 namespace FramerateUncap;
 
@@ -44,4 +46,13 @@ public sealed class Clicky : MonoBehaviour {
 
         return null;
     }
+}
+
+
+internal static partial class KatamariFfi {
+    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void UpdateUI();
+
+    [DllImport("katamari_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void PickThing(ushort idx);
 }
