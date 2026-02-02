@@ -48,7 +48,7 @@ static class DepthOfField {
             desc = desc with { colorFormat = RenderTextureFormat.R8, depthBufferBits = 0 };
             depthCamColor = new RenderTexture(desc) { name = "Depth Pass - Color" };
 
-            desc = desc with { colorFormat = RenderTextureFormat.Depth, depthBufferBits = 16 };
+            desc = desc with { colorFormat = RenderTextureFormat.Depth, depthBufferBits = 24 };
             depthCamDepth = new RenderTexture(desc) { name = "Depth Pass - Depth" };
         }
 
