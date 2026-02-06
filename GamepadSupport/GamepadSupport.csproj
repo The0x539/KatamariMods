@@ -1,10 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<TargetFramework>net35</TargetFramework>
-		<AssemblyName>GamepadSupport</AssemblyName>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<PackageReference Include="BepInEx.Analyzers" />
 		<PackageReference Include="BepInEx.Core" />
@@ -16,5 +10,4 @@
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\plugins" />
 	</Target>
-
 </Project>
