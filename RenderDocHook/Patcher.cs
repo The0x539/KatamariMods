@@ -1,13 +1,25 @@
-﻿using BepInEx.Preloader.Core.Patching;
+﻿using BepInEx.Configuration;
 
+using Mono.Cecil;
+
+using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace RenderDocHook;
 
-[PatcherPluginInfo(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
-public sealed class Patcher : BasePatcher {
-    public override void Initialize() {
-        if (this.Config.Bind("Main", "Enable", true).Value) Load();
+public static class Patcher {
+    public static IEnumerable<string> TargetDLLs {
+        get {
+            Initialize();
+            return new string[] { };
+        }
+    }
+
+    private static void Initialize() {
+        var configPath = Path.Combine(BepInEx.Paths.ConfigPath, "RenderDocHook.cfg");
+        var configFile = new ConfigFile(configPath, saveOnInit: true);
+        if (configFile.Bind("Main", "Enable", true).Value) Load();
     }
 
     // If this isn't a separate function, then the runtime loads the DLL whether or not we actually reach the SetCaptureOptions call.
@@ -18,6 +30,8 @@ public sealed class Patcher : BasePatcher {
         //RenderDoc.SetCaptureFile("./renderdoc.cap");
         //RenderDoc.SetDebugLogFile("./renderdoc.debug.log");
     }
+
+    public static void Patch(AssemblyDefinition _assembly) { }
 }
 
 [StructLayout(LayoutKind.Sequential, Size = 20)]

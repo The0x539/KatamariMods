@@ -7,7 +7,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="BepInEx.Analyzers" />
-		<PackageReference Include="BepInEx.Unity.Mono" />
+		<PackageReference Include="BepInEx.Core" />
 		<PackageReference Include="BepInEx.PluginInfoProps" />
 		<PackageReference Include="UnityEngine.Modules" />
 		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" />

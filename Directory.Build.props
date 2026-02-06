@@ -5,12 +5,5 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 		<Nullable>enable</Nullable>
-
-		<!--
-			This analyzer is broken in these prerelease builds,
-			because	it checks for BepInEx.BaseUnityPlugin
-			instead of BepInEx.Unity.Mono.BaseUnityPlugin.
-		-->
-		<NoWarn>BepInEx002</NoWarn>
 	</PropertyGroup>
 </Project>
