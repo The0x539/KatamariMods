@@ -92,14 +92,13 @@ public sealed class Plugin : BaseUnityPlugin {
 
     private static readonly MemberInfo
         s32Time = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32Time)),
+        s32VsTime = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32VsTime)),
         tutoTimer = AccessTools.Field(typeof(SI_TUTORIAL), nameof(SI_TUTORIAL.s32Timer)),
         gWork = AccessTools.Field(typeof(GameManager), nameof(GameManager.gWork)),
         siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial)),
         getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
 
-    // TODO: Improve this further; patch ALL the per-frame stuff.
-    // This will do for now by stopping the level-start dialogue from sometimes failing to show up and softlocking the game.
-    // Some stuff is fine to stay capped at 30 or 60, but anyhing called by sMain() or that touches the same timers
+    // Some stuff is fine to stay capped at 30 or 60, but anything called by sMain() or that touches the same timers
     // will need to be updated accordingly.
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.gYm_GameStateInitGameClear))]
@@ -108,9 +107,11 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameClear))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameOver))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sTutoTitle))]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sStartEffectMain))]
     public static IEnumerable<CodeInstruction> PatchTimerIncrements(IEnumerable<CodeInstruction> instructions) {
-        var loadsTimer = new CodeMatch(OpCodes.Ldfld) { operands = { s32Time, tutoTimer } };
-        var storesTimer = new CodeMatch(OpCodes.Stfld) { operands = { s32Time, tutoTimer } };
+        var timers = new List<object> { s32Time, s32VsTime, tutoTimer };
+        var loadsTimer = new CodeMatch(OpCodes.Ldfld) { operands = timers };
+        var storesTimer = new CodeMatch(OpCodes.Stfld) { operands = timers };
 
         return new CodeMatcher(instructions)
             // Match all code patterns that increment or decrement a timer by 1
@@ -152,9 +153,11 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameOver))]
     public static IEnumerable<CodeInstruction> TimerFixup1(IEnumerable<CodeInstruction> instructions) {
         return new CodeMatcher(instructions)
-            .MatchForward(true,
+            .MatchForward(false,
                           new(OpCodes.Ldfld, s32Time),
-                          new(OpCodes.Ldc_I4_S, (sbyte)60))
+                          new(OpCodes.Ldc_I4_S, (sbyte)60),
+                          new(OpCodes.Blt))
+            .Advance(1)
             .SetInstruction(new(OpCodes.Ldc_I4, 2000)) // 60 frames -> 2000 ms
             .Instructions();
     }
@@ -162,6 +165,7 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sTutoTitle))]
     public static IEnumerable<CodeInstruction> TimerFixup2(IEnumerable<CodeInstruction> instructions, ILGenerator gen) {
+        // Old C#: if (s32Timer == 22 frames)
         var matcher = new CodeMatcher(instructions)
             .MatchForward(false,
                           new(OpCodes.Ldfld, tutoTimer),
@@ -170,7 +174,6 @@ public sealed class Plugin : BaseUnityPlugin {
             .Advance(1)
             .RemoveInstruction();
 
-        // Old C#: if (s32Timer == 22 frames)
         // New C#: if (s32Timer <= 733 ms && s32Timer > 667 ms)
         var target = (Label)matcher.Operand;
         var loc = gen.DeclareLocal(typeof(int));
@@ -202,6 +205,20 @@ public sealed class Plugin : BaseUnityPlugin {
                     new(OpCodes.Ble_Un, target)); // the condition fails if s32Timer <= 0
 
         return matcher.Instructions();
+    }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sStartEffectMain))]
+    public static IEnumerable<CodeInstruction> TimerFixup3(IEnumerable<CodeInstruction> instructions) {
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldfld, s32VsTime),
+                          new(OpCodes.Ldc_I4_S, (sbyte)30),
+                          new(OpCodes.Blt))
+            .Repeat(cm => cm
+                .Advance(1)
+                .SetInstruction(new(OpCodes.Ldc_I4, 1000))) // 30 frames -> 1000 ms
+            .Instructions();
     }
 
     [HarmonyTranspiler]
