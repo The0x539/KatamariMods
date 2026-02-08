@@ -34,6 +34,7 @@ public static class Jungle {
             if (monoScene is null) yield break;
 
             billboard = Object.Instantiate(monoScene.jungleBoard);
+            billboard.SetActive(false);
             billboard.name = "JungleBillboardPrefab";
             material = Object.Instantiate(monoScene.matJungle);
             material.name = "JungleMaterialPrefab";
@@ -52,6 +53,7 @@ public static class Jungle {
         if (Prefabs.billboard == null || Prefabs.material == null) return;
 
         var billboard = Object.Instantiate(Prefabs.billboard);
+        billboard.SetActive(true);
         var material = new Material(Prefabs.material);
 
         billboard.name = "JungleBoardEnding";
