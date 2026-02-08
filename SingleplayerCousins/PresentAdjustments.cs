@@ -207,8 +207,36 @@ static class PresentAdjustments {
             [Present.Headphones] = Scale(x: 1.4),
         },
         [Cousin.Marny] = {
-            // This one might be beyond repair.
-            // His animations are broken in the main menu for some reason.
+            // Apron is a lost cause.
+            // Running Top is a lost cause, perhaps a bit less so than the apron.
+            [Present.Mawashi] = Scale(x: 1.8, z: 2),
+            [Present.CoolMask] = Translate(z: 0.15),
+            [Present.ChefHat, Present.Crown] = Translate(y: 0.09),
+            [Present.Headphones] = [
+                Translate(y: -0.11),
+                Scale(x: 1.2),
+                Rotate(x: -15),
+            ],
+            [Present.ChampBelt] = Scale(x: 2.2, z: 2.5), // ¯\_(ツ)_/¯
+            [Present.WhiteGuitar] = Translate(y: 0.2, z: -0.28).On(SPINE2), // The strap is a lost cause.
+            [Present.AlohaSet] = [
+                Scale(x: 1.8, z: 2.2).On(WAIST),
+                Translate(z: 0.65).On(SPINE1),
+                Scale(y: 5, z: 0.2).On(SPINE1),
+                Translate(y: 0.42, z: -0.05).On(SPINE2),
+            ],
+            [Present.SuperheroScarf, Present.WinterScarf] = Translate(-0.07, 0.42, -0.05),
+            [Present.Wig] = [
+                Translate(y: 0.04, z: 0.17),
+                Scale(x: 1.07),
+                Rotate(x: 30),
+            ],
+            [Present.Camera] = [
+                Translate(z: 0.25),
+                Rotate(x: 40),
+            ], // ¯\_(ツ)_/¯
+            [Present.Ducky] = Scale(2.2, 1.2, 2.2),
+            [Present.Snorkel] = Translate(y: -0.02, z: 0.22),
         },
         [Cousin.Foomin] = {
             [Present.Headphones] = [

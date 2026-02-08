@@ -257,6 +257,8 @@ public sealed class Plugin : BaseUnityPlugin {
             } catch (Exception e) {
                 e.LogDetailed();
             }
+        } else if (idx == (int)Cousin.Marny) {
+            ouji.AddComponent<Marny>();
         }
 
         try {
