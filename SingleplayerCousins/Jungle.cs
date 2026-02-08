@@ -119,7 +119,11 @@ public static class Jungle {
         public void LateUpdate() {
             var target = this.target ?? Camera.main;
             if (target != null) {
-                this.transform.LookAt(target.transform);
+                if (this.gameObject.scene.name == "UI_HUD") {
+                    this.transform.LookAt(this.transform.position with { z = -target.transform.position.z });
+                } else {
+                    this.transform.LookAt(target.transform);
+                }
             }
         }
     }
@@ -154,23 +158,12 @@ public static class Jungle {
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.SetupCharacterElement))]
-    public static void FixJungleInHudPart1(HUDManager __instance) {
+    public static void FixJungleInHud(HUDManager __instance) {
         // HUDManager already does this, but only as part of a versus-only block.
         for (var i = 0; i <= 1; i++) {
             if (__instance.gWork.player[i] == null) continue;
             if (__instance.transJungleBoard[i] != null) continue;
             __instance.transJungleBoard[i] = __instance.mCharacterClone[i].transform.Find("JungleBoard(Clone)");
-        }
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.Update))]
-    public static void FixJungleInHudPart2(HUDManager __instance) {
-        // HUDManager already does this, but only as part of a versus-only block.
-        foreach (var billboard in __instance.transJungleBoard) {
-            if (billboard == null) continue;
-            var z = __instance.HUDCamera.transform.position.z;
-            billboard.LookAt(billboard.position with { z = z });
         }
     }
 
