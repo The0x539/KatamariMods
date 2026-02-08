@@ -109,15 +109,27 @@ public static class Jungle {
         }
     }
 
+    // The vanilla code only does this during Update, which I think is too early under some circumstances.
+    // This component will fix that for the main player game object, as well as its main job of doing it "at all" for other instances.
     public sealed class FaceCamera : MonoBehaviour {
         public Camera? target = null;
 
-        public void Update() {
+        public void LateUpdate() {
             var target = this.target ?? Camera.main;
             if (target != null) {
                 this.transform.LookAt(target.transform);
             }
         }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), nameof(Player.Start))]
+    public static void FixEarlyBillboardUpdate(Player __instance) {
+        var billboard = __instance.objBillboard;
+        if (billboard == null) return;
+
+        var faceCamera = billboard.GetComponent<FaceCamera>() ?? billboard.AddComponent<FaceCamera>();
+        faceCamera.target = __instance.gWork.camGame[__instance.playerNo];
     }
 
     [HarmonyTranspiler]
