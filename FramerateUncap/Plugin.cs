@@ -8,6 +8,7 @@ using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace FramerateUncap;
 
@@ -35,15 +36,21 @@ public sealed class Plugin : BaseUnityPlugin {
     public static IEnumerable<CodeInstruction> Uncap(IEnumerable<CodeInstruction> instructions) {
         var deltaFrame = AccessTools.Field(typeof(GameManager), nameof(GameManager.deltaFrame));
         var mSimulation = AccessTools.Field(typeof(GameManager), nameof(GameManager.mSimulation));
+        var sCtrlWhirlpool = AccessTools.Method(typeof(GameManager), nameof(GameManager.sCtrl_Whirlpool));
         var thirtieth = 0.03333333f;
 
         return new CodeMatcher(instructions)
+            // 408: this.sCtrl_Whirlpool()
+            // In this case, rather than removing the if statement,
+            // just remove the call and use a postfix to insert one without the condition.
+            .RemoveMatching(new(OpCodes.Ldarg_0),
+                            new(OpCodes.Call, sCtrlWhirlpool)).AssertPos(408)
             // 683: if this.deltaFrame >= 1/30 {} (outer)
             .MatchForward(false, new(OpCodes.Ldarg_0),
                           new(OpCodes.Ldfld, deltaFrame),
                           new(OpCodes.Ldc_R4, thirtieth),
                           new(OpCodes.Blt_Un),
-                          new(OpCodes.Ldc_I4_0)).AssertPos(683)
+                          new(OpCodes.Ldc_I4_0)).AssertPos(683 - 2)
             // New condition: this.deltaFrame > 0f
             .Advance(2).SetOperandAndAdvance(0f)
             .SetOpcodeAndAdvance(OpCodes.Ble_Un)
@@ -54,7 +61,7 @@ public sealed class Plugin : BaseUnityPlugin {
                           new(OpCodes.Ldfld, deltaFrame),
                           new(OpCodes.Ldc_R4, thirtieth),
                           new(OpCodes.Sub),
-                          new(OpCodes.Stfld, deltaFrame)).AssertPos(693)
+                          new(OpCodes.Stfld, deltaFrame)).AssertPos(693 - 2)
             // New: this.deltaFrame -= deltaTime;
             // Yes, this is a bit silly. I don't want to refactor the target code much more than this,
             // and getting this patch to work properly already took a lot of trial and error.
@@ -63,23 +70,32 @@ public sealed class Plugin : BaseUnityPlugin {
             .MatchForward(true,
                           new(OpCodes.Ldarg_0),
                           new(OpCodes.Ldfld, mSimulation),
-                          new(OpCodes.Ldc_R4, thirtieth)).AssertPos(764)
+                          new(OpCodes.Ldc_R4, thirtieth)).AssertPos(764 - 2)
             // new argument: deltaTime
             .SetInstruction(new(OpCodes.Ldloc_0))
             // 812: if this.deltaFrame >= 1/30 {} (inner)
             .RemoveMatching(new(OpCodes.Ldarg_0),
                             new(OpCodes.Ldfld, deltaFrame),
-                            new(OpCodes.Ldc_R4, thirtieth)).AssertPos(812)
+                            new(OpCodes.Ldc_R4, thirtieth)).AssertPos(812 - 2)
             // For some reason, this is a backward jump, so we need to keep it and just make it unconditional.
             .SetOpcodeAndAdvance(OpCodes.Br)
             .Instructions();
     }
 
-    private static readonly FieldInfo
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
+    public static void UpdateWhirlpool(GameManager __instance) {
+        if (__instance.isEnableWhirlpool) {
+            __instance.sCtrl_Whirlpool();
+        }
+    }
+
+    private static readonly MemberInfo
         s32Time = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32Time)),
         tutoTimer = AccessTools.Field(typeof(SI_TUTORIAL), nameof(SI_TUTORIAL.s32Timer)),
         gWork = AccessTools.Field(typeof(GameManager), nameof(GameManager.gWork)),
-        siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial));
+        siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial)),
+        getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
 
     // TODO: Improve this further; patch ALL the per-frame stuff.
     // This will do for now by stopping the level-start dialogue from sometimes failing to show up and softlocking the game.
@@ -93,8 +109,6 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameOver))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sTutoTitle))]
     public static IEnumerable<CodeInstruction> PatchTimerIncrements(IEnumerable<CodeInstruction> instructions) {
-        var getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
-
         var loadsTimer = new CodeMatch(OpCodes.Ldfld) { operands = { s32Time, tutoTimer } };
         var storesTimer = new CodeMatch(OpCodes.Stfld) { operands = { s32Time, tutoTimer } };
 
@@ -193,8 +207,6 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
     public static IEnumerable<CodeInstruction> DeltaTimePropUpdates(IEnumerable<CodeInstruction> instructions) {
-        var deltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
-
         List<object> timers = [
             AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait)),
             AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait2)),
@@ -217,9 +229,9 @@ public sealed class Plugin : BaseUnityPlugin {
                           new(OpCodes.Ldc_I4_1),
                           new(OpCodes.Sub))
             .Repeat(cm => cm
-                .Advance(1)                                     // Keep the LDFLD
-                .RemoveInstruction()                            // Remove the LDC.I4.1
-                .InsertAndAdvance(new(OpCodes.Call, deltaTime), // Replace it with (int)(Time.deltaTime * 1000f)
+                .Advance(1)                                        // Keep the LDFLD
+                .RemoveInstruction()                               // Remove the LDC.I4.1
+                .InsertAndAdvance(new(OpCodes.Call, getDeltaTime), // Replace it with (int)(Time.deltaTime * 1000f)
                                   new(OpCodes.Ldc_R4, 1000f),
                                   new(OpCodes.Mul),
                                   new(OpCodes.Conv_I4)))
@@ -244,6 +256,59 @@ public sealed class Plugin : BaseUnityPlugin {
         secondCall.operand = doPS2ControllerSimulation;
 
         return m.Instructions();
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.gYm_Game2dRequestWhirlpool))]
+    public static void UnpatchWhirlpoolTimer(ref int time) {
+        // Things that initialize it to 75 (or 76) are already "patched",
+        // since those callers read the value from s32Timer,
+        // whose value already gets patched by PatchTimerIncrements.
+        // The only other value the game uses is 30.
+        if (time == 30) time = 1000;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sCtrl_Whirlpool))]
+    public static void WhirlpoolUpdate(GameManager __instance, ref bool __runOriginal) {
+        var self = __instance;
+        __runOriginal = false;
+
+        var dt = Time.deltaTime * 1000f;
+
+        if (self.whirlTime > 0) {
+            self.whirlTime -= (int)dt;
+            if (self.whirlTime < 0) self.whirlTime = 0;
+        } else if (self.whirlTime == 0) {
+            if (self.isChangeGameOver) {
+                self.gWork.camGame[0].cullingMask = 0;
+            } else {
+                self.objWhirlpoolObject.SetActive(false);
+            }
+            self.isEnableWhirlpool = false;
+            return;
+        }
+
+        self.sMsgSys.objFade.GetComponent<Image>().color = new(0, 0, 0, 0);
+        if (!self.objWhirlpoolObject.activeSelf) {
+            self.objWhirlpoolObject.SetActive(true);
+        }
+
+        // The original code divides by 4 for the angle change.
+        // To compensate for the mistake described below, multiply that by a bit.
+        self.whirlAngle += self.whirlAngleDelta * dt * 4f;
+        self.whirlScale += self.whirlScaleDelta * dt;
+        if (self.whirlScale < 0) self.whirlScale = 0;
+
+        var t = self.objWhirlpool.transform;
+        t.localScale = new(self.whirlScale, self.whirlScale, 1f);
+        t.localPosition = self.gWork.sWhirlpoolPosi;
+        // I think the original code was doing rad2deg, wrongly, and nobody noticed because of 30 FPS
+        // evidence:
+        // - the values for angleE passed to Game2dRequestWhirlpool are 180 and 540
+        // - the equivalent to this code multiplies by 180/pi, which is nonsensical if starting from degrees.
+        // - Quaternion.Euler takes degrees anyway
+        t.rotation = Quaternion.Euler(0, 0, self.whirlAngle);
     }
 }
 
