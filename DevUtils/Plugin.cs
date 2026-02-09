@@ -20,6 +20,9 @@ public class Plugin : BaseUnityPlugin {
         if (this.Config.Bind("Intro", "Skip", true).Value) {
             Harmony.CreateAndPatchAll(typeof(SkipIntro));
         }
+
+        OptionsMenu.AddListener();
+        Harmony.CreateAndPatchAll(typeof(OptionsMenu));
     }
 
     [HarmonyPrefix]
