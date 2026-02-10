@@ -20,7 +20,7 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(this.GetType());
         KatamariFfi.InstallHooks();
 
-        if (this.Config.Bind("Inspector", "Enable", true).Value) Clicky.Init();
+        if (this.Config.Bind("Inspector", "Enable", false).Value) Clicky.Init();
 
         Harmony.CreateAndPatchAll(typeof(StereoHaptics));
     }
