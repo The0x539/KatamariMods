@@ -5,7 +5,6 @@ using HarmonyLib;
 using MyGame;
 using MyGame.InputStatus;
 
-using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 
@@ -168,6 +167,7 @@ static class OptionsMenu {
 
         settings.SetParent(guide.transform, worldPositionStays: false);
         // TODO: This needs to scale with resolution I guess? Ugh.
+        // Pretty sure I chose these numbers based on 1600x900.
         settings.Translate(-25, 0, 0);
         back.transform.Translate(5, 0, 0);
 
@@ -181,4 +181,23 @@ static class OptionsMenu {
         // The vanilla game's copy of this method is just... unfinished?
         __instance.inputMoveType = (GlobalWork.eMoveType)GlobalWork.Instance.moveType[__instance.playerNo];
     }
+
+    // If a coroutine yields a WaitForSeconds while the game is paused,
+    // the coroutine freezes indefinitely, because Time.timeScale is set to 0.
+    //
+    // In the vanilla game this isn't an issue, because the options are only usable from the Home Planet.
+    // WaitForSecondsRealtime was the correct thing for Monkeycraft to use anyway,
+    // since this is fiddling with graphics and shouldn't depend on time scale.
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(QualityManager), nameof(QualityManager.ISetup), MethodType.Enumerator)]
+    public static IEnumerable<CodeInstruction> FixSoftlock(IEnumerable<CodeInstruction> instructions) {
+        var wfs = AccessTools.Constructor(typeof(WaitForSeconds), [typeof(float)]);
+        var wfsr = AccessTools.Constructor(typeof(WaitForSecondsRealtime), [typeof(float)]);
+
+        return new CodeMatcher(instructions)
+            .MatchForward(false, new CodeMatch(OpCodes.Newobj, wfs))
+            .Repeat(cm => cm.SetOperandAndAdvance(wfsr))
+            .Instructions();
+    }
+    // TODO: Recreate the appropriate render textures if the resolution got changed.
 }
