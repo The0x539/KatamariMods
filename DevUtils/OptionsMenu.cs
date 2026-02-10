@@ -22,6 +22,15 @@ static class OptionsMenu {
             if (a.name is "GameMain" && b.name is "Option" or "Quality") {
                 SceneManager.SetActiveScene(a);
             }
+
+            if (a.name is "GameMain" && b.name is "Quality") {
+                foreach (var obj in b.GetRootGameObjects()) {
+                    if (obj.name == "Main Camera") {
+                        obj.SetActive(false);
+                        break;
+                    }
+                }
+            }
         };
     }
 
@@ -159,10 +168,10 @@ static class OptionsMenu {
         var guide = __instance.objGuidePause;
         var back = guide.transform.GetChild(0);
 
-        var settings = UnityEngine.Object.Instantiate(back);
+        var settings = Object.Instantiate(back);
         settings.name = "Text_Settings";
 
-        UnityEngine.Object.Destroy(settings.GetComponent<UITextLocalizer>());
+        Object.Destroy(settings.GetComponent<UITextLocalizer>());
         settings.GetComponent<Text>().text = "Settings";
 
         settings.SetParent(guide.transform, worldPositionStays: false);
@@ -200,4 +209,5 @@ static class OptionsMenu {
             .Instructions();
     }
     // TODO: Recreate the appropriate render textures if the resolution got changed.
+    // TODO: Update quality settings mid-level, e.g. ambient occlusion
 }
