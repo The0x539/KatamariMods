@@ -166,10 +166,10 @@ static class OptionsMenu {
         settings.GetComponent<Text>().text = "Settings";
 
         settings.SetParent(guide.transform, worldPositionStays: false);
-        // TODO: This needs to scale with resolution I guess? Ugh.
-        // Pretty sure I chose these numbers based on 1600x900.
-        settings.Translate(-25, 0, 0);
-        back.transform.Translate(5, 0, 0);
+
+        var ratio = 1600f / Camera.main.pixelWidth; // This doesn't seem like the right way to manage this, but it at least works properly.
+        settings.Translate(-25 * ratio, 0, 0);
+        back.transform.Translate(5 * ratio, 0, 0);
 
         var glyph = settings.GetChild(0).GetComponent<KeyImageCheck>();
         glyph.iconKeyType = KeyMap.Back;
