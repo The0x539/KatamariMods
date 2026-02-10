@@ -167,10 +167,18 @@ static class OptionsMenu {
         settings.GetComponent<Text>().text = "Settings";
 
         settings.SetParent(guide.transform, worldPositionStays: false);
+        // TODO: This needs to scale with resolution I guess? Ugh.
         settings.Translate(-25, 0, 0);
         back.transform.Translate(5, 0, 0);
 
         var glyph = settings.GetChild(0).GetComponent<KeyImageCheck>();
         glyph.iconKeyType = KeyMap.Back;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), nameof(Player.InputMoveTypeUpdate))]
+    public static void ActuallyUpdateMoveType(Player __instance) {
+        // The vanilla game's copy of this method is just... unfinished?
+        __instance.inputMoveType = (GlobalWork.eMoveType)GlobalWork.Instance.moveType[__instance.playerNo];
     }
 }
