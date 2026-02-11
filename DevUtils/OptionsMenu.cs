@@ -208,6 +208,31 @@ static class OptionsMenu {
             .Repeat(cm => cm.SetOperandAndAdvance(wfsr))
             .Instructions();
     }
-    // TODO: Recreate the appropriate render textures if the resolution got changed.
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.ChangeIndex))]
+    public static void ApplySettings() {
+        var gWork = GlobalWork.Instance;
+        var game = gWork.manGame;
+        if (game == null) return;
+
+        var setup = game.GetComponent<SetupRenderTexture>();
+
+        setup.Release();
+        setup.Awake();
+        setup.setIndex = 1;
+    }
+
+    // lmao the original code uses == where it should use !=:
+    // checking if gWork.renderTexture is null to decide whether to iterate through it
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.Release))]
+    public static IEnumerable<CodeInstruction> FixRelease(IEnumerable<CodeInstruction> instructions) {
+        return new CodeMatcher(instructions)
+            .MatchForward(false, [new(OpCodes.Brtrue)])
+            .SetOpcodeAndAdvance(OpCodes.Brfalse)
+            .Instructions();
+    }
+
     // TODO: Update quality settings mid-level, e.g. ambient occlusion
 }
