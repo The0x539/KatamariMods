@@ -27,15 +27,20 @@ static class ExtraOptions {
 
             while (status.Count < __instance.ItemMax) status.Add(0);
 
-            if (__instance.statusNo[0] >= __instance.itemName.Count) __instance.statusNo[0] = 0;
-            if (__instance.statusNo[4] >= QualitySetting.antialiasingValue.Length) __instance.statusNo[4] = 1;
+            if (status[0] >= __instance.itemName.Count) status[0] = 0;
+            if (status[4] >= QualitySetting.antialiasingValue.Length) status[4] = 1;
+
+            __instance.statusNo = status.ToArray();
 
             return false;
-        } catch {
+        } catch (System.Exception ex) {
+            System.Console.WriteLine($"Error loading extended graphics settings: {ex}");
             return true;
         }
     }
 
+    // In case the special load fails (e.g. the first time you use this mod)
+    // or if new settings are added to the mod
     [HarmonyPostfix]
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Load))]
     public static void PadSettings(QualitySetting __instance) {
