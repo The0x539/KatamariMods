@@ -296,55 +296,56 @@ static class OptionsMenu {
 
         Transform get(string name) => __instance.transform.Find(name);
 
-        var labelPre = get("TextItem7");
-        var valuePre = get("TextItemExp7");
-        var leftPre = get("Button7L");
-        var rightPre = get("Button7R");
+        var prefabs = new {
+            label = get("TextItem5"),
+            value = get("TextItemExp5"),
+            left = get("Button5L"),
+            right = get("Button5R"),
+        };
 
-        // Text item 6 comes after 7 in the vanilla layout, and it's the disabled DoF option
-        // TODO: Consider just instantiating my own setting for the DoF? The vanilla one, being disabled, is a little inconsistent
         // TODO: Off/Low/Med/High DoF options
         // TODO: Actually honor the DoF and AF settings rather than just giving them a UI
 
-        get("TextItem6").gameObject.SetActive(true);
-        get("TextItemExp6").gameObject.SetActive(true);
-        get("Button6L").gameObject.SetActive(true);
-        get("Button6R").gameObject.SetActive(true);
+        var previous = prefabs.label;
+        var spacing = prefabs.label.position.y - get("TextItem4").position.y;
 
-        var spacing = get("TextItem1").position.y - get("TextItem0").position.y;
+        // Things get a bit "inconsistent" after 5, so just recreate it all ourselves
+        // Text item 6 comes after 7 in the vanilla layout, and it's the disabled DoF option
+        // The disabled options also have slightly different sizing/spacing
+        for (var i = 6; i < QualitySetting.Instance.ItemMax; i++) {
+            var offset = new Vector2(0, spacing * (i - 5));
 
-        var prevFocus = get("TextItem6");
-        LinkFocus(get("TextItem7"), prevFocus);
+            Transform make(Transform prefab, string name) {
+                var existing = get(name);
+                if (existing != null) {
+                    existing.SetParent(null);
+                    Object.Destroy(existing.gameObject);
+                }
 
-        for (var i = 8; i < QualitySetting.Instance.ItemMax; i++) {
-            var offset = new Vector2(0, spacing * (i - 6));
+                var obj = Object.Instantiate(prefab, prefab.parent); // TODO: I didn't know this overload exists and should use it in more places.
+                obj.name = name;
+                obj.Translate(offset);
+                return obj;
+            }
 
-            var label = Object.Instantiate(labelPre, labelPre.parent); // TODO: I didn't know this overload exists and should use it in more places.
-            label.name = $"TextItem{i}";
-            label.transform.Translate(offset);
-            var value = Object.Instantiate(valuePre, valuePre.parent);
-            value.name = $"TextItemExp{i}";
-            value.transform.Translate(offset);
+            make(prefabs.value, $"TextItemExp{i}");
+            make(prefabs.right, $"Button{i}R");
+            make(prefabs.left, $"Button{i}L");
 
-            var left = Object.Instantiate(leftPre, leftPre.parent);
-            left.name = $"Button{i}L";
-            left.transform.Translate(offset);
-
-            var right = Object.Instantiate(rightPre, rightPre.parent);
-            right.name = $"Button{i}R";
-            right.transform.Translate(offset);
-
-            LinkFocus(prevFocus, label);
-            prevFocus = label;
+            var label = make(prefabs.label, $"TextItem{i}");
+            LinkFocus(previous, label);
             label.GetComponent<UguiFocus>().focusID = i;
+            previous = label;
 
             label.GetComponent<UITextLocalizer>().textID = i switch {
-                8 => "UI_SYS_213",
-                _ => "UI_TTR_022", // Placeholder
+                6 => "UI_SYS_215", // Depth of Field
+                7 => "UI_SYS_278", // Vignette
+                8 => "UI_SYS_213", // Anisotropic Filtering
+                _ => "UI_TTR_022", // THWACK! (placeholder)
             };
         }
 
-        LinkFocus(prevFocus, get("TextItem0"));
+        LinkFocus(previous, get("TextItem0"));
     }
 
     private static void LinkFocus(Component prev, Component next) {
@@ -352,6 +353,12 @@ static class OptionsMenu {
         var nextF = next.GetComponent<UguiFocus>();
         prevF.downKeyMove = nextF;
         nextF.upKeyMove = prevF;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(UguiUtility), nameof(UguiUtility.SetText))]
+    public static void Foo(string name, string text) {
+        System.Console.WriteLine($"SetText({name}, {text})");
     }
 
     // TODO: Update quality settings mid-level, e.g. ambient occlusion
