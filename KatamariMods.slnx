@@ -6,6 +6,7 @@
   <Project Path="DevUtils/DevUtils.csproj" />
   <Project Path="FramerateUncap/FramerateUncap.csproj" />
   <Project Path="GamepadSupport/GamepadSupport.csproj" />
+  <Project Path="GraphicalEnhancements/GraphicalEnhancements.csproj" Id="679cb850-8a32-427f-8040-d2c6bdeed8d6" />
   <Project Path="RenderDocHook/RenderDocHook.csproj" />
   <Project Path="SingleplayerCousins/SingleplayerCousins.csproj" />
   <Project Path="StartupDummy/StartupDummy.csproj" />

@@ -15,14 +15,10 @@ public class Plugin : BaseUnityPlugin {
         Application.runInBackground = true;
 
         Harmony.CreateAndPatchAll(this.GetType());
-        Harmony.CreateAndPatchAll(typeof(DepthOfField));
 
         if (this.Config.Bind("Intro", "Skip", true).Value) {
             Harmony.CreateAndPatchAll(typeof(SkipIntro));
         }
-
-        OptionsMenu.AddListener();
-        Harmony.CreateAndPatchAll(typeof(OptionsMenu));
     }
 
     [HarmonyPrefix]
@@ -46,4 +42,13 @@ public class Plugin : BaseUnityPlugin {
             .SetOpcodeAndAdvance(OpCodes.Ldc_I4_1)
             .Instructions();
     }
+
+    /*
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GlobalManager), nameof(GlobalManager.LoadSinglePlayerGame))]
+    public static void CowbearCheat() {
+        GlobalWork.Instance.bearTypes = [472];
+        GlobalWork.Instance.cowTypes = [490];
+    }
+    */
 }
