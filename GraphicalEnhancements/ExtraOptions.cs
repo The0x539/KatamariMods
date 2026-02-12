@@ -53,11 +53,6 @@ static class ExtraOptions {
         return false;
     }
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(QualitySetting), MethodType.Constructor)]
-    public static void CreateExtraSettings(QualitySetting __instance) {
-    }
-
     [HarmonyPostfix]
     [HarmonyPatch(typeof(QualitySetting), MethodType.Constructor)]
     public static void ExposeExtraSettings(QualitySetting __instance) {
@@ -129,12 +124,6 @@ static class ExtraOptions {
         var nextF = next.GetComponent<UguiFocus>();
         prevF.downKeyMove = nextF;
         nextF.upKeyMove = prevF;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(UguiUtility), nameof(UguiUtility.SetText))]
-    public static void Foo(string name, string text) {
-        System.Console.WriteLine($"SetText({name}, {text})");
     }
 
     // TODO: Update quality settings mid-level, e.g. ambient occlusion
