@@ -15,6 +15,7 @@ public class Plugin : BaseUnityPlugin {
         Application.runInBackground = true;
 
         Harmony.CreateAndPatchAll(this.GetType());
+        Harmony.CreateAndPatchAll(typeof(FrustrationMusic));
 
         if (this.Config.Bind("Intro", "Skip", true).Value) {
             Harmony.CreateAndPatchAll(typeof(SkipIntro));
