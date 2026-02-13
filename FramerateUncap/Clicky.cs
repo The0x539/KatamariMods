@@ -14,7 +14,7 @@ public sealed class Clicky : MonoBehaviour {
     public void Update() {
         KatamariFfi.UpdateUI();
 
-        var cam = Camera.main;
+        var cam = GlobalWork.Instance?.camGame?[0];
         if (cam == null) return;
 
         if (!Input.GetMouseButtonDown(0)) return;
