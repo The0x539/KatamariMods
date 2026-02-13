@@ -123,7 +123,7 @@ public sealed class InputPadSDL3 : InputPadBase {
                 0 => 0f,
                 32767 => 1f,
                 -32768 => -1f,
-                > -1500 and < 1500 => 0, // deadzone
+                > -3500 and < 3500 => 0, // deadzone
                 short n => n / 32767f,
             };
         }
@@ -171,7 +171,6 @@ public sealed class InputPadSDL3 : InputPadBase {
         var ly = this.GetAxis(SDL.GamepadAxis.LeftY);
         var rx = this.GetAxis(SDL.GamepadAxis.RightX);
         var ry = this.GetAxis(SDL.GamepadAxis.RightY);
-
         this.PushStickLeft(lx, -ly);
         this.PushStickRight(rx, -ry);
         this.PushL2Trigger(this.GetAxis(SDL.GamepadAxis.LeftTrigger));
