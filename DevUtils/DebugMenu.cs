@@ -17,6 +17,7 @@ public static class DebugMenu {
         pauseMenu._gameDebug = __instance;
         pauseMenu.isEnableGameDebug = true;
         __instance.gameObject.SetActive(false);
+        __instance._gWork = pauseMenu.gWork;
     }
 
     [HarmonyPrefix]
