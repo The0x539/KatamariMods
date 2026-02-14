@@ -123,7 +123,7 @@ public sealed class InputPadSDL3 : InputPadBase {
                 0 => 0f,
                 32767 => 1f,
                 -32768 => -1f,
-                > -3500 and < 3500 => 0, // deadzone
+                > -5000 and < 5000 => 0, // deadzone
                 short n => n / 32767f,
             };
         }
