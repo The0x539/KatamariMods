@@ -20,6 +20,8 @@ public static class DebugMenu {
         __instance._gWork = pauseMenu.gWork;
     }
 
+    private static bool menuOpen = false;
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.PauseProc))]
     public static void ActivateGameDebug(PauseMenu __instance, out bool __runOriginal) {
@@ -36,6 +38,7 @@ public static class DebugMenu {
 
         if (canvas.activeSelf) {
             if (pad.IsDown(KeyMap.Start) || pad.IsDown(KeyMap.B)) {
+                menuOpen = false;
                 __runOriginal = false; // without this, pressing Start from the debug menu immediately opens the pause menu
 
                 self.Pause();
@@ -46,6 +49,7 @@ public static class DebugMenu {
             }
         } else {
             if (pad.IsDown(KeyMap.Start) && pad.IsPush(KeyMap.Up)) {
+                menuOpen = true;
                 self.Pause();
                 self.gWork.u8Pause = Define.ON;
                 self.sPauseSound();
@@ -63,7 +67,7 @@ public static class DebugMenu {
         if (__instance is not GameDebug self) return;
 
 
-        if (self._inputBase.Pad(0).IsDown(KeyMap.A)) {
+        if (menuOpen && self._inputBase.Pad(0).IsDown(KeyMap.A)) {
             self._gameDebugSelectable?.uEvent?.Invoke();
         }
     }
