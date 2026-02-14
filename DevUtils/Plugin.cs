@@ -13,6 +13,7 @@ public class Plugin : BaseUnityPlugin {
 
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(FrustrationMusic));
+        Harmony.CreateAndPatchAll(typeof(DebugMenu));
 
         if (this.Config.Bind("Intro", "Skip", true).Value) {
             Harmony.CreateAndPatchAll(typeof(SkipIntro));
