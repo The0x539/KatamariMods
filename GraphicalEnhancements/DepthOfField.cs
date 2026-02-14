@@ -25,7 +25,9 @@ static class DepthOfField {
                 // This should probably be a graphics option
                 ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
 
-                cam.gameObject.AddComponent<UpdateDof>();
+                if (cam.GetComponent<UpdateDof>() == null) {
+                    cam.gameObject.AddComponent<UpdateDof>();
+                }
             }
         }
     }
@@ -103,21 +105,17 @@ public sealed class UpdateDof : MonoBehaviour {
 
         this.adjuster = new GameObject("DoF Adjust").transform;
         this.adjuster.parent = this.transform;
-
-        var s = this.dofModel.settings;
-        // increase the focal length for now, to make it more obvious for testing
-        // (the chosen factor is completely arbitrary based on what looks good in MAS 4 and Eternal 3)
-        // definitely not final: this is way too strong in Eternal 1 and probably other Takeda Residence levels
-        this.adjuster.localScale = new(s.aperture, s.focalLength * 2.6f, 1f);
+        this.adjuster.localScale = new(0.25f, 0.55f, 5f);
     }
 
     // First person mode doesn't play very well with this - perhaps use the "desired follow distance" in such cases?
     public void Update() {
+        var distance = Vector3.Distance(this.transform.position, this.katamari.position);
         var s = this.adjuster.localScale;
         this.dofModel.settings = this.dofModel.settings with {
             aperture = s.x,
-            focalLength = s.y,
-            focusDistance = s.z * Vector3.Distance(this.transform.position, this.katamari.position),
+            focalLength = Mathf.Pow(distance, s.y) * s.z,
+            focusDistance = distance,
         };
     }
 }
