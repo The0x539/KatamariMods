@@ -105,7 +105,17 @@ public sealed class UpdateDof : MonoBehaviour {
 
         this.adjuster = new GameObject("DoF Adjust").transform;
         this.adjuster.parent = this.transform;
-        this.adjuster.localScale = new(0.25f, 0.55f, 5f);
+
+        // We want the DoF to behave fairly consistently throughout the game,
+        // despite the scale of the gameplay ranging from centimeters to a kilometer.
+        // Unity's "physically based" DoF parameters aren't very helpful for this situation,
+        // but these parameters seem to work reasonably well based on experimentation in the eternal stages.
+        //
+        // Using a vector from a transform to configure the DoF means they can be adjusted as sliders in Unity Explorer.
+        // (That's my only reason for not using normal component fields for this.)
+        // Camera distance from the katamari seems to be a pretty good independent variable to use here.
+        // "Aperture" is set to X. "Focal length" is set to distance^Y * Z.
+        this.adjuster.localScale = new(0.25f, 0.52f, 5.56f);
     }
 
     // First person mode doesn't play very well with this - perhaps use the "desired follow distance" in such cases?
