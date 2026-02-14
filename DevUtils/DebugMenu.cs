@@ -48,7 +48,7 @@ public static class DebugMenu {
                 debug.gameObject.SetActive(false);
             }
         } else {
-            if (pad.IsDown(KeyMap.Start) && pad.IsPush(KeyMap.Up)) {
+            if (pad.IsDown(KeyMap.Start) && pad.IsPush(KeyMap.Y)) {
                 menuOpen = true;
                 self.Pause();
                 self.gWork.u8Pause = Define.ON;
