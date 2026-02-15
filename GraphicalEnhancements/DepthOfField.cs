@@ -32,6 +32,26 @@ static class DepthOfField {
         }
     }
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.PauseProc))]
+    public static void FixPrinceLookDof(PauseMenu __instance) {
+        var player = __instance.playerNo;
+        var gWork = __instance.gWork;
+        var dof = gWork.camGame[player]?.GetComponent<UpdateDof>();
+        if (dof == null) return;
+
+        // The idea of using "the distance between the camera and the katamari" works pretty well,
+        // except for when the camera actually goes to the position of the katamari, i.e. first-person mode.
+        //
+        // When that happens, just use the distance from the moment the player entered first-person mode,
+        // since that should work pretty well for the current first-person "session".
+        if (gWork.oujiFaceMode[player] == 2) {
+            dof.FreezeDistance();
+        } else {
+            dof.ThawDistance();
+        }
+    }
+
     private static Camera depthCamera = null!;
     private static RenderTexture depthCamColor = null!, depthCamDepth = null!;
 
@@ -96,6 +116,12 @@ public sealed class UpdateDof : MonoBehaviour {
     public Transform katamari = null!;
     public Transform adjuster = null!;
 
+    private float Distance() => Vector3.Distance(this.transform.position, this.katamari.position);
+
+    private float? frozenDistance = null;
+    public void FreezeDistance() => this.frozenDistance = this.Distance();
+    public void ThawDistance() => this.frozenDistance = null;
+
     public void Start() {
         var gw = GlobalWork.instance;
         var i = Array.IndexOf(gw.camGame, this.GetComponent<Camera>());
@@ -115,12 +141,12 @@ public sealed class UpdateDof : MonoBehaviour {
         // (That's my only reason for not using normal component fields for this.)
         // Camera distance from the katamari seems to be a pretty good independent variable to use here.
         // "Aperture" is set to X. "Focal length" is set to distance^Y * Z.
-        this.adjuster.localScale = new(0.25f, 0.52f, 5.56f);
+        this.adjuster.localScale = new(0.25f, 0.52f, 5.6f);
     }
 
     // First person mode doesn't play very well with this - perhaps use the "desired follow distance" in such cases?
     public void Update() {
-        var distance = Vector3.Distance(this.transform.position, this.katamari.position);
+        var distance = this.frozenDistance ?? this.Distance();
         var s = this.adjuster.localScale;
         this.dofModel.settings = this.dofModel.settings with {
             aperture = s.x,
