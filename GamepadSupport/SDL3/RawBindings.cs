@@ -87,6 +87,9 @@ internal static unsafe partial class RawBindings {
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern RawGamepad* SDL_GetGamepadFromPlayerIndex(int playerIndex);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern ulong SDL_GetGamepadSteamHandle(RawGamepad* gamepad);
 }
 
 [Flags]

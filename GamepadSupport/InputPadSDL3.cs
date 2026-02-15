@@ -21,6 +21,7 @@ public sealed class InputPadSDL3 : InputPadBase {
         this.inner = new SDL.Gamepad(id);
         this.inner.PlayerIndex = this.ID;
         Console.WriteLine($"Connected {this.inner.Name} for player {this.ID}");
+        //Console.WriteLine($"Glyph path: {this.inner.Steam.GetActionOriginFromXboxOrigin(SteamInput.XboxOrigin.Y)}");
     }
 
     // Corresponds to MyGame.InputStatus.KeyMap

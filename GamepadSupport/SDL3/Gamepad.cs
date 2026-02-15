@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GamepadSupport.SteamInput;
+
+using System;
 using System.Runtime.InteropServices;
 
 namespace GamepadSupport.SDL3;
@@ -53,6 +55,8 @@ public unsafe class Gamepad : IDisposable {
     public short GetAxis(GamepadAxis axis) => RawBindings.SDL_GetGamepadAxis(this.ptr, axis);
     public bool GetButton(GamepadButton button) => RawBindings.SDL_GetGamepadButton(this.ptr, button);
     public void Rumble(ushort lo, ushort hi, uint duration) => RawBindings.SDL_RumbleGamepad(this.ptr, lo, hi, duration).ThrowIfFalse();
+
+    public ISteamInput Steam => new(RawBindings.SDL_GetGamepadSteamHandle(this.ptr));
 
     public int PlayerIndex {
         get => RawBindings.SDL_GetGamepadPlayerIndex(this.ptr);
