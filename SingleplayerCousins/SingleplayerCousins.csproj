@@ -1,5 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net35</TargetFramework>
+	</PropertyGroup>
+
 	<ItemGroup>
+		<PackageReference Include="AssimpNet" />
 		<PackageReference Include="BepInEx.Analyzers" />
 		<PackageReference Include="BepInEx.Core" />
 		<PackageReference Include="BepInEx.PluginInfoProps" />
@@ -7,8 +12,9 @@
 		<PackageReference Include="UnityEngine.Modules" />
 		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" />
 	</ItemGroup>
-
+	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<!-- TODO: Copy AssimpNet DLLs to game folder -->
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\plugins" />
 	</Target>
 </Project>
