@@ -1,4 +1,6 @@
-﻿using MyGame;
+﻿using GamepadSupport.SteamInput;
+
+using MyGame;
 using MyGame.InputStatus;
 
 using System;
@@ -9,9 +11,19 @@ namespace GamepadSupport;
 
 public sealed class InputPadSDL3 : InputPadBase {
     private SDL.Gamepad? inner;
+    public SDL.Gamepad Inner {
+        get {
+            if (this.inner == null) throw new InvalidOperationException();
+            return this.inner;
+        }
+    }
 
     private readonly float[] axes = new float[(int)SDL.GamepadAxis.COUNT];
     private uint buttons;
+
+    static InputPadSDL3() {
+        ISteamInput.Instance.Init();
+    }
 
     public void Start() {
         this.Enabled = true;
@@ -20,8 +32,17 @@ public sealed class InputPadSDL3 : InputPadBase {
     public void Connect(SDL.JoystickID id) {
         this.inner = new SDL.Gamepad(id);
         this.inner.PlayerIndex = this.ID;
-        Console.WriteLine($"Connected {this.inner.Name} for player {this.ID}");
-        //Console.WriteLine($"Glyph path: {this.inner.Steam.GetActionOriginFromXboxOrigin(SteamInput.XboxOrigin.Y)}");
+        var steam = this.inner.Steam;
+
+        ISteamInput.Instance.RunFrame();
+
+        Console.WriteLine($"Input type: {steam.InputType}");
+
+        XboxOrigin[] buttons = { XboxOrigin.A, XboxOrigin.B, XboxOrigin.X, XboxOrigin.Y };
+        foreach (var button in buttons) {
+            var actionOrigin = steam.GetActionOriginFromXboxOrigin(button);
+            string path = ISteamInput.Instance.GetGlyphPNGForActionOrigin(actionOrigin, GlyphSize.Medium, 0);
+        }
     }
 
     // Corresponds to MyGame.InputStatus.KeyMap

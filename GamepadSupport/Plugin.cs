@@ -1,8 +1,11 @@
 ﻿using BepInEx;
 
+using GamepadSupport.SteamInput;
+
 using HarmonyLib;
 
 using MyGame;
+using MyGame.InputStatus;
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +13,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 using UnityEngine;
+using UnityEngine.UI;
 
 using SDL = GamepadSupport.SDL3;
 
@@ -141,5 +145,75 @@ public sealed class Plugin : BaseUnityPlugin {
             self.mainUguiUtility.SetText("TextItemExp3", self.lstGamePad[loc].dispName);
             self.mainUguiUtility.SetTextColor("TextItemExp3", self.textColor[self.playerIndex]);
         }
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Awake))]
+    private static void SetRect(KeyImageCheck __instance) {
+        var tex = new Texture2D(256, 256);
+        var img = __instance.GetComponent<Image>();
+
+        img.sprite = Sprite.Create(tex, new(0, 0, 256, 256), img.sprite.pivot);
+    }
+
+    public static Texture2D LoadGlyph(InputPadSDL3 sdl, KeyMap key) {
+        var xboxOrigin = key switch {
+            KeyMap.A => XboxOrigin.A,
+            KeyMap.B => XboxOrigin.B,
+            KeyMap.X => XboxOrigin.X,
+            KeyMap.Y => XboxOrigin.Y,
+            KeyMap.L1 => XboxOrigin.LeftBumper,
+            KeyMap.R1 => XboxOrigin.RightBumper,
+            KeyMap.Back => XboxOrigin.View,
+            KeyMap.Start => XboxOrigin.Menu,
+            KeyMap.L3 => XboxOrigin.LeftStickClick,
+            KeyMap.R3 => XboxOrigin.RightStickClick,
+            KeyMap.L2 => XboxOrigin.LeftTriggerClick,
+            KeyMap.R2 => XboxOrigin.RightTriggerClick,
+            KeyMap.Home => XboxOrigin.Menu, // ¯\_(ツ)_/¯
+            KeyMap.Left => XboxOrigin.DPadWest,
+            KeyMap.Right => XboxOrigin.DPadEast,
+            KeyMap.Up => XboxOrigin.DPadNorth,
+            KeyMap.Down => XboxOrigin.DPadSouth,
+            KeyMap.StickLeftLeft => XboxOrigin.LeftStickWest,
+            KeyMap.StickLeftRight => XboxOrigin.LeftStickEast,
+            KeyMap.StickLeftUp => XboxOrigin.LeftStickNorth,
+            KeyMap.StickLeftDown => XboxOrigin.LeftStickSouth,
+            KeyMap.StickRightLeft => XboxOrigin.RightStickWest,
+            KeyMap.StickRightRight => XboxOrigin.RightStickEast,
+            KeyMap.StickRightUp => XboxOrigin.RightStickNorth,
+            KeyMap.StickRightDown => XboxOrigin.RightStickSouth,
+
+            // TODO: Learn more about why these are separate.
+            // Likely to do with US/Japan button switching.
+            KeyMap.Enter => XboxOrigin.A,
+            KeyMap.Cancel => XboxOrigin.B,
+
+            _ => XboxOrigin.Menu, // idk
+        };
+
+        var actionOrigin = sdl.Inner.Steam.GetActionOriginFromXboxOrigin(xboxOrigin);
+        return Glyphs.Get(actionOrigin, GlyphSize.Large);
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.GetTexture))]
+    public static bool UseSteamGlyph(KeyImageCheck __instance, ref Texture2D __result, KeyMap _iconKeyType) {
+        var pad = InputController.Instance.Pad(__instance.padIndex);
+        if (!pad.IsConnectPad) return true;
+        if (pad is not InputPadSDL3 sdl) return true;
+
+        __result = LoadGlyph(sdl, _iconKeyType);
+        return false;
+    }
+
+    public static bool UseSteamGlyph(KeyImage __instance, ref Texture2D __result, KeyMap key) {
+        var pad = InputController.Instance.Pad(0);
+        if (!pad.IsConnectPad) return true;
+        if (pad is not InputPadSDL3 sdl) return true;
+
+
+        __result = LoadGlyph(sdl, key);
+        return false;
     }
 }

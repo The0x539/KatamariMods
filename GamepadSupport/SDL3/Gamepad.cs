@@ -56,7 +56,7 @@ public unsafe class Gamepad : IDisposable {
     public bool GetButton(GamepadButton button) => RawBindings.SDL_GetGamepadButton(this.ptr, button);
     public void Rumble(ushort lo, ushort hi, uint duration) => RawBindings.SDL_RumbleGamepad(this.ptr, lo, hi, duration).ThrowIfFalse();
 
-    public ISteamInput Steam => new(RawBindings.SDL_GetGamepadSteamHandle(this.ptr));
+    public InputHandle Steam => new(RawBindings.SDL_GetGamepadSteamHandle(this.ptr));
 
     public int PlayerIndex {
         get => RawBindings.SDL_GetGamepadPlayerIndex(this.ptr);
