@@ -5,6 +5,6 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 		<Nullable>enable</Nullable>
-		<TargetFramework>net472</TargetFramework>
+		<TargetFramework>net35</TargetFramework>
 	</PropertyGroup>
 </Project>

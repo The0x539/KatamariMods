@@ -1,8 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFramework>net35</TargetFramework>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<PackageReference Include="AssimpNet" />
 		<PackageReference Include="BepInEx.Analyzers" />
