@@ -27,6 +27,14 @@ public enum Cousin {
     Miso = 24,
 }
 
+public enum PretenderId {
+    Dega = 25, START = Dega,
+    Belle = 26,
+    Colonq = 27,
+
+    DYNAMIC = 40,
+}
+
 public enum Present {
     Apron = 1,
     RunningTop = 2,

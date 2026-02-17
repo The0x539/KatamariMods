@@ -19,6 +19,7 @@ public sealed class Plugin : BaseUnityPlugin {
 
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(Jungle));
+        Harmony.CreateAndPatchAll(typeof(PretenderPatches));
 
         SceneManager.sceneLoaded += (scene, mode) => {
             if (scene.name is "Result2" or "UI_Moon") {
@@ -223,7 +224,13 @@ public sealed class Plugin : BaseUnityPlugin {
         var oujiName = $"OUJI{idx:D2}";
         if (oujiName == old.name) return;
 
-        var prefab = AssetBundleSimulator.Instance.LoadAsset<GameObject>(oujiName, oujiName);
+        GameObject prefab;
+        if (Pretender.pretenders.TryGetValue(idx, out var pretender)) {
+            prefab = pretender.Reify();
+        } else {
+            prefab = AssetBundleSimulator.Instance.LoadAsset<GameObject>(oujiName, oujiName);
+        }
+
         if (prefab == null) {
             Console.WriteLine($"Could not load player model: {oujiName}");
             return;
