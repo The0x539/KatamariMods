@@ -187,15 +187,23 @@ internal static class PretenderLoader {
         var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
             .ToDictionary(x => x.gameObject.name);
 
+        var bones = new Dictionary<string, Transform>();
+        foreach (var bone in ouji.GetComponentsInChildren<Transform>(true)) {
+            bones[bone.name] = bone;
+        }
+
         var uTextures = new List<Texture2D>();
         foreach (var aMat in scene.Materials) {
             var path = aMat.TextureDiffuse.FilePath;
+            if (path == null) {
+                Console.WriteLine($"Texture {aMat.Name} has no filepath");
+                continue;
+            }
             var uTex = new Texture2D(0, 0);
 
             if (path.StartsWith("*")) {
                 var i = int.Parse(path.Substring(1));
                 var aTex = scene.Textures[i];
-                //Console.WriteLine($"Embedded texture: {aTex.IsCompressed}, {aTex.CompressedFormatHint}");
                 ImageConversion.LoadImage(uTex, aTex.CompressedData);
             } else {
                 var data = File.ReadAllBytes(path);
@@ -205,16 +213,25 @@ internal static class PretenderLoader {
             uTextures.Add(uTex);
         }
 
+        var body_root = bodyParts["body_m"].transform.parent;
+
         foreach (var aMesh in scene.Meshes) {
-            if (!bodyParts.TryGetValue(aMesh.Name, out var bodyPart)) continue;
-            //var uMesh = new Mesh() { name = aMesh.Name };
-            var uMesh = bodyPart.sharedMesh;
-            var uBones = bodyPart.bones;
+
+            var bodyPart = new GameObject(aMesh.Name);
+            bodyPart.transform.SetParent(body_root);
+            bodyPart.hideFlags = HideFlags.HideAndDontSave;
+
+            var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
+            var uMesh = new Mesh() { name = aMesh.Name };
 
             var vertices = aMesh.Vertices.Select(v => v.ToUnity()).ToList();
             uMesh.SetVertices(vertices);
 
-            var topo = bodyPart.sharedMesh.GetTopology(0);
+            var topo = aMesh.Faces[0].IndexCount switch {
+                3 => MeshTopology.Triangles,
+                4 => MeshTopology.Quads,
+                _ => throw new InvalidOperationException(),
+            };
             var indices = new List<int>(3 * aMesh.FaceCount);
             foreach (var face in aMesh.Faces) indices.AddRange(face.Indices);
             uMesh.SetIndices(indices.ToArray(), topo, 0);
@@ -223,10 +240,18 @@ internal static class PretenderLoader {
             uMesh.SetUVs(0, uvs);
 
             var uBoneWeights = new BoneWeight[vertices.Count];
-            var uBindposes = new Matrix4x4[uBones.Length];
+            var uBindposes = new[] { Matrix4x4.identity };
 
+            /*
             foreach (var aBone in aMesh.Bones) {
-                var boneIdx = uBones.IndexOf(aBone.Name);
+                int boneIdx;
+                try {
+                    boneIdx = uBones.IndexOf(aBone.Name);
+                    Console.WriteLine($"Correlated bone {aBone.Name}");
+                } catch {
+                    Console.WriteLine($"Could not correlate bone {aBone.Name}");
+                    boneIdx = 0;
+                }
                 uBindposes[boneIdx] = aBone.OffsetMatrix.ToUnity();
 
                 foreach (var aWeight in aBone.VertexWeights) {
@@ -234,11 +259,21 @@ internal static class PretenderLoader {
                     uBoneWeights[aWeight.VertexID] = uBoneWeights[aWeight.VertexID].AddWeight(boneIdx, aWeight.Weight);
                 }
             }
+            */
+
+            for (var i = 0; i < vertices.Count; i++) {
+                uBoneWeights[i].boneIndex0 = 0;
+                uBoneWeights[i].weight0 = 1;
+            }
+
 
             uMesh.boneWeights = uBoneWeights;
             uMesh.bindposes = uBindposes;
 
-            bodyPart.material.mainTexture = uTextures[aMesh.MaterialIndex];
+            renderer.rootBone = bones["JNT_root"];
+            renderer.bones = [bones["JNT_root"]];
+            renderer.sharedMesh = uMesh;
+            renderer.material.mainTexture = uTextures[aMesh.MaterialIndex];
         }
     }
 }
