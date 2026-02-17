@@ -147,7 +147,7 @@ public sealed class Plugin : BaseUnityPlugin {
         }
     }
 
-    [HarmonyPrefix]
+    //[HarmonyPrefix]
     [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Awake))]
     private static void SetRect(KeyImageCheck __instance) {
         var tex = new Texture2D(256, 256);
@@ -196,7 +196,7 @@ public sealed class Plugin : BaseUnityPlugin {
         return Glyphs.Get(actionOrigin, GlyphSize.Large);
     }
 
-    [HarmonyPrefix]
+    //[HarmonyPrefix]
     [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.GetTexture))]
     public static bool UseSteamGlyph(KeyImageCheck __instance, ref Texture2D __result, KeyMap _iconKeyType) {
         var pad = InputController.Instance.Pad(__instance.padIndex);
@@ -207,6 +207,7 @@ public sealed class Plugin : BaseUnityPlugin {
         return false;
     }
 
+    // This was supposed to be a patch for a KeyImage method but I guess I forgot?
     public static bool UseSteamGlyph(KeyImage __instance, ref Texture2D __result, KeyMap key) {
         var pad = InputController.Instance.Pad(0);
         if (!pad.IsConnectPad) return true;

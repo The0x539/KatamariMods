@@ -32,17 +32,7 @@ public sealed class InputPadSDL3 : InputPadBase {
     public void Connect(SDL.JoystickID id) {
         this.inner = new SDL.Gamepad(id);
         this.inner.PlayerIndex = this.ID;
-        var steam = this.inner.Steam;
-
         ISteamInput.Instance.RunFrame();
-
-        Console.WriteLine($"Input type: {steam.InputType}");
-
-        XboxOrigin[] buttons = { XboxOrigin.A, XboxOrigin.B, XboxOrigin.X, XboxOrigin.Y };
-        foreach (var button in buttons) {
-            var actionOrigin = steam.GetActionOriginFromXboxOrigin(button);
-            string path = ISteamInput.Instance.GetGlyphPNGForActionOrigin(actionOrigin, GlyphSize.Medium, 0);
-        }
     }
 
     // Corresponds to MyGame.InputStatus.KeyMap
