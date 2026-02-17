@@ -16,7 +16,7 @@ public class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(DebugMenu));
         //Harmony.CreateAndPatchAll(typeof(VersusOnEarth));
 
-        if (this.Config.Bind("Intro", "Skip", true).Value) {
+        if (this.Config.Bind("Intro", "Skip", false).Value) {
             Harmony.CreateAndPatchAll(typeof(SkipIntro));
         }
     }
