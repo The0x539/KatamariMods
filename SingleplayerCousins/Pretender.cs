@@ -8,6 +8,8 @@ using System.Reflection.Emit;
 
 using UnityEngine;
 
+using UnityObject = UnityEngine.Object;
+
 namespace SingleplayerCousins;
 
 public sealed class Pretender {
@@ -192,15 +194,19 @@ internal static class PretenderLoader {
             bones[bone.name] = bone;
         }
 
-        var uTextures = new List<Texture2D?>();
+        var body_m = bodyParts["body_m"];
+        var body_root = body_m.transform.parent;
+
+        var uMaterials = new List<Material?>();
         foreach (var aMat in scene.Materials) {
             var path = aMat.TextureDiffuse.FilePath;
             if (path == null) {
                 Console.WriteLine($"Texture {aMat.Name} has no filepath");
-                uTextures.Add(null);
+                uMaterials.Add(null);
                 continue;
             }
-            var uTex = new Texture2D(0, 0) { name = aMat.Name }; // TODO: This name is absolutely not guaranteed to be unique across different characters.
+
+            var uTex = new Texture2D(0, 0);
 
             if (path.StartsWith("*")) {
                 var i = int.Parse(path.Substring(1));
@@ -211,10 +217,13 @@ internal static class PretenderLoader {
                 ImageConversion.LoadImage(uTex, data);
             }
 
-            uTextures.Add(uTex);
-        }
+            uTex.filterMode = FilterMode.Point;
 
-        var body_root = bodyParts["body_m"].transform.parent;
+            var uMat = UnityObject.Instantiate(body_m.material);
+            uMat.name = uTex.name = aMat.Name; // TODO: This name is absolutely not guaranteed to be unique across different characters.
+            uMat.mainTexture = uTex;
+            uMaterials.Add(uMat);
+        }
 
         foreach (var aMesh in scene.Meshes) {
             var bodyPart = new GameObject(aMesh.Name);
@@ -272,10 +281,8 @@ internal static class PretenderLoader {
 
             renderer.rootBone = bones["JNT_root"];
             renderer.sharedMesh = uMesh;
-            if (uTextures[aMesh.MaterialIndex] is Texture2D tex) {
-                // TODO: This is not the standard Prince body material I'm pretty sure, and thus ends up looking darker than the rest of the game.
-                renderer.material.mainTexture = tex;
-                renderer.material.name = tex.name;
+            if (uMaterials[aMesh.MaterialIndex] is Material mat) {
+                renderer.material = mat;
             }
         }
 
