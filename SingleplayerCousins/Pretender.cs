@@ -192,11 +192,12 @@ internal static class PretenderLoader {
             bones[bone.name] = bone;
         }
 
-        var uTextures = new List<Texture2D>();
+        var uTextures = new List<Texture2D?>();
         foreach (var aMat in scene.Materials) {
             var path = aMat.TextureDiffuse.FilePath;
             if (path == null) {
                 Console.WriteLine($"Texture {aMat.Name} has no filepath");
+                uTextures.Add(null);
                 continue;
             }
             var uTex = new Texture2D(0, 0) { name = aMat.Name }; // TODO: This name is absolutely not guaranteed to be unique across different characters.
@@ -239,34 +240,28 @@ internal static class PretenderLoader {
             uMesh.SetUVs(0, uvs);
 
             var uBoneWeights = new BoneWeight[vertices.Count];
-            var uBindposes = new[] { Matrix4x4.identity };
+            var uBindposes = new List<Matrix4x4> { Matrix4x4.identity };
+            var uBones = new List<Transform> { bones["JNT_root"] };
 
-            /*
             foreach (var aBone in aMesh.Bones) {
                 int boneIdx;
-                try {
-                    boneIdx = uBones.IndexOf(aBone.Name);
-                    Console.WriteLine($"Correlated bone {aBone.Name}");
-                } catch {
-                    Console.WriteLine($"Could not correlate bone {aBone.Name}");
+                if (bones.TryGetValue(aBone.Name, out var bone)) {
+                    boneIdx = uBones.Count;
+                    uBones.Add(bone);
+                    uBindposes.Add(aBone.OffsetMatrix.ToUnity());
+                } else {
                     boneIdx = 0;
                 }
-                uBindposes[boneIdx] = aBone.OffsetMatrix.ToUnity();
 
                 foreach (var aWeight in aBone.VertexWeights) {
                     if (aWeight.Weight == 0) continue;
                     uBoneWeights[aWeight.VertexID] = uBoneWeights[aWeight.VertexID].AddWeight(boneIdx, aWeight.Weight);
                 }
             }
-            */
 
-            for (var i = 0; i < vertices.Count; i++) {
-                uBoneWeights[i].boneIndex0 = 0;
-                uBoneWeights[i].weight0 = 1;
-            }
-
+            renderer.bones = uBones.ToArray();
+            uMesh.bindposes = uBindposes.ToArray();
             uMesh.boneWeights = uBoneWeights;
-            uMesh.bindposes = uBindposes;
 
             if (aMesh.HasNormals) {
                 var normals = aMesh.Normals.Select(n => n.ToUnity()).ToList();
@@ -276,11 +271,12 @@ internal static class PretenderLoader {
             }
 
             renderer.rootBone = bones["JNT_root"];
-            renderer.bones = [bones["JNT_root"]];
             renderer.sharedMesh = uMesh;
-            // TODO: This is not the standard Prince body material I'm pretty sure, and thus ends up looking darker than the rest of the game.
-            renderer.material.mainTexture = uTextures[aMesh.MaterialIndex];
-            renderer.material.name = renderer.material.mainTexture.name;
+            if (uTextures[aMesh.MaterialIndex] is Texture2D tex) {
+                // TODO: This is not the standard Prince body material I'm pretty sure, and thus ends up looking darker than the rest of the game.
+                renderer.material.mainTexture = tex;
+                renderer.material.name = tex.name;
+            }
         }
 
         foreach (var part in bodyParts.Values) {
