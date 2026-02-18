@@ -216,7 +216,6 @@ internal static class PretenderLoader {
         var body_root = bodyParts["body_m"].transform.parent;
 
         foreach (var aMesh in scene.Meshes) {
-
             var bodyPart = new GameObject(aMesh.Name);
             bodyPart.transform.SetParent(body_root);
             bodyPart.hideFlags = HideFlags.HideAndDontSave;
@@ -266,14 +265,24 @@ internal static class PretenderLoader {
                 uBoneWeights[i].weight0 = 1;
             }
 
-
             uMesh.boneWeights = uBoneWeights;
             uMesh.bindposes = uBindposes;
+
+            if (aMesh.HasNormals) {
+                var normals = aMesh.Normals.Select(n => n.ToUnity()).ToList();
+                uMesh.SetNormals(normals);
+            } else {
+                uMesh.RecalculateNormals();
+            }
 
             renderer.rootBone = bones["JNT_root"];
             renderer.bones = [bones["JNT_root"]];
             renderer.sharedMesh = uMesh;
             renderer.material.mainTexture = uTextures[aMesh.MaterialIndex];
+        }
+
+        foreach (var part in bodyParts.Values) {
+            part.enabled = false;
         }
     }
 }
