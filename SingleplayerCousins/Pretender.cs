@@ -199,7 +199,7 @@ internal static class PretenderLoader {
                 Console.WriteLine($"Texture {aMat.Name} has no filepath");
                 continue;
             }
-            var uTex = new Texture2D(0, 0);
+            var uTex = new Texture2D(0, 0) { name = aMat.Name }; // TODO: This name is absolutely not guaranteed to be unique across different characters.
 
             if (path.StartsWith("*")) {
                 var i = int.Parse(path.Substring(1));
@@ -278,7 +278,9 @@ internal static class PretenderLoader {
             renderer.rootBone = bones["JNT_root"];
             renderer.bones = [bones["JNT_root"]];
             renderer.sharedMesh = uMesh;
+            // TODO: This is not the standard Prince body material I'm pretty sure, and thus ends up looking darker than the rest of the game.
             renderer.material.mainTexture = uTextures[aMesh.MaterialIndex];
+            renderer.material.name = renderer.material.mainTexture.name;
         }
 
         foreach (var part in bodyParts.Values) {
