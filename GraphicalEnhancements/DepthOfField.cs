@@ -97,6 +97,8 @@ static class DepthOfField {
         var ctx = __instance.m_Context;
 
         if (depthCamera == null) {
+            if (ctx.camera.targetTexture == null) return;
+
             depthCamera = new GameObject().AddComponent<Camera>();
             depthCamera.enabled = false;
 
