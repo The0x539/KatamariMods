@@ -1,10 +1,13 @@
 ﻿using HarmonyLib;
 
 using System;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 
 using UnityEngine;
 
 using UnityEngine.PostProcessing;
+using UnityEngine.Rendering;
 
 namespace GraphicalEnhancements;
 
@@ -24,6 +27,13 @@ static class DepthOfField {
                 ppb.profile.depthOfField.enabled = QualitySetting.Instance.IsDOF;
                 // This should probably be a graphics option
                 ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
+
+                // This game uses a rather distant far-clip-plane value of 8000 due to how the gameplay works.
+                // Doing this causes the ambient occlusion effect's first shader to experience some precision-related errors
+                // if it tries to use the low-precision depth information from the DepthNormals texture.
+                // This setting tells the SSAO effect to use the output of a dedicated depth pass instead of DepthNormals,
+                // which the vanilla game didn't have working, but my patches get into a usable state.
+                ppb.profile.ambientOcclusion.settings = ppb.profile.ambientOcclusion.settings with { highPrecision = true };
 
                 if (cam.GetComponent<UpdateDof>() == null) {
                     cam.gameObject.AddComponent<UpdateDof>();
@@ -55,10 +65,36 @@ static class DepthOfField {
     private static Camera depthCamera = null!;
     private static RenderTexture depthCamColor = null!, depthCamDepth = null!;
 
+    // TODO: Split the code that's not really DoF related into another guy
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnPreRender))]
+    public static IEnumerable<CodeInstruction> TakeControlOfSSAO(IEnumerable<CodeInstruction> instructions) {
+        // Normally, the ambient occlusion effect schedules its stuff to run during CameraEvent.BeforeImageEffectsOpaque.
+        // However, it's VERY difficult to get non–command buffer–flavored code to run immediately before this,
+        // and command buffer code can't really "draw the whole world" the way we need to.
+        // However, we're fortunate in that everything in this game's world uses a basic opaque material.
+        // This means that there's nothing that runs in between that step and the OnRenderImage "camera message".
+        // As such, we can just surgically remove the normal "TryExecuteCommandBuffer" invocation here,
+        // and instead manually execute the command buffer "right away" after we do our depth-pass fix hack thing.
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldarg_0),
+                          new(OpCodes.Ldarg_0),
+                          new(OpCodes.Ldfld, AccessTools.Field(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.m_AmbientOcclusion))),
+                          new(OpCodes.Call))
+            .RemoveInstructions(4)
+            .Instructions();
+    }
+
+
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(DepthOfFieldComponent), nameof(DepthOfFieldComponent.Prepare))]
-    public static void DepthPassToFixDof(DepthOfFieldComponent __instance) {
-        var ctx = __instance.context;
+    [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
+    public static void DepthPassToFixDof(PostProcessingBehaviour __instance) {
+        if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) {
+            return;
+        }
+
+        var ctx = __instance.m_Context;
 
         if (depthCamera == null) {
             depthCamera = new GameObject().AddComponent<Camera>();
@@ -67,6 +103,8 @@ static class DepthOfField {
             // This msaaSamples thing was very difficult to hunt down and made the whole thing not work.
             var desc = ctx.camera.targetTexture.descriptor with { msaaSamples = 1 };
 
+            // TODO: I should probably be using the render texture factory for these, right?
+            // Would mean supporting things like on-the-fly resolution changes, which I do want to support.
             desc = desc with { colorFormat = RenderTextureFormat.R8, depthBufferBits = 0 };
             depthCamColor = new RenderTexture(desc) { name = "Depth Pass - Color" };
 
@@ -85,6 +123,12 @@ static class DepthOfField {
         blitToDepth.SetPass(0);
         blitToDepth.SetTexture("_MainTex", depthCamDepth);
         DrawQuad();
+
+        if (__instance.m_AmbientOcclusion.active) {
+            var cb = new CommandBuffer();
+            __instance.m_AmbientOcclusion.PopulateCommandBuffer(cb);
+            Graphics.ExecuteCommandBuffer(cb);
+        }
     }
 
     private static void DrawQuad() {
