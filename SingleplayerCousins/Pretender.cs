@@ -290,4 +290,21 @@ internal static class PretenderLoader {
             part.enabled = false;
         }
     }
+
+    private static void PrintNode(Assimp.Scene scene, Assimp.Node node, int depth = 0) {
+        var indent = "";
+        for (var i = 0; i < depth; i++) indent += "  ";
+
+        Console.WriteLine(indent + node.Name);
+        node.Transform.Decompose(out _, out var rot, out var pos);
+        Console.WriteLine(indent + rot);
+        Console.WriteLine(indent + pos);
+
+        foreach (var meshIdx in node.MeshIndices) {
+            Console.WriteLine(indent + "  * " + scene.Meshes[meshIdx].Name);
+        }
+        foreach (var child in node.Children) {
+            PrintNode(scene, child, depth + 1);
+        }
+    }
 }
