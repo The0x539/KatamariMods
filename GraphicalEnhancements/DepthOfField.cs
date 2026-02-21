@@ -126,12 +126,53 @@ static class DepthOfField {
         blitToDepth.SetTexture("_MainTex", depthCamDepth);
         DrawQuad();
 
-        if (__instance.m_AmbientOcclusion.active) {
+        // Disable SSAO when the katamari passes 120 meters, since it messes up the appearance of clouds,
+        // because they write to the normal buffer but not the depth buffer. 120 meters is roughly the point
+        // at which this problem begins to become obvious, due to camera altitude.
+        // I'm not happy about this, but it's preferable to clearly messed up clouds, still a pretty solid improvement over vanilla,
+        // and I doubt I'm going to be able to fix the AO any more thoroughly than this.
+        // Using the "collected" material for clouds is an improvement in that the "seeing through" doesn't work anymore,
+        // but when the cloud is close to the camera it still gets unwanted darkening.
+        // Any dust/smoke particles are subject to a similar issue.
+        // I suspect this would be a LOT easier to fix in the original Unity project versus a mod. Such is life. Ugh.
+        if (__instance.m_AmbientOcclusion.active && GlobalWork.Instance.katamariDiameterInt[0] < 120_000) {
             var cb = new CommandBuffer();
             __instance.m_AmbientOcclusion.PopulateCommandBuffer(cb);
             Graphics.ExecuteCommandBuffer(cb);
         }
     }
+
+    // I don't quite understand why patching SetShaderSimple to not set the shader
+    // results in things being transparent "too often".
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
+    public static IEnumerable<CodeInstruction> NoSimpleShader(IEnumerable<CodeInstruction> instructions) {
+        var isReqSimple = AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.isReqSimple));
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldc_I4_1),
+                          new(OpCodes.Stfld, isReqSimple))
+            .SetOpcodeAndAdvance(OpCodes.Ldc_I4_0)
+            .Instructions();
+    }
+
+    /*
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PropMaterialController), nameof(PropMaterialController.Awake))]
+    public static void FixCloudMaterials() {
+        var materials = GlobalWork.Instance.dicPropMaterial;
+        var clouds = materials.Keys.Where(k => k.StartsWith("CLOUD")).ToArray();
+        foreach (var k in clouds) {
+            // Unfortunately, the normal cloud material writes to depth but not to depth-normals.
+            // As a result, it ends up looking really messed up when any object, including the katamari, is behind the cloud,
+            // and/or when the cloud is near the camera.
+            // Fortunately, "picked up" texture doesn't seem to have this problem.
+            if (materials.TryGetValue("Get" + k, out var collectedMaterial)) {
+                materials[k] = collectedMaterial;
+            }
+        }
+    }
+    */
 
     private static void DrawQuad() {
         GL.LoadOrtho();
