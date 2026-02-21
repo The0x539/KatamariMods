@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 
 using Object = UnityEngine.Object;
 
-namespace SingleplayerCousins;
+namespace SingleplayerCousins.Cousins;
 
 public static class Jungle {
     private static class Prefabs {

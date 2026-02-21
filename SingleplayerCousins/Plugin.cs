@@ -4,6 +4,8 @@ using HarmonyLib;
 
 using MonoMod.Utils;
 
+using SingleplayerCousins.Cousins;
+
 using System;
 using System.Collections.Generic;
 
@@ -266,6 +268,12 @@ public sealed class Plugin : BaseUnityPlugin {
             }
         } else if (idx == (int)Cousin.Marny) {
             ouji.AddComponent<Marny>();
+        } else if (idx == (int)Cousin.Dipp) {
+            // This is exceptionally dumb.
+            // Ideally I'd simply "merge" the animation controllers,
+            // as the one that Dipp loads in with has his animation clip(s)
+            // for animating the texture, but it seems like Unity makes that fundamentally impossible for some reason.
+            ouji.AddComponent<Dipp>();
         }
 
         try {

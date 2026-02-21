@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace SingleplayerCousins;
+namespace SingleplayerCousins.Cousins;
 
 public sealed class Marny : MonoBehaviour {
     private Transform? spine, neck, head;
