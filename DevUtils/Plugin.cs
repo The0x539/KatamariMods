@@ -14,6 +14,7 @@ public class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(FrustrationMusic));
         Harmony.CreateAndPatchAll(typeof(DebugMenu));
+        Harmony.CreateAndPatchAll(typeof(HideCursor));
         //Harmony.CreateAndPatchAll(typeof(VersusOnEarth));
 
         if (this.Config.Bind("Intro", "Skip", false).Value) {
