@@ -175,6 +175,15 @@ public static class Jungle {
         __instance.objBillboard.transform.localPosition = Vector3.up * 0.55f;
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(MonoOnlyCamera), nameof(MonoOnlyCamera.Update))]
+    public static void TweakVanillaBillboardPosition(MonoOnlyCamera __instance) {
+        if (__instance.objBillboard is not GameObject billboard) return;
+        var panel = billboard.transform.GetChild(0);
+        panel.localScale = Vector3.one * 1.65f;
+        panel.localPosition = Vector3.up * 0.55f;
+    }
+
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.Update))]
     public static IEnumerable<CodeInstruction> TweakVanillaBillboardRotation(IEnumerable<CodeInstruction> instructions) {
