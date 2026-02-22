@@ -147,13 +147,18 @@ public sealed class Plugin : BaseUnityPlugin {
         }
     }
 
-    //[HarmonyPrefix]
+    [HarmonyPrefix]
     [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Awake))]
     private static void SetRect(KeyImageCheck __instance) {
         var tex = new Texture2D(256, 256);
         var img = __instance.GetComponent<Image>();
 
         img.sprite = Sprite.Create(tex, new(0, 0, 256, 256), img.sprite.pivot);
+
+        var rt = __instance.GetComponent<RectTransform>();
+        if (rt.sizeDelta == new Vector2(320, 160)) {
+            rt.sizeDelta = new(160, 160);
+        }
     }
 
     public static Texture2D LoadGlyph(InputPadSDL3 sdl, KeyMap key) {
@@ -191,20 +196,38 @@ public sealed class Plugin : BaseUnityPlugin {
 
             _ => XboxOrigin.Menu, // idk
         };
+        return LoadGlyph(sdl, xboxOrigin);
+    }
 
+    public static Texture2D LoadGlyph(InputPadSDL3 sdl, XboxOrigin xboxOrigin) {
         var actionOrigin = sdl.Inner.Steam.GetActionOriginFromXboxOrigin(xboxOrigin);
         return Glyphs.Get(actionOrigin, GlyphSize.Large);
     }
 
-    //[HarmonyPrefix]
+    [HarmonyPrefix]
     [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.GetTexture))]
     public static bool UseSteamGlyph(KeyImageCheck __instance, ref Texture2D __result, KeyMap _iconKeyType) {
         var pad = InputController.Instance.Pad(__instance.padIndex);
         if (!pad.IsConnectPad) return true;
         if (pad is not InputPadSDL3 sdl) return true;
 
-        __result = LoadGlyph(sdl, _iconKeyType);
+        if (IsStickIcon(__instance)) {
+            __result = LoadGlyph(sdl, XboxOrigin.LeftStickMove);
+        } else {
+            __result = LoadGlyph(sdl, _iconKeyType);
+        }
+
         return false;
+    }
+
+    private static bool IsStickIcon(KeyImageCheck k) {
+        if (k.iconKeyType != KeyMap.StickLeftLeft) return false;
+        if (k.gameObject.name != "Image_icon") return false;
+        var idx = k.transform.GetSiblingIndex();
+        if (k.transform.parent.childCount <= idx) return false;
+        if (k.transform.parent.GetChild(idx + 1).name != "Image_icon_up") return false;
+
+        return true;
     }
 
     // This was supposed to be a patch for a KeyImage method but I guess I forgot?

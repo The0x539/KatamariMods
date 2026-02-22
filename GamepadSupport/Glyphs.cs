@@ -21,7 +21,7 @@ public static class Glyphs {
         // TODO: Figure out what the flags argument does...
         string path = ISteamInput.Instance.GetGlyphPNGForActionOrigin(origin, size, 0);
         {
-            var colorPath = path.Replace("ps_button", "ps_color_button");
+            var colorPath = path.Replace("knockout\\ps_button", "light\\ps_color_button");
             if (File.Exists(colorPath)) path = colorPath;
         }
         var tex = new Texture2D(0, 0);
