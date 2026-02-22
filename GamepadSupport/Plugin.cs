@@ -21,7 +21,11 @@ namespace GamepadSupport;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
+    private static Plugin __instance = null!;
+
     public void Awake() {
+        __instance = this;
+
         SDL.SDL.InitSubSystem(SDL.InitFlags.Gamepad);
         Harmony.CreateAndPatchAll(this.GetType());
     }
@@ -37,6 +41,8 @@ public sealed class Plugin : BaseUnityPlugin {
             }
         }
     }
+
+    private static void RunCoroutine(System.Collections.IEnumerator coroutine) => __instance.StartCoroutine(coroutine);
 
     private static void OnConnect(SDL.JoystickID id) {
         var player = SDL.Gamepad.PlayerIndexForID(id);
@@ -200,10 +206,16 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     public static Texture2D LoadGlyph(InputPadSDL3 sdl, XboxOrigin xboxOrigin) {
-        // TODO: For some reason, this seems to return None on some hotplug events.
-        // This is highly aggravating and breaks on-the-fly changing of icons.
         var actionOrigin = sdl.Inner.Steam.GetActionOriginFromXboxOrigin(xboxOrigin);
         return Glyphs.Get(actionOrigin, GlyphSize.Large);
+    }
+
+    public static Texture2D LoadGenericGlyph(KeyImageCheck instance) {
+        if (IsStickIcon(instance)) {
+            return Glyphs.Get(ActionOrigin.LeftStickMove, GlyphSize.Large);
+        } else {
+            return LoadGenericGlyph(instance.iconKeyType);
+        }
     }
 
     public static Texture2D LoadGenericGlyph(KeyMap key) {
@@ -249,36 +261,29 @@ public sealed class Plugin : BaseUnityPlugin {
         var pad = InputController.Instance.Pad(__instance.padIndex);
 
         if (!pad.IsConnectPad || pad is not InputPadSDL3 sdl) {
-            if (IsStickIcon(__instance)) {
-                __result = Glyphs.Get(ActionOrigin.LeftStickMove, GlyphSize.Large);
-
-            } else {
-                __result = LoadGenericGlyph(_iconKeyType);
-            }
-
+            __result = LoadGenericGlyph(__instance);
             return false;
         }
 
-        if (IsStickIcon(__instance)) {
-            __result = LoadGlyph(sdl, XboxOrigin.LeftStickMove);
-        } else {
-            __result = LoadGlyph(sdl, _iconKeyType);
+        try {
+            if (IsStickIcon(__instance)) {
+                __result = LoadGlyph(sdl, XboxOrigin.LeftStickMove);
+            } else {
+                __result = LoadGlyph(sdl, _iconKeyType);
+            }
+        } catch {
+            __result = LoadGenericGlyph(__instance);
+            RunCoroutine(QueueForRecheck(__instance));
         }
 
         return false;
     }
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Set))]
-    public static void Foo(KeyImageCheck __instance) {
-        var k = __instance;
-        var p = InputController.Instance.Pad(k.padIndex);
-        Console.WriteLine("---------------------------------");
-        Console.WriteLine($"{k.padType} -> {p.PadType}");
-        Console.WriteLine($"{k.iconKeyTypeWork} -> {k.iconKeyType}");
-        Console.WriteLine($"{k.iconType} -> {p.IconType}");
-        Console.WriteLine($"{k.OnOff} -> {k.onOff}");
-        Console.WriteLine("---------------------------------");
+    private static System.Collections.IEnumerator QueueForRecheck(KeyImageCheck key) {
+        // For some reason, the Steam Input stuff isn't immediately ready upon the controller showing up as an SDL device.
+        // This fix is kinda sketchy, but seems to get the job done.
+        yield return new WaitForSeconds(0.5f);
+        key.Set();
     }
 
     private static bool IsStickIcon(KeyImageCheck k) {
