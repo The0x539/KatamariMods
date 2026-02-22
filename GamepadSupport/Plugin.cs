@@ -211,8 +211,13 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     public static Texture2D LoadGenericGlyph(KeyImageCheck instance) {
-        if (IsStickIcon(instance)) {
-            return Glyphs.Get(ActionOrigin.LeftStickMove, GlyphSize.Large);
+        if (IsStickIcon(instance, out var origin)) {
+            var actionOrigin = origin switch {
+                XboxOrigin.LeftStickMove => ActionOrigin.LeftStickMove,
+                XboxOrigin.RightStickMove => ActionOrigin.RightStickMove,
+                _ => throw new Exception(), // unreachable
+            };
+            return Glyphs.Get(actionOrigin, GlyphSize.Large);
         } else {
             return LoadGenericGlyph(instance.iconKeyType);
         }
@@ -266,8 +271,8 @@ public sealed class Plugin : BaseUnityPlugin {
         }
 
         try {
-            if (IsStickIcon(__instance)) {
-                __result = LoadGlyph(sdl, XboxOrigin.LeftStickMove);
+            if (IsStickIcon(__instance, out var origin)) {
+                __result = LoadGlyph(sdl, origin);
             } else {
                 __result = LoadGlyph(sdl, _iconKeyType);
             }
@@ -286,14 +291,20 @@ public sealed class Plugin : BaseUnityPlugin {
         key.Set();
     }
 
-    private static bool IsStickIcon(KeyImageCheck k) {
-        if (k.iconKeyType != KeyMap.StickLeftLeft) return false;
+    private static bool IsStickIcon(KeyImageCheck k, out XboxOrigin xboxOrigin) {
+        xboxOrigin = k.iconKeyType switch {
+            KeyMap.StickLeftLeft => XboxOrigin.LeftStickMove,
+            KeyMap.StickRightRight => XboxOrigin.RightStickMove,
+            _ => XboxOrigin.A,
+        };
+
+        if (xboxOrigin == XboxOrigin.A) return false;
         if (k.gameObject.name != "Image_icon") return false;
         var idx = k.transform.GetSiblingIndex();
         if (k.transform.parent.childCount <= idx) return false;
-        if (k.transform.parent.GetChild(idx + 1).name != "Image_icon_up") return false;
 
-        return true;
+        var siblingName = k.transform.parent.GetChild(idx + 1).name;
+        return siblingName is "Image_icon_up" or "Image_icon_up (1)";
     }
 
     // This was supposed to be a patch for a KeyImage method but I guess I forgot?
