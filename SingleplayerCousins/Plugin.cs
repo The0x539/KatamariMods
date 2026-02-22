@@ -73,7 +73,9 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(SaveManager2), nameof(SaveManager2.SetSaveData))]
     [HarmonyPatch(typeof(SaveManager2), nameof(SaveManager2.Load))]
     public static void InitializeOujiId() {
-        if (OujiId < 1 || OujiId > 24) {
+        if (OujiId < 1) {
+            OujiId = 1;
+        } else if (OujiId > 24 && !Pretender.pretenders.ContainsKey(OujiId)) {
             OujiId = 1;
         }
 
