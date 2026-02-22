@@ -128,10 +128,6 @@ static class IngameOptions {
     }
 
     private static System.Collections.IEnumerator ShowOptionsMenu(PauseMenu pauseMenu) {
-        // TODO: Show a button prompt for entering the options menu
-        // TODO: Actually changing settings on the fly doesn't really work yet.
-        // A bunch of stuff is goign to need to be reloaded.
-
         yield return SceneManager.LoadSceneAsync("Option", LoadSceneMode.Additive);
         var optionsScene = SceneManager.GetSceneByName("Option");
 
