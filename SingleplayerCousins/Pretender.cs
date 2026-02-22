@@ -1,9 +1,12 @@
-﻿using HarmonyLib;
+﻿using DefineEnum;
+
+using HarmonyLib;
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 
 using UnityEngine;
@@ -24,6 +27,7 @@ public sealed class Pretender {
         var dynamicId = (int)PretenderId.DYNAMIC;
         foreach (var path in items) {
             if (Path.GetExtension(path) != ".fbx") continue;
+            if (path.EndsWith(".ball.fbx")) continue;
 
             int id;
 
@@ -37,7 +41,10 @@ public sealed class Pretender {
 
             maxID = Math.Max(maxID, id);
 
-            var p = new Pretender { Id = id, Name = name, FilePath = path };
+            var ballPath = path.Replace(".fbx", ".ball.fbx");
+            if (!File.Exists(ballPath)) ballPath = null;
+
+            var p = new Pretender { Id = id, Name = name, FilePath = path, BallFilePath = ballPath };
             pretenders.Add(id, p);
         }
     }
@@ -45,6 +52,9 @@ public sealed class Pretender {
     public int Id { get; init; } = 0;
     public string Name { get; init; } = "";
     public string FilePath { get; init; } = "";
+    public string? BallFilePath { get; init; } = null;
+
+    public bool HasBall => this.BallFilePath != null;
 
     public GameObject Reify() {
         var name = "OUJI16"; // June is a pretty Prince-shaped character who's also unlocked from the start, so a good candidate
@@ -53,9 +63,19 @@ public sealed class Pretender {
         ouji.name = $"OUJI{this.Id:00}-{this.Name}";
         return ouji;
     }
+
+    public GameObject ReifyBall() {
+        var name = "core_01";
+        var ball = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
+        PretenderLoader.ApplyBallModel(ball, this.BallFilePath ?? "");
+        return ball;
+    }
 }
 
 public static class PretenderPatches {
+    private static readonly MethodInfo loadGameObject = typeof(AssetBundleSimulator).GetMethod("LoadAsset").MakeGenericMethod(typeof(GameObject));
+    private static readonly MethodInfo assetBundleSimulatorInstance = AccessTools.PropertyGetter(typeof(AssetBundleSimulator), nameof(AssetBundleSimulator.Instance));
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GlobalWork), nameof(GlobalWork.InitItoko))]
     public static void InitItoko(GlobalWork __instance) {
@@ -121,23 +141,35 @@ public static class PretenderPatches {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Player), nameof(Player.Start))]
-    public static IEnumerable<CodeInstruction> LoadIngame(IEnumerable<CodeInstruction> instructions) {
-        // TODO: The array used to choose the katamari model still needs to be fixed,
-        // so Eternal mode and multiplayer currently don't work with pretenders
-
+    public static IEnumerable<CodeInstruction> LoadIngamePlayer(IEnumerable<CodeInstruction> instructions) {
         return new CodeMatcher(instructions)
             .MatchForward(false,
-                          new(OpCodes.Call, AccessTools.PropertyGetter(typeof(AssetBundleSimulator), nameof(AssetBundleSimulator.Instance))),
-                          new(OpCodes.Ldarg_0),
-                          new(OpCodes.Ldfld),
-                          new(OpCodes.Ldarg_0),
-                          new(OpCodes.Ldfld),
-                          new(OpCodes.Callvirt))
+                          new(OpCodes.Call, assetBundleSimulatorInstance),
+                          new(OpCodes.Ldarg_0), new(OpCodes.Ldfld),
+                          new(OpCodes.Ldarg_0), new(OpCodes.Ldfld),
+                          new(OpCodes.Callvirt, loadGameObject))
             .RemoveInstructions(6)
             .InsertAndAdvance(new(OpCodes.Ldarg_0),
-                              new(OpCodes.Call, AccessTools.Method(typeof(PretenderPatches), nameof(LoadIngameImpl))))
+                              new(OpCodes.Call, AccessTools.Method(typeof(PretenderPatches), nameof(LoadIngameImpl), [typeof(Player)])))
             .Instructions();
     }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(CharacterCloneController), nameof(CharacterCloneController.Update))]
+    public static IEnumerable<CodeInstruction> LoadIngameClone(IEnumerable<CodeInstruction> instructions) {
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Call, assetBundleSimulatorInstance),
+                          new(OpCodes.Ldarg_0), new(OpCodes.Ldfld), new(OpCodes.Ldfld),
+                          new(OpCodes.Ldarg_0), new(OpCodes.Ldfld), new(OpCodes.Ldfld),
+                          new(OpCodes.Callvirt, loadGameObject))
+            .SetOpcodeAndAdvance(OpCodes.Nop).RemoveInstructions(7)
+            .InsertAndAdvance(new(OpCodes.Ldarg_0),
+                              new(OpCodes.Call, AccessTools.Method(typeof(PretenderPatches), nameof(LoadIngameImpl), [typeof(CharacterCloneController)])))
+            .Instructions();
+    }
+
+    private static GameObject LoadIngameImpl(CharacterCloneController clone) => LoadIngameImpl(clone.player);
 
     private static GameObject LoadIngameImpl(Player player) {
         if (Pretender.pretenders.TryGetValue(player.oujiNo, out var pretender)) {
@@ -157,6 +189,53 @@ public static class PretenderPatches {
             var name = player.oujiName;
             return AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
         }
+    }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(Player), nameof(Player.Start))]
+    public static IEnumerable<CodeInstruction> ChooseCore(IEnumerable<CodeInstruction> instructions) {
+        var matcher = new CodeMatcher(instructions);
+
+        var start = matcher
+            .MatchForward(false,
+                          new(OpCodes.Ldarg_0),
+                          new(OpCodes.Ldfld, AccessTools.Field(typeof(Player), nameof(Player.gWork))),
+                          new(OpCodes.Ldfld, AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.playMission))))
+            .Pos;
+
+        var end = matcher
+            .MatchForward(false, [new(OpCodes.Callvirt, loadGameObject)])
+            .Pos;
+
+        matcher
+            .Start()
+            .Advance(start + 1)
+            .RemoveInstructionsInRange(start + 1, end)
+            .InsertAndAdvance([new(OpCodes.Call, AccessTools.Method(typeof(PretenderPatches), nameof(PretenderPatches.ChooseCoreImpl)))]);
+
+        return matcher.Instructions();
+    }
+
+    // Copied verbatim from the game.
+    private static readonly int[] oujiCores = [
+        0, 1, 11, 22, 24, 3, 9, 21, 2, 14,
+        8, 12, 5, 15, 20, 18, 23, 16, 13, 17,
+        10, 19, 6, 4, 7
+    ];
+
+    public static GameObject ChooseCoreImpl(Player p) {
+        var i = (int)p.gWork.playMission;
+        if (p.gWork.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS || p.gWork.u8GameType == GI_GAMETYPE.GI_GAMETYPE_X) {
+            if (p.oujiNo < oujiCores.Length) {
+                i = oujiCores[p.oujiNo];
+            } else if (Pretender.pretenders.TryGetValue(p.oujiNo, out var pretender)) {
+                if (pretender.HasBall) {
+                    return pretender.ReifyBall();
+                }
+            }
+        }
+        var name = $"core_{i:D2}";
+        return AssetBundleSimulator.instance.LoadAsset<GameObject>(name, name);
     }
 }
 
@@ -183,7 +262,7 @@ internal static class PretenderLoader {
     }
 
     public static void ApplyModel(GameObject ouji, string path) => ApplyModel(ouji, LoadFile(path));
-
+    public static void ApplyBallModel(GameObject ball, string path) => ApplyBallModel(ball, LoadFile(path));
 
     public static void ApplyModel(GameObject ouji, Assimp.Scene scene) {
         var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
@@ -199,25 +278,14 @@ internal static class PretenderLoader {
 
         var uMaterials = new List<Material?>();
         foreach (var aMat in scene.Materials) {
-            var path = aMat.TextureDiffuse.FilePath;
-            if (path == null) {
-                Console.WriteLine($"Texture {aMat.Name} has no filepath");
+            Texture2D uTex;
+            try {
+                uTex = LoadTexture(scene, aMat);
+            } catch (Exception ex) {
+                Console.WriteLine($"Texture {aMat.Name} has no filepath: {ex}");
                 uMaterials.Add(null);
                 continue;
             }
-
-            var uTex = new Texture2D(0, 0);
-
-            if (path.StartsWith("*")) {
-                var i = int.Parse(path.Substring(1));
-                var aTex = scene.Textures[i];
-                ImageConversion.LoadImage(uTex, aTex.CompressedData);
-            } else {
-                var data = File.ReadAllBytes(path);
-                ImageConversion.LoadImage(uTex, data);
-            }
-
-            uTex.filterMode = FilterMode.Point;
 
             var uMat = UnityObject.Instantiate(body_m.material);
             uMat.name = uTex.name = aMat.Name; // TODO: This name is absolutely not guaranteed to be unique across different characters.
@@ -233,22 +301,11 @@ internal static class PretenderLoader {
             var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
             var uMesh = new Mesh() { name = aMesh.Name };
 
-            var vertices = aMesh.Vertices.Select(v => v.ToUnity()).ToList();
-            uMesh.SetVertices(vertices);
+            LoadVertices(aMesh, uMesh);
+            LoadIndices(aMesh, uMesh);
+            LoadUVs(aMesh, uMesh);
 
-            var topo = aMesh.Faces[0].IndexCount switch {
-                3 => MeshTopology.Triangles,
-                4 => MeshTopology.Quads,
-                _ => throw new InvalidOperationException(),
-            };
-            var indices = new List<int>(3 * aMesh.FaceCount);
-            foreach (var face in aMesh.Faces) indices.AddRange(face.Indices);
-            uMesh.SetIndices(indices.ToArray(), topo, 0);
-
-            var uvs = aMesh.TextureCoordinateChannels[0].Select(v => v.ToUnityVec2()).ToList();
-            uMesh.SetUVs(0, uvs);
-
-            var uBoneWeights = new BoneWeight[vertices.Count];
+            var uBoneWeights = new BoneWeight[aMesh.VertexCount];
             var uBindposes = new List<Matrix4x4> { Matrix4x4.identity };
             var uBones = new List<Transform> { bones["JNT_root"] };
 
@@ -272,12 +329,7 @@ internal static class PretenderLoader {
             uMesh.bindposes = uBindposes.ToArray();
             uMesh.boneWeights = uBoneWeights;
 
-            if (aMesh.HasNormals) {
-                var normals = aMesh.Normals.Select(n => n.ToUnity()).ToList();
-                uMesh.SetNormals(normals);
-            } else {
-                uMesh.RecalculateNormals();
-            }
+            LoadNormals(aMesh, uMesh);
 
             renderer.rootBone = bones["JNT_root"];
             renderer.sharedMesh = uMesh;
@@ -288,6 +340,79 @@ internal static class PretenderLoader {
 
         foreach (var part in bodyParts.Values) {
             part.enabled = false;
+        }
+    }
+
+    public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
+        var filter = ball.GetComponent<MeshFilter>();
+        var renderer = ball.GetComponent<MeshRenderer>();
+
+
+        var aMat = scene.Materials[0];
+        var uTex = LoadTexture(scene, aMat);
+        var uMaterial = UnityObject.Instantiate(renderer.material);
+        uMaterial.name = uTex.name = aMat.Name;
+        uMaterial.mainTexture = uTex;
+
+        var aMesh = scene.Meshes[0];
+        var uMesh = new Mesh() { name = aMesh.Name };
+
+        LoadVertices(aMesh, uMesh);
+        LoadIndices(aMesh, uMesh);
+        LoadUVs(aMesh, uMesh);
+        LoadNormals(aMesh, uMesh);
+
+        filter.mesh = uMesh;
+        renderer.material = uMaterial;
+    }
+
+    private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat) {
+        var path = aMat.TextureDiffuse.FilePath;
+
+        var uTex = new Texture2D(0, 0);
+
+        if (path.StartsWith("*")) {
+            var i = int.Parse(path.Substring(1));
+            var aTex = scene.Textures[i];
+            ImageConversion.LoadImage(uTex, aTex.CompressedData);
+        } else if (path == null) {
+            throw new Exception($"FBX material {aMat.Name} has no texture");
+        } else {
+            var data = File.ReadAllBytes(path);
+            ImageConversion.LoadImage(uTex, data);
+        }
+
+        uTex.filterMode = FilterMode.Point;
+        return uTex;
+    }
+
+    private static void LoadVertices(Assimp.Mesh aMesh, Mesh uMesh) {
+        var vertices = aMesh.Vertices.Select(v => v.ToUnity()).ToList();
+        uMesh.SetVertices(vertices);
+    }
+
+    private static void LoadIndices(Assimp.Mesh aMesh, Mesh uMesh) {
+        var topo = aMesh.Faces[0].IndexCount switch {
+            3 => MeshTopology.Triangles,
+            4 => MeshTopology.Quads,
+            _ => throw new InvalidOperationException(),
+        };
+        var indices = new List<int>(3 * aMesh.FaceCount);
+        foreach (var face in aMesh.Faces) indices.AddRange(face.Indices);
+        uMesh.SetIndices(indices.ToArray(), topo, 0);
+    }
+
+    private static void LoadUVs(Assimp.Mesh aMesh, Mesh uMesh) {
+        var uvs = aMesh.TextureCoordinateChannels[0].Select(v => v.ToUnityVec2()).ToList();
+        uMesh.SetUVs(0, uvs);
+    }
+
+    private static void LoadNormals(Assimp.Mesh aMesh, Mesh uMesh) {
+        if (aMesh.HasNormals) {
+            var normals = aMesh.Normals.Select(n => n.ToUnity()).ToList();
+            uMesh.SetNormals(normals);
+        } else {
+            uMesh.RecalculateNormals();
         }
     }
 
