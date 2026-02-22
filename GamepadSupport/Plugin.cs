@@ -200,7 +200,46 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     public static Texture2D LoadGlyph(InputPadSDL3 sdl, XboxOrigin xboxOrigin) {
+        // TODO: For some reason, this seems to return None on some hotplug events.
+        // This is highly aggravating and breaks on-the-fly changing of icons.
         var actionOrigin = sdl.Inner.Steam.GetActionOriginFromXboxOrigin(xboxOrigin);
+        return Glyphs.Get(actionOrigin, GlyphSize.Large);
+    }
+
+    public static Texture2D LoadGenericGlyph(KeyMap key) {
+        var actionOrigin = key switch {
+            KeyMap.A => ActionOrigin.A,
+            KeyMap.B => ActionOrigin.B,
+            KeyMap.X => ActionOrigin.X,
+            KeyMap.Y => ActionOrigin.Y,
+            KeyMap.L1 => ActionOrigin.L1,
+            KeyMap.R1 => ActionOrigin.R1,
+            KeyMap.Back => ActionOrigin.View,
+            KeyMap.Start => ActionOrigin.Menu,
+            KeyMap.L3 => ActionOrigin.L3,
+            KeyMap.R3 => ActionOrigin.L3,
+            KeyMap.L2 => ActionOrigin.L2,
+            KeyMap.R2 => ActionOrigin.R2,
+            KeyMap.Home => ActionOrigin.Menu, // ¯\_(ツ)_/¯
+            KeyMap.Left => ActionOrigin.DPadWest,
+            KeyMap.Right => ActionOrigin.DPadEast,
+            KeyMap.Up => ActionOrigin.DPadNorth,
+            KeyMap.Down => ActionOrigin.DPadSouth,
+            KeyMap.StickLeftLeft => ActionOrigin.LeftStickWest,
+            KeyMap.StickLeftRight => ActionOrigin.LeftStickEast,
+            KeyMap.StickLeftUp => ActionOrigin.LeftStickNorth,
+            KeyMap.StickLeftDown => ActionOrigin.LeftStickSouth,
+            KeyMap.StickRightLeft => ActionOrigin.RightStickWest,
+            KeyMap.StickRightRight => ActionOrigin.RightStickEast,
+            KeyMap.StickRightUp => ActionOrigin.RightStickNorth,
+            KeyMap.StickRightDown => ActionOrigin.RightStickSouth,
+
+            // TODO: See above.
+            KeyMap.Enter => ActionOrigin.A,
+            KeyMap.Cancel => ActionOrigin.B,
+
+            _ => ActionOrigin.Menu, // idk
+        };
         return Glyphs.Get(actionOrigin, GlyphSize.Large);
     }
 
@@ -208,8 +247,17 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.GetTexture))]
     public static bool UseSteamGlyph(KeyImageCheck __instance, ref Texture2D __result, KeyMap _iconKeyType) {
         var pad = InputController.Instance.Pad(__instance.padIndex);
-        if (!pad.IsConnectPad) return true;
-        if (pad is not InputPadSDL3 sdl) return true;
+
+        if (!pad.IsConnectPad || pad is not InputPadSDL3 sdl) {
+            if (IsStickIcon(__instance)) {
+                __result = Glyphs.Get(ActionOrigin.LeftStickMove, GlyphSize.Large);
+
+            } else {
+                __result = LoadGenericGlyph(_iconKeyType);
+            }
+
+            return false;
+        }
 
         if (IsStickIcon(__instance)) {
             __result = LoadGlyph(sdl, XboxOrigin.LeftStickMove);
@@ -218,6 +266,19 @@ public sealed class Plugin : BaseUnityPlugin {
         }
 
         return false;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Set))]
+    public static void Foo(KeyImageCheck __instance) {
+        var k = __instance;
+        var p = InputController.Instance.Pad(k.padIndex);
+        Console.WriteLine("---------------------------------");
+        Console.WriteLine($"{k.padType} -> {p.PadType}");
+        Console.WriteLine($"{k.iconKeyTypeWork} -> {k.iconKeyType}");
+        Console.WriteLine($"{k.iconType} -> {p.IconType}");
+        Console.WriteLine($"{k.OnOff} -> {k.onOff}");
+        Console.WriteLine("---------------------------------");
     }
 
     private static bool IsStickIcon(KeyImageCheck k) {
