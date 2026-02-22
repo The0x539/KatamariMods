@@ -231,4 +231,29 @@ static class IngameOptions {
             .SetOpcodeAndAdvance(OpCodes.Brfalse)
             .Instructions();
     }
+
+    /*
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.PauseState))]
+    public static void OpenSoundMenu() {
+        var pad = InputController.Instance.Pad(0);
+        if (pad.IsDown(KeyMap.R1)) {
+            // Whoops, never mind.
+            // The sound settings aren't a separate scene.
+            // They're part of UI_OujiStar.
+            // Oh well. Not the end of the world.
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
+    private static void AddSoundPrompt(KatamariPauseController __instance) {
+        var graphics = __instance.transform.Find("Canvas/MainMenuPC/RawImage3").gameObject;
+        var sound = Object.Instantiate(graphics, graphics.transform.parent);
+        sound.name = "RawImage4_Sound";
+        sound.GetComponent<RectTransform>().Translate(new(-180, 0));
+        sound.GetComponentInChildren<UITextLocalizer>().textID = "OT_CTG_014";
+        sound.GetComponentInChildren<KeyImageCheck>().iconKeyType = KeyMap.R1;
+    }
+    */
 }
