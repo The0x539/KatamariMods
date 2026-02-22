@@ -115,8 +115,8 @@ static class DepthOfField {
         blitToDepth.SetTexture("_MainTex", depthTexture);
         DrawQuad();
 
-        RenderTexture.ReleaseTemporary(colorTexture);
-        RenderTexture.ReleaseTemporary(depthTexture);
+        ctx.renderTextureFactory.Release(colorTexture);
+        ctx.renderTextureFactory.Release(depthTexture);
 
         // Disable SSAO when the katamari passes 120 meters, since it messes up the appearance of clouds,
         // because they write to the normal buffer but not the depth buffer. 120 meters is roughly the point
