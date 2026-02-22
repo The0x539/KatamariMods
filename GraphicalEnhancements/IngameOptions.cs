@@ -122,7 +122,7 @@ static class IngameOptions {
         var pad = self.input.Pad(0);
         if (pad.IsDown(KeyMap.Y)) {
             self.ShowDialog(true);
-        } else if (pad.IsDown(KeyMap.Back)) {
+        } else if (pad.IsDown(KeyMap.X)) {
             self.StartCoroutine(ShowOptionsMenu(self));
         }
     }
@@ -183,7 +183,7 @@ static class IngameOptions {
         back.transform.Translate(5 * ratio, 0, 0);
 
         var glyph = settings.GetChild(0).GetComponent<KeyImageCheck>();
-        glyph.iconKeyType = KeyMap.Back;
+        glyph.iconKeyType = KeyMap.X;
     }
 
     [HarmonyPostfix]
