@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 using SDL = GamepadSupport.SDL3;
@@ -59,8 +60,25 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     private static void OnDisconnect(SDL.JoystickID id) {
-        // Is there actually anything to be done here, though?
-        Console.WriteLine($"Gamepad removed: {id}");
+        if (GetPauseMenu() is not PauseMenu menu) return;
+        if (menu.gWork.u8Pause != Define.OFF) return;
+
+        menu.Pause();
+        menu.gWork.u8Pause = Define.ON;
+        menu.sInit(0); // ideally we'd detect which player got disconnected but honestly? whatever
+        menu.objGuidePause.SetActive(true);
+
+        return;
+    }
+
+    private static PauseMenu? GetPauseMenu() {
+        var scene = SceneManager.GetSceneByName("UI_Pause");
+        if (!scene.IsValid()) return null;
+
+        foreach (var o in scene.GetRootGameObjects()) {
+            if (o.GetComponent<PauseMenu>() is PauseMenu menu) return menu;
+        }
+        return null;
     }
 
     [HarmonyTranspiler]
