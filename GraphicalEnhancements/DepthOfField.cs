@@ -98,32 +98,21 @@ static class DepthOfField {
 
         if (depthCamera == null) {
             if (ctx.camera.targetTexture == null) return;
-
-            depthCamera = new GameObject().AddComponent<Camera>();
+            depthCamera = new GameObject("Custom Depth Pass Camera").AddComponent<Camera>();
             depthCamera.enabled = false;
-
-            // This msaaSamples thing was very difficult to hunt down and made the whole thing not work.
-            var desc = ctx.camera.targetTexture.descriptor with { msaaSamples = 1 };
-
-            // TODO: I should probably be using the render texture factory for these, right?
-            // Would mean supporting things like on-the-fly resolution changes, which I do want to support.
-            desc = desc with { colorFormat = RenderTextureFormat.R8, depthBufferBits = 0 };
-            depthCamColor = new RenderTexture(desc) { name = "Depth Pass - Color" };
-
-            desc = desc with { colorFormat = RenderTextureFormat.Depth, depthBufferBits = 24 };
-            depthCamDepth = new RenderTexture(desc) { name = "Depth Pass - Depth" };
         }
 
-        var depthCam = depthCamera;
+        var colorTexture = ctx.renderTextureFactory.Get(ctx.width / 2, ctx.height / 2, depthBuffer: 0, RenderTextureFormat.R8, name: "Depth Pass - Color");
+        var depthTexture = ctx.renderTextureFactory.Get(ctx.width / 2, ctx.height / 2, depthBuffer: 24, RenderTextureFormat.Depth, name: "Depth Pass - Depth");
 
-        depthCam.CopyFrom(ctx.camera);
-        depthCam.SetTargetBuffers(depthCamColor.colorBuffer, depthCamDepth.depthBuffer);
-        depthCam.Render();
+        depthCamera.CopyFrom(ctx.camera);
+        depthCamera.SetTargetBuffers(colorTexture.colorBuffer, depthTexture.depthBuffer);
+        depthCamera.Render();
 
         RenderTexture.active = Shader.GetGlobalTexture("_CameraDepthTexture") as RenderTexture;
         var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth");
         blitToDepth.SetPass(0);
-        blitToDepth.SetTexture("_MainTex", depthCamDepth);
+        blitToDepth.SetTexture("_MainTex", depthTexture);
         DrawQuad();
 
         // Disable SSAO when the katamari passes 120 meters, since it messes up the appearance of clouds,
