@@ -101,6 +101,10 @@ public static class PretenderPatches {
     [HarmonyPatch(typeof(SaveManager2), nameof(SaveManager2.Save))]
     public static void AddToOujiArray(GlobalWork gWork) => AddToOujiArray(gWork.siGame);
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.gTj_ResultInit))]
+    public static void AddToOujiArray(SelectManager __instance) => AddToOujiArray(__instance.gWork.siGame);
+
     public static void AddToOujiArray(SI_GAME siGame) {
         if (siGame.oujiArray.Length > 24) return;
 
