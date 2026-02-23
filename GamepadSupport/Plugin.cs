@@ -302,6 +302,30 @@ public sealed class Plugin : BaseUnityPlugin {
         return false;
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TutorialUI), nameof(TutorialUI.Awake))]
+    public static void UseKeyImageCheck(TutorialUI __instance) {
+        var icons = new Dictionary<string, KeyMap> {
+            ["1/joy-con/icon1"] = KeyMap.StickLeftUp,
+            ["1/joy-con/icon1 (1)"] = KeyMap.StickLeftDown,
+            ["1/joy-con/icon2"] = KeyMap.StickRightDown,
+            ["1/joy-con/icon2 (1)"] = KeyMap.StickRightUp,
+            ["3/window_switch/stick1"] = KeyMap.L3,
+            ["3/window_switch/stick2"] = KeyMap.R3,
+        };
+
+        foreach (var entry in icons) {
+            var icon = __instance.objPage2[0].transform.Find(entry.Key).gameObject;
+            icon.AddComponent<KeyImageCheck>().iconKeyType = entry.Value;
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TutorialJoypad), nameof(TutorialJoypad.Start))]
+    public static void ObviousJoysticks(TutorialJoypad __instance) {
+        __instance.stickLen = 1;
+    }
+
     private static System.Collections.IEnumerator QueueForRecheck(KeyImageCheck key) {
         // For some reason, the Steam Input stuff isn't immediately ready upon the controller showing up as an SDL device.
         // This fix is kinda sketchy, but seems to get the job done.
