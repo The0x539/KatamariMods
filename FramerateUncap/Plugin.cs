@@ -137,12 +137,12 @@ public sealed class Plugin : BaseUnityPlugin {
                 // Multiply that constant by the milliseconds-per-tick ratio
                 .SetInstructionAndAdvance(new(OpCodes.Ldc_I4, cm.Instruction.ConstInt() * 1000 / 30)))
             .Start()
-            // Match all code patterns that branch if s32Time is nonzero
+            // Match all code patterns that branch if a timer is nonzero
             .MatchForward(false,
-                          new(OpCodes.Ldfld, s32Time),
+                          loadsTimer,
                           new(OpCodes.Brtrue))
             .Repeat(cm => cm
-                // Instead branch if s32time is GREATER than zero
+                // Instead branch if that timer is GREATER than zero
                 .Advance(1)
                 .InsertAndAdvance(new CodeInstruction(OpCodes.Ldc_I4_0))
                 .SetOpcodeAndAdvance(OpCodes.Bgt))
