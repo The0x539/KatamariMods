@@ -61,6 +61,7 @@ public sealed class Plugin : BaseUnityPlugin {
 
     private static void OnDisconnect(SDL.JoystickID id) {
         if (GetPauseMenu() is not PauseMenu menu) return;
+        if (menu.sCheckPause() != Define.TRUE) return;
         if (menu.gWork.u8Pause != Define.OFF) return;
 
         menu.Pause();
