@@ -185,8 +185,14 @@ public sealed class Plugin : BaseUnityPlugin {
             rt.sizeDelta = new(160, 160);
         } else if (rt.sizeDelta == new Vector2(120, 60)) {
             rt.sizeDelta = new(60, 60);
+        } else if (rt.sizeDelta == new Vector2(88.84f, 44.42f)) {
+            rt.sizeDelta = new(44.42f, 44.42f);
         }
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(EulaManager), nameof(EulaManager.CheckInput))]
+    public static bool DontOverrideButtonsForEula() => false;
 
     public static Texture2D LoadGlyph(InputPadSDL3 sdl, KeyMap key) {
         var xboxOrigin = key switch {
