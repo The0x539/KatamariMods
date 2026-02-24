@@ -75,7 +75,7 @@ static class IngameOptions {
         var endLabel = (Label)matcher.Advance(4).Operand;
         end = matcher.MatchForward(false, [new() { labels = { endLabel } }]).Pos;
 
-        // This patch lets you open the options menu by pressing SELECT.
+        // This patch lets you open the options menu by pressing X/square.
         matcher
             .RemoveInstructionsInRange(start, end - 1)
             .Start()
@@ -117,10 +117,9 @@ static class IngameOptions {
 
     private static void PauseMenuPatchB(PauseMenu self) {
         if (self.isActiveDialogReturn) return;
-        if (self.gWork.u8GameMode == GI_GMODE.GI_GMODE_TUTORIAL_B) return;
 
         var pad = self.input.Pad(0);
-        if (pad.IsDown(KeyMap.Y)) {
+        if (pad.IsDown(KeyMap.Y) && self.gWork.u8GameMode != GI_GMODE.GI_GMODE_TUTORIAL_B) {
             self.ShowDialog(true);
         } else if (pad.IsDown(KeyMap.X)) {
             self.StartCoroutine(ShowOptionsMenu(self));
@@ -174,7 +173,7 @@ static class IngameOptions {
 
         settings.SetParent(guide.transform, worldPositionStays: false);
 
-        var ratio = 1600f / Camera.main.pixelWidth; // This doesn't seem like the right way to manage this, but it at least works properly.
+        var ratio = 1600f / guide.transform.parent.GetComponent<Canvas>().pixelRect.width; // This doesn't seem like the right way to manage this, but it at least works properly.
         settings.Translate(-25 * ratio, 0, 0);
         back.transform.Translate(5 * ratio, 0, 0);
 
