@@ -360,4 +360,15 @@ public sealed class Plugin : BaseUnityPlugin {
         __result = LoadGlyph(sdl, key);
         return false;
     }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Awake))]
+    public static void AddShadow(KeyImageCheck __instance) {
+        if (__instance.gameObject.GetComponent<Shadow>() != null) return; // bail if there's already a shadow
+        if (__instance.transform.parent.GetComponent<Shadow>() == null) return; // bail if the text has no matching shadow
+
+        var shadow = __instance.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = Color.black;
+        shadow.effectDistance = new(8, -16);
+    }
 }
