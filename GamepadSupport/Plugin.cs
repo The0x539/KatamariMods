@@ -365,10 +365,11 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Awake))]
     public static void AddShadow(KeyImageCheck __instance) {
         if (__instance.gameObject.GetComponent<Shadow>() != null) return; // bail if there's already a shadow
-        if (__instance.transform.parent.GetComponent<Shadow>() == null) return; // bail if the text has no matching shadow
+        if (__instance.transform.parent.GetComponent<Shadow>() is not Shadow parentShadow) return; // bail if the text has no matching shadow
+        if (!parentShadow.enabled) return;
 
         var shadow = __instance.gameObject.AddComponent<Shadow>();
-        shadow.effectColor = Color.black;
-        shadow.effectDistance = new(8, -16);
+        shadow.effectColor = parentShadow.effectColor;
+        shadow.effectDistance = parentShadow.effectDistance / __instance.transform.localScale;
     }
 }
