@@ -26,7 +26,7 @@ public static class Glyphs {
 
         if (glyphCache.TryGetValue(path, out var existing)) return existing;
 
-        var tex = new Texture2D(0, 0);
+        var tex = new Texture2D(0, 0) { wrapMode = TextureWrapMode.Clamp };
         var data = File.ReadAllBytes(path);
         ImageConversion.LoadImage(tex, data);
 

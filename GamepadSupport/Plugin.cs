@@ -183,6 +183,8 @@ public sealed class Plugin : BaseUnityPlugin {
         var rt = __instance.GetComponent<RectTransform>();
         if (rt.sizeDelta == new Vector2(320, 160)) {
             rt.sizeDelta = new(160, 160);
+        } else if (rt.sizeDelta == new Vector2(120, 60)) {
+            rt.sizeDelta = new(60, 60);
         }
     }
 
@@ -316,8 +318,38 @@ public sealed class Plugin : BaseUnityPlugin {
         };
 
         foreach (var entry in icons) {
-            var icon = __instance.objPage2[0].transform.Find(entry.Key).gameObject;
-            icon.AddComponent<KeyImageCheck>().iconKeyType = entry.Value;
+            __instance.objPage2[0].transform
+                .Find(entry.Key).gameObject
+                .AddComponent<KeyImageCheck>()
+                .SetIcon(entry.Value);
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(UIKinoko), nameof(UIKinoko.Start))]
+    public static void UseKeyImageCheck(UIKinoko __instance) {
+        SetDashIcons(__instance._go_guidePlay.transform.Find("tame_icon/icon/pad_joy-con"));
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PadTypeEnableVS), nameof(PadTypeEnableVS.Start))]
+    public static void UseKeyImageCheck(PadTypeEnableVS __instance) {
+        SetDashIcons(__instance.padDefault.transform.Find("pad_sw"));
+    }
+
+    private static void SetDashIcons(Transform parent) {
+        if (parent == null) return;
+        Console.WriteLine($"SetDashIcons({parent.name})");
+        var icons = new[] {
+            KeyMap.StickLeftUp,
+            KeyMap.StickLeftDown,
+            KeyMap.StickRightDown,
+            KeyMap.StickRightUp,
+        };
+        for (var i = 0; i < icons.Length; i++) {
+            parent.GetChild(i).gameObject
+                .AddComponent<KeyImageCheck>()
+                .SetIcon(icons[i]);
         }
     }
 
@@ -342,12 +374,12 @@ public sealed class Plugin : BaseUnityPlugin {
         };
 
         if (xboxOrigin == XboxOrigin.A) return false;
-        if (k.gameObject.name != "Image_icon") return false;
+        if (k.gameObject.name is not ("Image_icon" or "Image_leftStick" or "ImagePad")) return false;
         var idx = k.transform.GetSiblingIndex();
         if (k.transform.parent.childCount <= idx) return false;
 
         var siblingName = k.transform.parent.GetChild(idx + 1).name;
-        return siblingName is "Image_icon_up" or "Image_icon_up (1)" or "Image_icon (1)";
+        return siblingName is "Image_icon_up" or "Image_icon_up (1)" or "Image_icon (1)" or "ImageKeyboardUp (1)";
     }
 
     // This was supposed to be a patch for a KeyImage method but I guess I forgot?
@@ -360,24 +392,25 @@ public sealed class Plugin : BaseUnityPlugin {
         return false;
     }
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Update))]
-    public static void Foo(KeyImageCheck __instance) {
-        var pad = InputController.Instance.Pad(__instance.padIndex);
-        if (__instance.padType != pad.PadType) Console.WriteLine($"{__instance.padType} != {pad.PadType}");
-        if (__instance.iconKeyTypeWork != __instance.iconKeyType) Console.WriteLine($"{__instance.iconKeyTypeWork} != {__instance.iconKeyType}");
-        if (__instance.iconType != pad.IconType) Console.WriteLine($"{__instance.iconType} != {pad.IconType}");
-    }
-
     [HarmonyPostfix]
     [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Awake))]
     public static void AddShadow(KeyImageCheck __instance) {
         if (__instance.gameObject.GetComponent<Shadow>() != null) return; // bail if there's already a shadow
-        if (__instance.transform.parent.GetComponent<Shadow>() is not Shadow parentShadow) return; // bail if the text has no matching shadow
-        if (!parentShadow.enabled) return;
+        var parentShadow = __instance.transform.parent.GetComponent<Shadow>() ?? __instance.transform.parent.parent?.GetComponent<Shadow>();
+        if (parentShadow == null || !parentShadow.enabled) return; // bail if the text has no matching shadow
 
         var shadow = __instance.gameObject.AddComponent<Shadow>();
         shadow.effectColor = parentShadow.effectColor;
         shadow.effectDistance = parentShadow.effectDistance / __instance.transform.localScale;
+    }
+}
+
+static class Extensions {
+    public static void SetIcon(this KeyImageCheck self, KeyMap key) {
+        self.iconKeyType = self.iconKeyTypeWork = key;
+        // This triggers the "change detection" without doing anything destructive.
+        // The private field gets updated to match the public property.
+        self.OnOff = true;
+        self.onOff = false;
     }
 }

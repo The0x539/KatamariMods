@@ -179,6 +179,9 @@ static class IngameOptions {
 
         var glyph = settings.GetChild(0).GetComponent<KeyImageCheck>();
         glyph.iconKeyType = glyph.iconKeyTypeWork = KeyMap.X;
+        // Trigger change detection
+        glyph.onOff = false;
+        glyph.OnOff = true;
     }
 
     [HarmonyPostfix]
