@@ -347,7 +347,7 @@ public sealed class Plugin : BaseUnityPlugin {
         if (k.transform.parent.childCount <= idx) return false;
 
         var siblingName = k.transform.parent.GetChild(idx + 1).name;
-        return siblingName is "Image_icon_up" or "Image_icon_up (1)";
+        return siblingName is "Image_icon_up" or "Image_icon_up (1)" or "Image_icon (1)";
     }
 
     // This was supposed to be a patch for a KeyImage method but I guess I forgot?
@@ -356,9 +356,17 @@ public sealed class Plugin : BaseUnityPlugin {
         if (!pad.IsConnectPad) return true;
         if (pad is not InputPadSDL3 sdl) return true;
 
-
         __result = LoadGlyph(sdl, key);
         return false;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(KeyImageCheck), nameof(KeyImageCheck.Update))]
+    public static void Foo(KeyImageCheck __instance) {
+        var pad = InputController.Instance.Pad(__instance.padIndex);
+        if (__instance.padType != pad.PadType) Console.WriteLine($"{__instance.padType} != {pad.PadType}");
+        if (__instance.iconKeyTypeWork != __instance.iconKeyType) Console.WriteLine($"{__instance.iconKeyTypeWork} != {__instance.iconKeyType}");
+        if (__instance.iconType != pad.IconType) Console.WriteLine($"{__instance.iconType} != {pad.IconType}");
     }
 
     [HarmonyPostfix]
