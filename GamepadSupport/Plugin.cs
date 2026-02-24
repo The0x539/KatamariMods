@@ -345,7 +345,6 @@ public sealed class Plugin : BaseUnityPlugin {
 
     private static void SetDashIcons(Transform parent) {
         if (parent == null) return;
-        Console.WriteLine($"SetDashIcons({parent.name})");
         var icons = new[] {
             KeyMap.StickLeftUp,
             KeyMap.StickLeftDown,

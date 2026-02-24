@@ -16,7 +16,6 @@ public readonly unsafe struct ISteamInput {
     public InputHandle[] GetConnectedControllers() {
         var handles = new InputHandle[16];
         var length = this.GetConnectedControllers(handles);
-        Console.WriteLine($"There are {length} controllers");
         return handles.Take(length).ToArray();
     }
 }
