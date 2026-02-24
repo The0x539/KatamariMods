@@ -178,7 +178,7 @@ static class IngameOptions {
         back.transform.Translate(5 * ratio, 0, 0);
 
         var glyph = settings.GetChild(0).GetComponent<KeyImageCheck>();
-        glyph.iconKeyType = KeyMap.X;
+        glyph.iconKeyType = glyph.iconKeyTypeWork = KeyMap.X;
     }
 
     [HarmonyPostfix]
