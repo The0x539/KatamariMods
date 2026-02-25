@@ -57,7 +57,7 @@ internal static class Extensions {
             self.boneIndex3 = idx;
             self.weight3 = weight;
         } else {
-            //throw new System.InvalidOperationException("Too many weights on one bone!");
+            throw new System.InvalidOperationException("Too many weights on one bone!");
         }
         return self;
     }

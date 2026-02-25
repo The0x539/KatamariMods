@@ -292,6 +292,14 @@ internal static class PretenderLoader {
             }
 
             var uMat = UnityObject.Instantiate(body_m.material);
+            if (aMat.Name == "FaceTexture") {
+                // TODO: The fact that this works tells me that I might be able to do something similar for the DoF/SSAO fixes!
+                // _ZWrite and what not.
+                // Need to reference what the standard material does; I already grabbed its code.
+                uMat.EnableKeyword("_ALPHATEST_ON");
+                uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            }
+
             uMat.name = uTex.name = aMat.Name; // TODO: This name is absolutely not guaranteed to be unique across different characters.
             uMat.mainTexture = uTex;
             uMaterials.Add(uMat);
@@ -304,8 +312,8 @@ internal static class PretenderLoader {
             if (bones.TryGetValue(node.Name, out var bone)) {
                 node.Transform.Decompose(out var scale, out var rotation, out var position);
                 bone.transform.localPosition = position.ToUnity();
-                bone.transform.localRotation = rotation.ToUnity();
-                bone.transform.localScale = scale.ToUnity();
+                //bone.transform.rotation = Quaternion.Inverse(rotation.ToUnity());
+                //bone.transform.localScale = scale.ToUnity();
             }
 
             foreach (var child in node.Children) {
@@ -419,7 +427,7 @@ internal static class PretenderLoader {
         };
         var indices = new List<int>(3 * aMesh.FaceCount);
         foreach (var face in aMesh.Faces) indices.AddRange(face.Indices);
-        indices.Reverse(); // I still need to figure out exactly what's going on but this is sensitive to winding order.
+        //indices.Reverse(); // I still need to figure out exactly what's going on but this is sensitive to winding order.
         uMesh.SetIndices(indices.ToArray(), topo, 0);
     }
 
@@ -429,7 +437,7 @@ internal static class PretenderLoader {
     }
 
     private static void LoadNormals(Assimp.Mesh aMesh, Mesh uMesh) {
-        if (aMesh.HasNormals) {
+        if (aMesh.HasNormals && false) {
             var normals = aMesh.Normals.Select(n => -n.ToUnity()).ToList();
             uMesh.SetNormals(normals);
         } else {
@@ -442,9 +450,10 @@ internal static class PretenderLoader {
         for (var i = 0; i < depth; i++) indent += "  ";
 
         Console.WriteLine(indent + node.Name);
-        node.Transform.Decompose(out _, out var rot, out var pos);
+        node.Transform.Decompose(out var size, out var rot, out var pos);
         Console.WriteLine(indent + rot);
         Console.WriteLine(indent + pos);
+        Console.WriteLine(indent + size);
 
         foreach (var meshIdx in node.MeshIndices) {
             Console.WriteLine(indent + "  * " + scene.Meshes[meshIdx].Name);
