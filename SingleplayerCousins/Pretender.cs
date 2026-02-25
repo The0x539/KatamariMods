@@ -297,6 +297,22 @@ internal static class PretenderLoader {
             uMaterials.Add(uMat);
         }
 
+        var nodes = new Stack<Assimp.Node>();
+        nodes.Push(scene.RootNode);
+        while (nodes.Count > 0) {
+            var node = nodes.Pop();
+            if (bones.TryGetValue(node.Name, out var bone)) {
+                node.Transform.Decompose(out var scale, out var rotation, out var position);
+                bone.transform.localPosition = position.ToUnity();
+                bone.transform.localRotation = rotation.ToUnity();
+                bone.transform.localScale = scale.ToUnity();
+            }
+
+            foreach (var child in node.Children) {
+                nodes.Push(child);
+            }
+        }
+
         foreach (var aMesh in scene.Meshes) {
             var bodyPart = new GameObject(aMesh.Name);
             bodyPart.transform.SetParent(body_root);
@@ -403,6 +419,7 @@ internal static class PretenderLoader {
         };
         var indices = new List<int>(3 * aMesh.FaceCount);
         foreach (var face in aMesh.Faces) indices.AddRange(face.Indices);
+        indices.Reverse(); // I still need to figure out exactly what's going on but this is sensitive to winding order.
         uMesh.SetIndices(indices.ToArray(), topo, 0);
     }
 
@@ -413,7 +430,7 @@ internal static class PretenderLoader {
 
     private static void LoadNormals(Assimp.Mesh aMesh, Mesh uMesh) {
         if (aMesh.HasNormals) {
-            var normals = aMesh.Normals.Select(n => n.ToUnity()).ToList();
+            var normals = aMesh.Normals.Select(n => -n.ToUnity()).ToList();
             uMesh.SetNormals(normals);
         } else {
             uMesh.RecalculateNormals();
