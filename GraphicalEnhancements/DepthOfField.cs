@@ -106,6 +106,19 @@ static class DepthOfField {
 
         depthCamera.CopyFrom(ctx.camera);
         depthCamera.SetTargetBuffers(colorTexture.colorBuffer, depthTexture.depthBuffer);
+
+        if (GlobalWork.Instance.player[0].f32Alpha == 0) {
+            foreach (var prop in GlobalWork.instance.listProp) {
+                if (prop == null) continue;
+                if (!prop.mIsAttachedToKatamari) continue;
+
+                // For reasons that remain unknown to me, disabling the renderer only in a gYm_OujiSetAlpha prefix
+                // doesn't fully work, and leads to the objects here drawing to the depth buffer. Frustrating!
+                foreach (var r in prop.mRenderers) r.enabled = false;
+                foreach (var r in prop.smRenderers) r.enabled = false;
+            }
+        }
+
         depthCamera.Render();
 
         RenderTexture.active = Shader.GetGlobalTexture("_CameraDepthTexture") as RenderTexture;
@@ -131,7 +144,8 @@ static class DepthOfField {
 
         ctx.renderTextureFactory.Release(colorTexture);
 
-        if (GlobalWork.Instance.player[0].oujiNo == 23) {
+        var player = GlobalWork.Instance.player[0];
+        if (player.oujiNo == 23 && player.objOuji.activeInHierarchy) {
             // Prepare to draw Jungle's billboard, but not until after the normal post-processing step
             __state = depthTexture;
         } else {
