@@ -96,6 +96,7 @@ public sealed class Plugin : BaseUnityPlugin {
         tutoTimer = AccessTools.Field(typeof(SI_TUTORIAL), nameof(SI_TUTORIAL.s32Timer)),
         gWork = AccessTools.Field(typeof(GameManager), nameof(GameManager.gWork)),
         siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial)),
+        f32Scale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32Scale)),
         getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
 
     // Some stuff is fine to stay capped at 30 or 60, but anything called by sMain() or that touches the same timers
@@ -218,6 +219,21 @@ public sealed class Plugin : BaseUnityPlugin {
             .Repeat(cm => cm
                 .Advance(1)
                 .SetInstruction(new(OpCodes.Ldc_I4, 1000))) // 30 frames -> 1000 ms
+            .Instructions();
+    }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameClear))]
+    public static IEnumerable<CodeInstruction> DeltaTimeRainbow(IEnumerable<CodeInstruction> instructions) {
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldfld, f32Scale),
+                          new(OpCodes.Ldc_R4),
+                          new() { opcodes = { OpCodes.Add, OpCodes.Sub } })
+            .Repeat(cm => cm
+                .Advance(2)
+                .Insert(new(OpCodes.Call, getDeltaTime),
+                        new(OpCodes.Mul)))
             .Instructions();
     }
 
