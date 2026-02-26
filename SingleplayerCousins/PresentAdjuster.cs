@@ -19,6 +19,16 @@ public sealed class PresentAdjuster : MonoBehaviour {
         var cousin = this.DetermineCousin();
         var present = this.DeterminePresent();
 
+        if (cousin == Cousin.Jungle && present == Present.Apron && this.smr.gameObject.scene.name == "GameMain") {
+            // The Apron uses a transparent texture for its main smock,
+            // so it gets drawn in a different part of the rendering pipeline from usual.
+            // The Jungle billboard ends up getting drawn over it.
+            // For reasons I haven't figured out, this is only a problem during a level, not in space.
+            // This is a partial fix. It causes the apron to draw in front of the billboard,
+            // but any transparent parts along the edges "cut out" transparent bits from the body underneath.
+            this.smr.sortingOrder--;
+        }
+
         if (PresentAdjustments.Get(cousin, present) is not Adjustment adjustment) return;
 
         var parents = new HashSet<int>();
