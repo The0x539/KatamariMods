@@ -97,6 +97,7 @@ public sealed class Plugin : BaseUnityPlugin {
         gWork = AccessTools.Field(typeof(GameManager), nameof(GameManager.gWork)),
         siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial)),
         f32Scale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32Scale)),
+        f32KataAlpha = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32KataAlpha)),
         getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
 
     // Some stuff is fine to stay capped at 30 or 60, but anything called by sMain() or that touches the same timers
@@ -227,7 +228,7 @@ public sealed class Plugin : BaseUnityPlugin {
     public static IEnumerable<CodeInstruction> DeltaTimeRainbow(IEnumerable<CodeInstruction> instructions) {
         return new CodeMatcher(instructions)
             .MatchForward(false,
-                          new(OpCodes.Ldfld, f32Scale),
+                          new(OpCodes.Ldfld) { operands = { f32Scale, f32KataAlpha } },
                           new(OpCodes.Ldc_R4),
                           new() { opcodes = { OpCodes.Add, OpCodes.Sub } })
             .Repeat(cm => cm
