@@ -109,6 +109,20 @@ static class DepthOfField {
         depthCamera.SetTargetBuffers(colorTexture.colorBuffer, depthTexture.depthBuffer);
         depthCamera.Render();
 
+        // Manually draw Jungle's specially-rendered body parts to the depth buffer so that they don't get broken AO.
+        // Ideally, this region would be completely exempt from SSAO, so that the whole texture is drawn at full brightness.
+        var player = GlobalWork.Instance.player[0];
+        if (player.oujiNo == 23) {
+            var mesh = new Mesh();
+            Material.GetDefaultMaterial().SetPass(0);
+            Graphics.SetRenderTarget(depthTexture);
+            foreach (var name in new[] { "head_tawara_m", "body01_m", "hand_m" }) {
+                var bodyPart = player.objOuji.transform.Find("body_root/" + name).GetComponent<SkinnedMeshRenderer>();
+                bodyPart.BakeMesh(mesh);
+                Graphics.DrawMeshNow(mesh, bodyPart.transform.position, bodyPart.transform.rotation);
+            }
+        }
+
         RenderTexture.active = Shader.GetGlobalTexture("_CameraDepthTexture") as RenderTexture;
         var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth");
         blitToDepth.SetPass(0);
