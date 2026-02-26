@@ -89,48 +89,30 @@ static class DepthOfField {
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void DepthPassToFixDof(PostProcessingBehaviour __instance) {
-        if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) {
-            return;
-        }
+    public static void DepthPassToFixDof(PostProcessingBehaviour __instance, out RenderTexture? __state) {
+        __state = null;
+        if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) return;
 
         var ctx = __instance.m_Context;
 
         if (depthCamera == null) {
             if (ctx.camera.targetTexture == null) return;
-            depthCamera = new GameObject("Custom Depth Pass Camera").AddComponent<Camera>();
+            depthCamera = new GameObject("Manual Depth Pass").AddComponent<Camera>();
             depthCamera.enabled = false;
         }
 
-        var colorTexture = ctx.renderTextureFactory.Get(ctx.width / 2, ctx.height / 2, depthBuffer: 0, RenderTextureFormat.R8, name: "Depth Pass - Color");
-        var depthTexture = ctx.renderTextureFactory.Get(ctx.width / 2, ctx.height / 2, depthBuffer: 24, RenderTextureFormat.Depth, name: "Depth Pass - Depth");
+        var colorTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 0, RenderTextureFormat.R8, name: "Manual Depth Pass - Color");
+        var depthTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 24, RenderTextureFormat.Depth, name: "Manual Depth Pass - Depth");
 
         depthCamera.CopyFrom(ctx.camera);
         depthCamera.SetTargetBuffers(colorTexture.colorBuffer, depthTexture.depthBuffer);
         depthCamera.Render();
-
-        // Manually draw Jungle's specially-rendered body parts to the depth buffer so that they don't get broken AO.
-        // Ideally, this region would be completely exempt from SSAO, so that the whole texture is drawn at full brightness.
-        var player = GlobalWork.Instance.player[0];
-        if (player.oujiNo == 23) {
-            var mesh = new Mesh();
-            Material.GetDefaultMaterial().SetPass(0);
-            Graphics.SetRenderTarget(depthTexture);
-            foreach (var name in new[] { "head_tawara_m", "body01_m", "hand_m" }) {
-                var bodyPart = player.objOuji.transform.Find("body_root/" + name).GetComponent<SkinnedMeshRenderer>();
-                bodyPart.BakeMesh(mesh);
-                Graphics.DrawMeshNow(mesh, bodyPart.transform.position, bodyPart.transform.rotation);
-            }
-        }
 
         RenderTexture.active = Shader.GetGlobalTexture("_CameraDepthTexture") as RenderTexture;
         var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth");
         blitToDepth.SetPass(0);
         blitToDepth.SetTexture("_MainTex", depthTexture);
         DrawQuad();
-
-        ctx.renderTextureFactory.Release(colorTexture);
-        ctx.renderTextureFactory.Release(depthTexture);
 
         // Disable SSAO when the katamari passes 120 meters, since it messes up the appearance of clouds,
         // because they write to the normal buffer but not the depth buffer. 120 meters is roughly the point
@@ -146,6 +128,39 @@ static class DepthOfField {
             __instance.m_AmbientOcclusion.PopulateCommandBuffer(cb);
             Graphics.ExecuteCommandBuffer(cb);
         }
+
+        ctx.renderTextureFactory.Release(colorTexture);
+
+        if (GlobalWork.Instance.player[0].oujiNo == 23) {
+            // Prepare to draw Jungle's billboard, but not until after the normal post-processing step
+            __state = depthTexture;
+        } else {
+            ctx.renderTextureFactory.Release(depthTexture);
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
+    public static void DrawJungle(PostProcessingBehaviour __instance, in RenderTexture __state, RenderTexture destination) {
+        if (__state is not RenderTexture depthTexture) return;
+        var ctx = __instance.m_Context;
+
+        Graphics.SetRenderTarget(destination.colorBuffer, depthTexture.depthBuffer);
+        GL.SetViewMatrix(ctx.camera.worldToCameraMatrix);
+        GL.LoadProjectionMatrix(ctx.camera.projectionMatrix);
+
+        var mesh = new Mesh();
+        var player = GlobalWork.Instance.player[0];
+        foreach (var name in new[] { "head_tawara_m", "body01_m", "hand_m" }) {
+            var bodyPart = player.objOuji.transform.Find("body_root/" + name).GetComponent<SkinnedMeshRenderer>();
+            bodyPart.material.SetPass(0);
+            bodyPart.BakeMesh(mesh);
+            Graphics.DrawMeshNow(mesh, bodyPart.transform.position, bodyPart.transform.rotation);
+        }
+
+        var billboard = player.objBillboard.transform.GetChild(0);
+        billboard.GetComponent<MeshRenderer>().material.SetPass(0);
+        Graphics.DrawMeshNow(billboard.GetComponent<MeshFilter>().sharedMesh, billboard.localToWorldMatrix);
     }
 
     // I don't quite understand why patching SetShaderSimple to not set the shader
