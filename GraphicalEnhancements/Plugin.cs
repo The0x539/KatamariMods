@@ -50,11 +50,15 @@ public sealed class Plugin : BaseUnityPlugin {
 
         if (visibleBefore == visibleAfter) return;
 
-        // This doesn't actually work for re-enabling visibility, but we can pretend, since the game doesn't actually use it.
+        // This doesn't actually work properly for re-enabling visibility,
+        // but we can pretend, since the game doesn't actually use it.
         var active = visibleAfter;
 
         playerObj.objOuji.SetActive(active);
         playerObj.katamari.SetActive(active);
         playerObj.ShadowTransform.GetChild(0).gameObject.SetActive(active);
+        foreach (var effect in playerObj.effectKiraKira ?? []) {
+            effect.gameObject.SetActive(active);
+        }
     }
 }
