@@ -369,6 +369,7 @@ internal static class PretenderLoader {
         foreach (var part in bodyParts.Values) {
             part.enabled = false;
         }
+        bones["JNT_antenna"].GetChild(0).gameObject.SetActive(false);
     }
 
     public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
