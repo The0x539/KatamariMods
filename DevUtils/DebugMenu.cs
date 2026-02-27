@@ -2,6 +2,8 @@
 
 using MyGame.InputStatus;
 
+using UnityEngine;
+
 using Object = UnityEngine.Object;
 
 namespace DevUtils;
@@ -21,6 +23,16 @@ public static class DebugMenu {
     }
 
     private static bool menuOpen = false;
+
+    private static KonamiCode konamiCode = new();
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Start))]
+    public static void ListenForKonamiCode(GameManager __instance) {
+        var listener = new GameObject("Konami Code Listener");
+        listener.transform.parent = __instance.transform;
+        konamiCode = listener.AddComponent<KonamiCode>();
+    }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.PauseProc))]
@@ -48,7 +60,9 @@ public static class DebugMenu {
                 debug.gameObject.SetActive(false);
             }
         } else {
-            if (pad.IsDown(KeyMap.Start) && pad.IsPush(KeyMap.Y)) {
+            if (pad.IsDown(KeyMap.Start) && konamiCode.IsPrimed) {
+                konamiCode.Reset();
+
                 menuOpen = true;
                 self.Pause();
                 self.gWork.u8Pause = Define.ON;
