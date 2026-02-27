@@ -67,7 +67,7 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     // One of many unused spots in the save file.
-    private static ref int OujiId => ref GlobalWork.Instance.siMission[43].u32CatchRanking[1];
+    internal static ref int OujiId => ref GlobalWork.Instance.siMission[43].u32CatchRanking[1];
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(SaveManager2), nameof(SaveManager2.SetSaveData))]

@@ -241,6 +241,19 @@ public static class PretenderPatches {
         var name = $"core_{i:D2}";
         return AssetBundleSimulator.instance.LoadAsset<GameObject>(name, name);
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Entity_king_text), nameof(Entity_king_text.GetLocaliseText))]
+    public static bool OverrideLocalization(string id, int local, ref string __result) {
+        if (local != (int)LANGUAGE.ENGLISH) return true;
+
+        if (id == "OT_OBJ_0512" && Plugin.OujiId == (int)PretenderId.Dega) {
+            __result = "Bud";
+            return false;
+        }
+
+        return true;
+    }
 }
 
 internal static class PretenderLoader {
