@@ -92,17 +92,11 @@ public static class Jungle {
         billboard.transform.localScale = Vector3.one * 5;
         var faceCamera = billboard.AddComponent<FaceCamera>();
 
-        // Are there any scenes where this is *not* desirable?
-        // TBD, but for everything I've checked it seems close to ideal
         billboard.transform.localScale = Vector3.one * 2.5f;
         billboard.transform.localPosition = new Vector3(0f, 0.55f);
 
         if (ouji.transform.root.gameObject.name is "EarchCharacter" or "GO_ouji_motion") {
-            // This results in a slight "jump" when landing on the home planet,
-            // but I think this looks better than using the same transform in both cases.
-            // Takeoff from the home planet is already not smoothly animated anyway.
-            // Ideally it would do some interpolation during the landing animation,
-            // but I'm not ready to implement that just yet.
+            // This position happens to be a bit nicer for the sideways flying animation.
             billboard.transform.localPosition = new Vector3(0f, 0.45f);
         }
 
@@ -216,5 +210,27 @@ public static class Jungle {
                               new(OpCodes.Call, getComponentTransform),
                               new(OpCodes.Call, lookAt))
             .Instructions();
+    }
+
+    // This is a big improvement, but for some reason, the transition from the title screen to the home planet still has a jump,
+    // because the billboard is positioned too high up during that animation? Like there's some kind of additional offset.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(StartsMover), nameof(StartsMover.LandOujiStar))]
+    public static IEnumerator EaseGuy(IEnumerator __result, StartsMover __instance) {
+        var anim = __instance._animator_ouji;
+        if (Plugin.OujiId != (int)Cousin.Jungle || anim.transform.Find("GO_defaultPosition/OUJI23/JungleBoardEnding") is not Transform billboard) {
+            while (__result.MoveNext()) {
+                yield return __result.Current;
+            }
+            yield break;
+        }
+
+        while (__result.MoveNext()) {
+            yield return __result.Current;
+            var time = anim.GetCurrentAnimatorStateInfo(0).normalizedTime;
+            var t = Mathf.Clamp01((time - 1f) / 0.3f);
+            var y = Mathf.Lerp(t, 0.45f, 0.55f);
+            billboard.transform.localPosition = Vector3.up * y;
+        }
     }
 }
