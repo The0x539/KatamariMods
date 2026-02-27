@@ -247,9 +247,17 @@ public static class PretenderPatches {
     public static bool OverrideLocalization(string id, int local, ref string __result) {
         if (local != (int)LANGUAGE.ENGLISH) return true;
 
-        if (id == "OT_OBJ_0512" && Plugin.OujiId == (int)PretenderId.Dega) {
-            __result = "Bud";
-            return false;
+        if (Plugin.OujiId == (int)PretenderId.Dega) {
+            if (id == "OT_OBJ_0512") {
+                __result = "Bud";
+                return false;
+            } else if (id == "OT_OBJ_1365") {
+                __result = "Bodega, Japan";
+                return false;
+            } else if (id == "OT_OBJ_1348") {
+                __result = "Bodega Sign";
+                return false;
+            }
         }
 
         return true;
