@@ -216,7 +216,7 @@ public static class Jungle {
     // because the billboard is positioned too high up during that animation? Like there's some kind of additional offset.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StartsMover), nameof(StartsMover.LandOujiStar))]
-    public static IEnumerator EaseGuy(IEnumerator __result, StartsMover __instance) {
+    public static IEnumerator EaseBillboard(IEnumerator __result, StartsMover __instance) {
         var anim = __instance._animator_ouji;
         if (Plugin.OujiId != (int)Cousin.Jungle || anim.transform.Find("GO_defaultPosition/OUJI23/JungleBoardEnding") is not Transform billboard) {
             while (__result.MoveNext()) {
@@ -228,9 +228,23 @@ public static class Jungle {
         while (__result.MoveNext()) {
             yield return __result.Current;
             var time = anim.GetCurrentAnimatorStateInfo(0).normalizedTime;
-            var t = Mathf.Clamp01((time - 1f) / 0.3f);
-            var y = Mathf.Lerp(t, 0.45f, 0.55f);
+            if (time == 0) continue;
+            var t = Mathf.Clamp01((time - 1.05f) / 0.1f);
+            var y = Mathf.Lerp(a: 0.45f, b: 0.55f, t: t);
             billboard.transform.localPosition = Vector3.up * y;
         }
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(StartsMover), nameof(StartsMover.LandKinoko))]
+    [HarmonyPatch(typeof(StartsMover), nameof(StartsMover.LandEarch))]
+    [HarmonyPatch(typeof(StartsMover), nameof(StartsMover.LandOujiStar))]
+    public static void ResetBillboard(StartsMover __instance) {
+        var anim = __instance._animator_ouji;
+        if (Plugin.OujiId != (int)Cousin.Jungle || anim.transform.Find("GO_defaultPosition/OUJI23/JungleBoardEnding") is not Transform billboard) {
+            return;
+        }
+
+        billboard.transform.localPosition = Vector3.up * 0.45f;
     }
 }
