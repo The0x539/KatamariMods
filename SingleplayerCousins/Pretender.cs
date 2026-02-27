@@ -377,6 +377,26 @@ internal static class PretenderLoader {
             if (uMaterials[aMesh.MaterialIndex] is Material mat) {
                 renderer.material = mat;
             }
+
+            foreach (var groupName in new[] { "eye", "face", "mouth", "parts" }) {
+                if (!aMesh.Name.StartsWith(groupName + "[")) continue;
+
+                var chop1 = aMesh.Name.Substring(groupName.Length + 1);
+                var chop2 = chop1.Substring(0, chop1.IndexOf(']'));
+                var idx = int.Parse(chop2) - 1;
+
+                var parent = ouji.transform.Find("face_root/" + groupName);
+
+                var replaced = parent.GetChild(idx);
+                replaced.SetAsLastSibling();
+                UnityObject.Destroy(replaced.gameObject);
+
+                renderer.transform.SetParent(parent);
+                renderer.transform.SetSiblingIndex(idx);
+                renderer.gameObject.SetActive(false);
+
+                break;
+            }
         }
 
         foreach (var part in bodyParts.Values) {

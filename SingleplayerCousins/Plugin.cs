@@ -337,6 +337,5 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(Player), nameof(Player.Start))]
     public static void EnableFaceExpressions(Player __instance) {
         __instance.objParts[0].transform.parent.gameObject.SetActive(true);
-        __instance.objHUDParts[0].transform.parent.gameObject.SetActive(true);
     }
 }
