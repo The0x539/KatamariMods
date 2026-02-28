@@ -329,6 +329,46 @@ static class PresentAdjustments {
                 Rotate(x: 35),
             ],
         },
+        [(Cousin)PretenderId.Dega] = {
+            //[Present.Apron] = [],
+            //[Present.RunningTop] = [],
+            [Present.Mawashi] = [
+                Translate(y: -0.05),
+                Scale(x: 0.5, z: 0.5),
+            ],
+            [Present.CoolMask] = [
+                Translate(y: 0.06, z: -0.04),
+                Rotate(x: 15),
+                Scale(0.5, 0.5, 0.5),
+            ],
+            [Present.ChefHat] = Scale(x: 0.7, z: 0.7),
+            [Present.Headphones] = [
+                Translate(y: 0.07),
+                Scale(0.27, 0.5, 0.5),
+            ],
+            [Present.ChampBelt] = [
+                Translate(y: -0.08, z: 0.01),
+                Scale(x: 0.55, z: 0.55),
+            ],
+            [Present.WhiteGuitar] = Scale(0.5, 0.5, 0.5),
+            [Present.SuperheroScarf, Present.WinterScarf] = [
+                Translate(y: 0.05, z: -0.02),
+                Scale(-0.5, 0.5, 0.5),
+            ],
+            [Present.Crown] = [
+                Translate(x: 0.01, y: 0.07),
+                Rotate(z: -15),
+                Scale(0.5, 0.5, 0.5),
+            ],
+            [Present.Camera, Present.HeldCamera] = Scale(0.5, 0.5, 0.5),
+            [Present.Ducky] = Scale(0.5, 0.5, 0.5),
+            [Present.Snorkel] = [
+                Translate(y: 0.04, z: -0.01),
+                Rotate(x: 40),
+                Scale(0.5, 0.5, 0.5),
+            ],
+
+        },
     };
 
     private sealed class OuterDict : Dictionary<Cousin, InnerDict> {
