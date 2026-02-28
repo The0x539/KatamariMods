@@ -18,28 +18,50 @@ static class DepthOfField {
     [HarmonyPatch(typeof(GlobalManager), nameof(GlobalManager.SetActiveStageObject))]
     public static void EnableDof() {
         var gw = GlobalWork.Instance;
-        if (gw.u8GameMode != DefineEnum.GI_GMODE.GI_GMODE_ENDING) {
-            for (var i = 0; i <= 1; i++) {
-                var cam = gw.camGame[i];
-                if (cam == null) continue;
+        if (gw.u8GameMode == DefineEnum.GI_GMODE.GI_GMODE_ENDING) return;
 
-                var ppb = cam.GetComponent<PostProcessingBehaviour>();
-                ppb.profile.depthOfField.enabled = QualitySetting.Instance.IsDOF;
-                // This should probably be a graphics option
-                ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
+        for (var i = 0; i <= 1; i++) {
+            var cam = gw.camGame[i];
+            if (cam == null) continue;
 
-                // This game uses a rather distant far-clip-plane value of 8000 due to how the gameplay works.
-                // Doing this causes the ambient occlusion effect's first shader to experience some precision-related errors
-                // if it tries to use the low-precision depth information from the DepthNormals texture.
-                // This setting tells the SSAO effect to use the output of a dedicated depth pass instead of DepthNormals,
-                // which the vanilla game didn't have working, but my patches get into a usable state.
-                ppb.profile.ambientOcclusion.settings = ppb.profile.ambientOcclusion.settings with { highPrecision = true };
+            var ppb = cam.GetComponent<PostProcessingBehaviour>();
+            ppb.profile.depthOfField.enabled = QualitySetting.Instance.IsDOF;
+            // This should probably be a graphics option
+            ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
 
-                if (cam.GetComponent<UpdateDof>() == null) {
-                    cam.gameObject.AddComponent<UpdateDof>();
-                }
+            // This game uses a rather distant far-clip-plane value of 8000 due to how the gameplay works.
+            // Doing this causes the ambient occlusion effect's first shader to experience some precision-related errors
+            // if it tries to use the low-precision depth information from the DepthNormals texture.
+            // This setting tells the SSAO effect to use the output of a dedicated depth pass instead of DepthNormals,
+            // which the vanilla game didn't have working, but my patches get into a usable state.
+            ppb.profile.ambientOcclusion.settings = ppb.profile.ambientOcclusion.settings with { highPrecision = true };
+
+            if (cam.GetComponent<UpdateDof>() == null) {
+                cam.gameObject.AddComponent<UpdateDof>();
             }
         }
+
+        cloudsGathered = false;
+    }
+
+    private static bool cloudsGathered = true;
+    private static readonly HashSet<AttachableProp> clouds = [];
+
+    private static void GatherClouds() {
+        if (cloudsGathered) return;
+
+        clouds.Clear();
+        var gw = GlobalWork.Instance;
+        for (var i = 0; i < gw.listProp.Length; i++) {
+            if (!gw.activeProp[i]) continue;
+            var prop = gw.listProp[i];
+            if (prop.mIsAttachedToKatamari) continue;
+            if (prop.mRenderers?.Length is 0 or null) continue;
+            if (prop.mRenderers?[0]?.material?.shader?.name != "CustomCloud") continue;
+            clouds.Add(prop);
+        }
+
+        cloudsGathered = true;
     }
 
     [HarmonyPrefix]
@@ -63,7 +85,6 @@ static class DepthOfField {
     }
 
     private static Camera depthCamera = null!;
-    private static RenderTexture depthCamColor = null!, depthCamDepth = null!;
 
     // TODO: Split the code that's not really DoF related into another guy
     [HarmonyTranspiler]
@@ -127,16 +148,7 @@ static class DepthOfField {
         blitToDepth.SetTexture("_MainTex", depthTexture);
         DrawQuad();
 
-        // Disable SSAO when the katamari passes 120 meters, since it messes up the appearance of clouds,
-        // because they write to the normal buffer but not the depth buffer. 120 meters is roughly the point
-        // at which this problem begins to become obvious, due to camera altitude.
-        // I'm not happy about this, but it's preferable to clearly messed up clouds, still a pretty solid improvement over vanilla,
-        // and I doubt I'm going to be able to fix the AO any more thoroughly than this.
-        // Using the "collected" material for clouds is an improvement in that the "seeing through" doesn't work anymore,
-        // but when the cloud is close to the camera it still gets unwanted darkening.
-        // Any dust/smoke particles are subject to a similar issue.
-        // I suspect this would be a LOT easier to fix in the original Unity project versus a mod. Such is life. Ugh.
-        if (__instance.m_AmbientOcclusion.active && GlobalWork.Instance.katamariDiameterInt[0] < 120_000) {
+        if (__instance.m_AmbientOcclusion.active) {
             var cb = new CommandBuffer();
             __instance.m_AmbientOcclusion.PopulateCommandBuffer(cb);
             Graphics.ExecuteCommandBuffer(cb);
@@ -144,27 +156,35 @@ static class DepthOfField {
 
         ctx.renderTextureFactory.Release(colorTexture);
 
-        var player = GlobalWork.Instance.player[0];
-        if (player.oujiNo == 23 && player.objOuji.activeInHierarchy) {
-            // Prepare to draw Jungle's billboard, but not until after the normal post-processing step
-            __state = depthTexture;
-        } else {
-            ctx.renderTextureFactory.Release(depthTexture);
-        }
+        // Prepare to redraw certain objects, namely clouds and Jungle, *after* the main post processing.
+        __state = depthTexture;
     }
 
+    // TODO: Similarly, manually draw the "dust" particles spawned when you roll
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void DrawJungle(PostProcessingBehaviour __instance, in RenderTexture __state, RenderTexture destination) {
+    public static void RedrawAOExempt(PostProcessingBehaviour __instance, in RenderTexture __state, RenderTexture destination) {
         if (__state is not RenderTexture depthTexture) return;
         var ctx = __instance.m_Context;
 
         Graphics.SetRenderTarget(destination.colorBuffer, depthTexture.depthBuffer);
         GL.SetViewMatrix(ctx.camera.worldToCameraMatrix);
         GL.LoadProjectionMatrix(ctx.camera.projectionMatrix);
+        RedrawJungle();
+
+        // Need to introduce a small depth bias so that the redrawn clouds don't Z-fight with the ones underneath with scuffed AO.
+        GL.LoadProjectionMatrix(Matrix4x4.Translate(new(0, 0, -0.000001f)) * ctx.camera.projectionMatrix);
+        RedrawClouds();
+
+        // I'm supposed to do this, right? Then why is it throwing an exception?
+        //ctx.renderTextureFactory.Release(depthTexture);
+    }
+
+    private static void RedrawJungle() {
+        var player = GlobalWork.Instance.player[0];
+        if (player.oujiNo != 23 || !player.objOuji.activeInHierarchy) return;
 
         var mesh = new Mesh();
-        var player = GlobalWork.Instance.player[0];
         foreach (var name in new[] { "head_tawara_m", "body01_m", "hand_m" }) {
             var bodyPart = player.objOuji.transform.Find("body_root/" + name).GetComponent<SkinnedMeshRenderer>();
             bodyPart.material.SetPass(0);
@@ -175,6 +195,23 @@ static class DepthOfField {
         var billboard = player.objBillboard.transform.GetChild(0);
         billboard.GetComponent<MeshRenderer>().material.SetPass(0);
         Graphics.DrawMeshNow(billboard.GetComponent<MeshFilter>().sharedMesh, billboard.localToWorldMatrix);
+    }
+
+    private static void RedrawClouds() {
+        GatherClouds();
+        if (clouds.Count == 0) return;
+
+        foreach (var cloud in clouds) {
+            if (cloud.IsAttachedToKatamari) continue;
+
+            var renderer = cloud.mRenderers[0];
+            if (!renderer.isVisible || !renderer.enabled) continue;
+
+            var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+            renderer.material.SetPass(0);
+            //Material.GetDefaultMaterial().SetPass(0);
+            Graphics.DrawMeshNow(mesh, cloud.transform.localToWorldMatrix);
+        }
     }
 
     // I don't quite understand why patching SetShaderSimple to not set the shader
@@ -190,24 +227,6 @@ static class DepthOfField {
             .SetOpcodeAndAdvance(OpCodes.Ldc_I4_0)
             .Instructions();
     }
-
-    /*
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PropMaterialController), nameof(PropMaterialController.Awake))]
-    public static void FixCloudMaterials() {
-        var materials = GlobalWork.Instance.dicPropMaterial;
-        var clouds = materials.Keys.Where(k => k.StartsWith("CLOUD")).ToArray();
-        foreach (var k in clouds) {
-            // Unfortunately, the normal cloud material writes to depth but not to depth-normals.
-            // As a result, it ends up looking really messed up when any object, including the katamari, is behind the cloud,
-            // and/or when the cloud is near the camera.
-            // Fortunately, "picked up" texture doesn't seem to have this problem.
-            if (materials.TryGetValue("Get" + k, out var collectedMaterial)) {
-                materials[k] = collectedMaterial;
-            }
-        }
-    }
-    */
 
     private static void DrawQuad() {
         GL.LoadOrtho();
