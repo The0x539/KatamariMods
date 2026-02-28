@@ -85,11 +85,11 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(InputController), nameof(InputController.Setup))]
     public static IEnumerable<CodeInstruction> UseMyGuy(IEnumerable<CodeInstruction> instructions) {
-        static MethodInfo addComponent(Type component) => AccessTools.Method(typeof(GameObject), nameof(GameObject.AddComponent), null, [component]);
+        static MethodInfo addComponent<T>() => AccessTools.Method(typeof(GameObject), nameof(GameObject.AddComponent), null, [typeof(T)]);
 
         return new CodeMatcher(instructions)
-            .MatchForward(false, new CodeMatch(OpCodes.Callvirt, addComponent(typeof(InputPadRewired))))
-            .SetOperandAndAdvance(addComponent(typeof(InputPadSDL3)))
+            .MatchForward(false, new CodeMatch(OpCodes.Callvirt, addComponent<InputPadRewired>()))
+            .SetOperandAndAdvance(addComponent<InputPadSDL3>())
             .Instructions();
     }
 
