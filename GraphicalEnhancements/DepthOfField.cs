@@ -57,8 +57,12 @@ static class DepthOfField {
             var prop = gw.listProp[i];
             if (prop.mIsAttachedToKatamari) continue;
             if (prop.mRenderers?.Length is 0 or null) continue;
-            if (prop.mRenderers?[0]?.material?.shader?.name != "CustomCloud") continue;
-            clouds.Add(prop);
+
+            if (prop.mRenderers?[0]?.material?.shader?.name == "CustomCloud") {
+                clouds.Add(prop);
+            } else if (prop.u16MonoNameIdx == Define.MONO_IDX_CLOUD02_G) {
+                clouds.Add(prop);
+            }
         }
 
         cloudsGathered = true;
