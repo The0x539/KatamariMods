@@ -177,7 +177,7 @@ static class DepthOfField {
         RedrawJungle();
 
         // Need to introduce a small depth bias so that the redrawn clouds don't Z-fight with the ones underneath with scuffed AO.
-        GL.LoadProjectionMatrix(Matrix4x4.Translate(new(0, 0, -0.000001f)) * ctx.camera.projectionMatrix);
+        GL.LoadProjectionMatrix(Matrix4x4.Translate(new(0, 0, -0.00001f)) * ctx.camera.projectionMatrix);
         RedrawClouds();
 
         // I'm supposed to do this, right? Then why is it throwing an exception?
