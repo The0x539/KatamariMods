@@ -88,11 +88,6 @@ public sealed class Plugin : BaseUnityPlugin {
         static MethodInfo addComponent(Type component) => AccessTools.Method(typeof(GameObject), nameof(GameObject.AddComponent), null, [component]);
 
         return new CodeMatcher(instructions)
-            // Skip the code at the very start of the method to conditionally load the rewired input manager
-            .Start()
-            .RemoveInstruction()
-            .SetOpcodeAndAdvance(OpCodes.Br)
-            // Replace .AddComponent<InputPadRewired>() with .AddComponent<InputPadSDL3>()
             .MatchForward(false, new CodeMatch(OpCodes.Callvirt, addComponent(typeof(InputPadRewired))))
             .SetOperandAndAdvance(addComponent(typeof(InputPadSDL3)))
             .Instructions();
@@ -413,6 +408,18 @@ public sealed class Plugin : BaseUnityPlugin {
         shadow.effectColor = parentShadow.effectColor;
         shadow.effectDistance = parentShadow.effectDistance / __instance.transform.localScale;
     }
+
+    /*
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
+    public static IEnumerable<CodeInstruction> SkipMissingRewired(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+        var matcher = new CodeMatcher(instructions, generator);
+
+        matcher.MatchForward(false, [new(OpCodes.Stloc_0)]);
+        matcher.RemoveInstructionsInRange(0, matcher.Pos);
+        matcher.Start();
+    }
+    */
 }
 
 static class Extensions {
