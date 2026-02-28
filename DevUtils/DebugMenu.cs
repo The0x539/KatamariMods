@@ -2,24 +2,39 @@
 
 using MyGame.InputStatus;
 
-using UnityEngine;
+using System.Collections;
 
-using Object = UnityEngine.Object;
+using UnityEngine;
 
 namespace DevUtils;
 
 public static class DebugMenu {
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(GameDebug), nameof(GameDebug.Awake))]
-    public static void ConnectGameDebug(GameDebug __instance) {
-        var pauseMenu = Object.FindObjectOfType<PauseMenu>();
-        if (pauseMenu == null) return;
-        if (pauseMenu._gameDebug != null) return;
+    private static void FixMenu(GameDebug menu) {
+        if (menu._gWork != null) return;
+        menu._gWork = GlobalWork.Instance;
 
-        pauseMenu._gameDebug = __instance;
-        pauseMenu.isEnableGameDebug = true;
-        __instance.gameObject.SetActive(false);
-        __instance._gWork = pauseMenu.gWork;
+        const int ROWS = 4;
+        const int COLS = 5;
+        const int ITEMS = ROWS * COLS;
+
+        var buttons = new GameDebugSelectable[ITEMS];
+        var buttonParent = menu._gameDebugSelectable.transform.parent;
+
+        for (var i = 0; i < ITEMS; i++) {
+            buttons[i] = buttonParent.GetChild(i).GetComponent<GameDebugSelectable>();
+        }
+
+        for (var i = 0; i < ITEMS; i++) {
+            buttons[i]._up = buttons[(i + ITEMS - COLS) % ITEMS];
+            buttons[i]._down = buttons[(i + COLS) % ITEMS];
+        }
+
+        menu.StartCoroutine(FixMenuPart2(menu));
+    }
+
+    private static IEnumerator FixMenuPart2(GameDebug menu) {
+        yield return new WaitForSecondsRealtime(0.1f);
+        menu._image_cursor.transform.position = menu._gameDebugSelectable.transform.position;
     }
 
     private static bool menuOpen = false;
@@ -71,6 +86,7 @@ public static class DebugMenu {
                 canvas.SetActive(true);
                 self.canvas.gameObject.SetActive(false);
                 debug.gameObject.SetActive(true);
+                FixMenu(debug);
             }
         }
     }
@@ -79,7 +95,6 @@ public static class DebugMenu {
     [HarmonyPatch(typeof(Selector), nameof(Selector.Update))]
     public static void InvokeButton(Selector __instance) {
         if (__instance is not GameDebug self) return;
-
 
         if (menuOpen && self._inputBase.Pad(0).IsDown(KeyMap.A)) {
             self._gameDebugSelectable?.uEvent?.Invoke();
