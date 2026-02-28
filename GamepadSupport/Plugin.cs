@@ -88,6 +88,11 @@ public sealed class Plugin : BaseUnityPlugin {
         static MethodInfo addComponent(Type component) => AccessTools.Method(typeof(GameObject), nameof(GameObject.AddComponent), null, [component]);
 
         return new CodeMatcher(instructions)
+            // Skip the code at the very start of the method to conditionally load the rewired input manager
+            .Start()
+            .RemoveInstruction()
+            .SetOpcodeAndAdvance(OpCodes.Br)
+            // Replace .AddComponent<InputPadRewired>() with .AddComponent<InputPadSDL3>()
             .MatchForward(false, new CodeMatch(OpCodes.Callvirt, addComponent(typeof(InputPadRewired))))
             .SetOperandAndAdvance(addComponent(typeof(InputPadSDL3)))
             .Instructions();
