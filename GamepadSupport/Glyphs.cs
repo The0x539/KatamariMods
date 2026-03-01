@@ -24,12 +24,16 @@ public static class Glyphs {
         img.sprite = Sprite.Create(tex, new(0, 0, 256, 256), img.sprite.pivot);
 
         var rt = __instance.GetComponent<RectTransform>();
+        // Cover the common cases of icons being double-wide due to the vanilla sprite layout
         if (rt.sizeDelta == new Vector2(320, 160)) {
             rt.sizeDelta = new(160, 160);
         } else if (rt.sizeDelta == new Vector2(120, 60)) {
             rt.sizeDelta = new(60, 60);
         } else if (rt.sizeDelta == new Vector2(88.84f, 44.42f)) {
             rt.sizeDelta = new(44.42f, 44.42f);
+        } else if (rt.sizeDelta == new Vector2(85, 101)) {
+            // Cover the "Skip" prompt in the results screen being too big
+            rt.sizeDelta = new(42, 42);
         }
     }
 
