@@ -184,6 +184,19 @@ static class IngameOptions {
         glyph.OnOff = true;
     }
 
+    // Since we made it possible to use the B button to exit the menu,
+    // show that button instead of Start for visual consistency.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.Start))]
+    private static void UseEastButtonForExitPrompt(PauseMenu __instance) {
+        var guide = __instance.objGuidePause;
+        var glyph = guide.transform.Find("Text_Back/Image_icon").GetComponent<KeyImageCheck>();
+        glyph.iconKeyType = glyph.iconKeyTypeWork = KeyMap.B;
+        // Trigger change detection
+        glyph.onOff = false;
+        glyph.OnOff = true;
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.InputMoveTypeUpdate))]
     public static void ActuallyUpdateMoveType(Player __instance) {
