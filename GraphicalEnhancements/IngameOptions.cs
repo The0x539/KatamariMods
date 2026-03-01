@@ -248,16 +248,6 @@ static class IngameOptions {
             .Instructions();
     }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
-    public static void SetOtherSettings(QualitySetting __instance) {
-        if (Camera.main?.GetComponent<PostProcessingBehaviour>() is not PostProcessingBehaviour ppb) return;
-        var profile = ppb.profile;
-        profile.ambientOcclusion.enabled = __instance.IsSsao;
-        profile.depthOfField.enabled = __instance.IsDOF;
-        profile.vignette.enabled = __instance.IsVignette;
-    }
-
     /*
     [HarmonyPostfix]
     [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.PauseState))]

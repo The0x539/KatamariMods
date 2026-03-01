@@ -6,6 +6,9 @@ using System.IO;
 using System.Linq;
 
 using UnityEngine;
+using UnityEngine.PostProcessing;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace GraphicalEnhancements;
 
@@ -13,6 +16,8 @@ namespace GraphicalEnhancements;
 
 static class ExtraOptions {
     private static readonly string QualitySettingsPath = Path.Combine(FileManager.SaveTemporaryPath, "Setting/quality.ex.setting");
+
+    private static readonly int[] fpsValues = [360, 240, 180, 165, 144, 120, 90, 60, 30, 24, 15, 10, 5];
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Load))]
@@ -63,6 +68,7 @@ static class ExtraOptions {
     public static void ExposeExtraSettings(QualitySetting __instance) {
         var items = __instance.itemName;
         items.Add(["16x", "1x", "2x", "4x", "8x"]);
+        items.Add(fpsValues.Select(n => n.ToString()).ToList());
     }
 
     [HarmonyPrefix]
@@ -113,15 +119,31 @@ static class ExtraOptions {
             label.GetComponent<UguiFocus>().focusID = i;
             previous = label;
 
-            label.GetComponent<UITextLocalizer>().textID = i switch {
-                6 => "UI_SYS_215", // Depth of Field
-                7 => "UI_SYS_278", // Vignette
-                8 => "UI_SYS_213", // Anisotropic Filtering
-                _ => "UI_TTR_022", // THWACK! (placeholder)
-            };
+            var name = GetSettingName(i, out var localized);
+            if (localized) {
+                label.GetComponent<UITextLocalizer>().textID = name;
+            } else {
+                Object.Destroy(label.GetComponent<UITextLocalizer>());
+                label.GetComponent<Text>().text = name;
+            }
         }
 
         LinkFocus(previous, get("TextItem0"));
+    }
+
+    private static string GetSettingName(int row, out bool localized) {
+        localized = true;
+        switch (row) {
+            case 6: return "UI_SYS_215"; // Depth of Field
+            case 7: return "UI_SYS_278"; // Vignette
+            case 8: return "UI_SYS_213"; // Anisotropic Filtering
+            case 9:
+                localized = false;
+                return "Max FPS";
+            default:
+                localized = false;
+                return "(?)";
+        }
     }
 
     private static void LinkFocus(Component prev, Component next) {
@@ -131,5 +153,19 @@ static class ExtraOptions {
         nextF.upKeyMove = prevF;
     }
 
-    // TODO: Update quality settings mid-level, e.g. ambient occlusion
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
+    public static void ActuallyUpdateSettings(QualitySetting __instance) {
+        // Seems to only go up to 8 at startup.
+        if (__instance.statusNo.Length >= 9) {
+            Application.targetFrameRate = fpsValues[__instance.statusNo[9]];
+        }
+
+        if (SceneManager.GetSceneByName("GameMain").isLoaded) {
+            var ppb = Camera.main.GetComponent<PostProcessingBehaviour>();
+            ppb.profile.ambientOcclusion.enabled = __instance.IsSsao;
+            ppb.profile.depthOfField.enabled = __instance.IsDOF;
+            ppb.profile.vignette.enabled = __instance.IsVignette;
+        }
+    }
 }
