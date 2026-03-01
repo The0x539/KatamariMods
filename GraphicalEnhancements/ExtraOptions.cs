@@ -153,13 +153,18 @@ static class ExtraOptions {
         nextF.upKeyMove = prevF;
     }
 
+    // Be careful not to use this shorthand property during the QualitySettings constructor.
+    // There is a risk of this because the constructor calls Set() at the end.
+    private static int TargetFPS => GetTargetFPS(QualitySetting.Instance);
+
+    private static int GetTargetFPS(QualitySetting qs) {
+        return qs.statusNo.Length >= 9 ? fpsValues[qs.statusNo[9]] : 120;
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
     public static void ActuallyUpdateSettings(QualitySetting __instance) {
-        // Seems to only go up to 8 at startup.
-        if (__instance.statusNo.Length >= 9) {
-            Application.targetFrameRate = fpsValues[__instance.statusNo[9]];
-        }
+        Application.targetFrameRate = GetTargetFPS(__instance);
 
         if (SceneManager.GetSceneByName("GameMain").isLoaded) {
             var ppb = Camera.main.GetComponent<PostProcessingBehaviour>();
@@ -167,5 +172,11 @@ static class ExtraOptions {
             ppb.profile.depthOfField.enabled = __instance.IsDOF;
             ppb.profile.vignette.enabled = __instance.IsVignette;
         }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))] // GameManager sets targetFrameRate to 60 with VSync on and -1 with it off.
+    public static void SetMaxFps() {
+        Application.targetFrameRate = TargetFPS;
     }
 }
