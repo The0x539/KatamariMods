@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 
 using UnityEngine;
+using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -245,6 +246,16 @@ static class IngameOptions {
             .MatchForward(false, [new(OpCodes.Brtrue)])
             .SetOpcodeAndAdvance(OpCodes.Brfalse)
             .Instructions();
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
+    public static void SetOtherSettings(QualitySetting __instance) {
+        if (Camera.main?.GetComponent<PostProcessingBehaviour>() is not PostProcessingBehaviour ppb) return;
+        var profile = ppb.profile;
+        profile.ambientOcclusion.enabled = __instance.IsSsao;
+        profile.depthOfField.enabled = __instance.IsDOF;
+        profile.vignette.enabled = __instance.IsVignette;
     }
 
     /*
