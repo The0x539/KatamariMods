@@ -87,6 +87,50 @@ public sealed class Plugin : BaseUnityPlugin {
             .Instructions();
     }
 
+    // Disable the object so it doesn't try to update and produce those annoying logs accordingly
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(InputController), nameof(InputController.Setup))]
+    public static void SuppressRewiredA(InputController __instance) {
+        __instance.userdatastore.gameObject.SetActive(false);
+    }
+
+    // Remove the "userdatastore" setup
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
+    public static IEnumerable<CodeInstruction> SuppressRewiredB(IEnumerable<CodeInstruction> instructions) {
+        var matcher = new CodeMatcher(instructions);
+        return matcher
+            .MatchForward(false,
+                          new(OpCodes.Ldarg_0),
+                          new(OpCodes.Call, AccessTools.Field(typeof(KatamariPauseController), nameof(KatamariPauseController.GetJoystickData))))
+            .RemoveInstructionsInRange(0, matcher.Pos - 1)
+            .Instructions();
+    }
+
+    // Reroute "ReInput.controllers.joystickCount" to my SDL replacement since the `.controllers` part goes awry
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.ControllerCheck))]
+    public static IEnumerable<CodeInstruction> SuppressRewiredC(IEnumerable<CodeInstruction> instructions) {
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Call, AccessTools.PropertyGetter(typeof(Rewired.ReInput), nameof(Rewired.ReInput.controllers))),
+                          new(OpCodes.Callvirt, AccessTools.PropertyGetter(typeof(Rewired.ReInput.ControllerHelper), nameof(Rewired.ReInput.ControllerHelper.joystickCount))))
+            .Repeat(cm => cm
+                .RemoveInstructions(2)
+                .Insert(new(OpCodes.Ldc_I4_0),
+                        new(OpCodes.Call, AccessTools.Method(typeof(Plugin), nameof(GetConnectCount)))))
+            .Instructions();
+    }
+
+    // Disable these methods to save and load keyboard settings since this mod doesn't currently support keyboard input at all
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(InputController), nameof(InputController.LoadSetting))]
+    [HarmonyPatch(typeof(InputController), nameof(InputController.SaveSetting))]
+    public static bool SuppressRewiredD(out bool __result) {
+        __result = true;
+        return false;
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(InputController), nameof(InputController.GetConnectCount))]
     [HarmonyPatch(typeof(Rewired.ReInput.ControllerHelper), nameof(Rewired.ReInput.ControllerHelper.joystickCount), MethodType.Getter)]
@@ -133,6 +177,12 @@ public sealed class Plugin : BaseUnityPlugin {
         __runOriginal = false;
         var self = __instance;
         self.lstGamePad.Clear();
+
+        self.lstPlayer ??= [];
+        if (self.lstPlayer.Count == 0) {
+            self.lstPlayer.Add(new() { id = 0, difineName = "Player 1" });
+            self.lstPlayer.Add(new() { id = 1, difineName = "Player 2" });
+        }
 
         self.lstPlayer[0].GamePadLoc = -1;
         self.lstPlayer[1].GamePadLoc = -1;
