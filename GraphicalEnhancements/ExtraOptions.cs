@@ -153,10 +153,6 @@ static class ExtraOptions {
         nextF.upKeyMove = prevF;
     }
 
-    // Be careful not to use this shorthand property during the QualitySettings constructor.
-    // There is a risk of this because the constructor calls Set() at the end.
-    private static int TargetFPS => GetTargetFPS(QualitySetting.Instance);
-
     private static int GetTargetFPS(QualitySetting qs) {
         return qs.statusNo.Length >= 9 ? fpsValues[qs.statusNo[9]] : 120;
     }
@@ -195,6 +191,6 @@ static class ExtraOptions {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))] // GameManager sets targetFrameRate to 60 with VSync on and -1 with it off.
     public static void SetMaxFps() {
-        Application.targetFrameRate = TargetFPS;
+        Application.targetFrameRate = GetTargetFPS(QualitySetting.Instance);
     }
 }
