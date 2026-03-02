@@ -289,7 +289,6 @@ public sealed class UpdateDof : MonoBehaviour {
         this.adjuster.localScale = new(0.25f, 0.52f, 5.6f);
     }
 
-    // First person mode doesn't play very well with this - perhaps use the "desired follow distance" in such cases?
     public void Update() {
         var distance = this.frozenDistance ?? this.Distance();
         var s = this.adjuster.localScale;
