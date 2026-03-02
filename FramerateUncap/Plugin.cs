@@ -25,6 +25,19 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(StereoHaptics));
     }
 
+    private static int deltaMillis = 0;
+    private static float accumulatedRoundingError = 0;
+
+    public void Update() {
+        var dt = Time.deltaTime * 1000f;
+        deltaMillis = Mathf.FloorToInt(dt);
+        accumulatedRoundingError += dt % 1f;
+        while (accumulatedRoundingError >= 1f) {
+            accumulatedRoundingError -= 1f;
+            deltaMillis += 1;
+        }
+    }
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SimulationNativeMethods), nameof(SimulationNativeMethods.Tick))]
     public static void OnTick(float delta) {
@@ -98,7 +111,8 @@ public sealed class Plugin : BaseUnityPlugin {
         siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial)),
         f32Scale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32Scale)),
         f32KataAlpha = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32KataAlpha)),
-        getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
+        getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime)),
+        fieldDeltaMillis = AccessTools.Field(typeof(Plugin), nameof(deltaMillis));
 
     // Some stuff is fine to stay capped at 30 or 60, but anything called by sMain() or that touches the same timers
     // will need to be updated accordingly.
@@ -123,13 +137,9 @@ public sealed class Plugin : BaseUnityPlugin {
                           new(ci => ci.opcode == OpCodes.Add || ci.opcode == OpCodes.Sub),
                           storesTimer)
             .Repeat(cm => cm
-                // Replace the 1 with (int)(Time.deltaTime * 1000f)
+                // Replace the 1 with Plugin.deltaMillis
                 .Advance(1)
-                .RemoveInstruction()
-                .Insert(new(OpCodes.Call, getDeltaTime),
-                        new(OpCodes.Ldc_R4, 1000f),
-                        new(OpCodes.Mul),
-                        new(OpCodes.Conv_I4)))
+                .Set(OpCodes.Ldsfld, fieldDeltaMillis))
             .Start()
             // Match all code patterns that assign a (nonzero) constant to a timer
             .MatchForward(false,
@@ -246,29 +256,23 @@ public sealed class Plugin : BaseUnityPlugin {
             AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait2)),
             AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.s16EscapeTimer)),
         ];
-        var storesTimer = new CodeMatch(OpCodes.Stfld) { operands = timers };
-        var loadsTimer = new CodeMatch(OpCodes.Ldfld) { operands = timers };
 
         return new CodeMatcher(instructions)
             .MatchForward(false,
                           new(OpCodes.Ldc_I4_S, 30),
-                          storesTimer)
+                          new(OpCodes.Stfld) { operands = timers })
             .Repeat(cm => cm
-                .SetInstructionAndAdvance(new(OpCodes.Ldc_I4, 1000)))
+                .SetAndAdvance(OpCodes.Ldc_I4, 1000))
             .Start()
             // Replace: this.(timer)--;
-            // With: this.(timer) -= (int)(Time.deltaTime * 1000f);
+            // With: this.(timer) -= Plugin.deltaMillis
             .MatchForward(false,
-                          loadsTimer,
+                          new(OpCodes.Ldfld) { operands = timers },
                           new(OpCodes.Ldc_I4_1),
                           new(OpCodes.Sub))
             .Repeat(cm => cm
-                .Advance(1)                                        // Keep the LDFLD
-                .RemoveInstruction()                               // Remove the LDC.I4.1
-                .InsertAndAdvance(new(OpCodes.Call, getDeltaTime), // Replace it with (int)(Time.deltaTime * 1000f)
-                                  new(OpCodes.Ldc_R4, 1000f),
-                                  new(OpCodes.Mul),
-                                  new(OpCodes.Conv_I4)))
+                .Advance(1)
+                .Set(OpCodes.Ldsfld, fieldDeltaMillis))
             .Instructions();
     }
 
@@ -308,10 +312,8 @@ public sealed class Plugin : BaseUnityPlugin {
         var self = __instance;
         __runOriginal = false;
 
-        var dt = Time.deltaTime * 1000f;
-
         if (self.whirlTime > 0) {
-            self.whirlTime -= (int)dt;
+            self.whirlTime -= deltaMillis;
             if (self.whirlTime < 0) self.whirlTime = 0;
         } else if (self.whirlTime == 0) {
             if (self.isChangeGameOver) {
@@ -330,6 +332,7 @@ public sealed class Plugin : BaseUnityPlugin {
 
         // The original code divides by 4 for the angle change.
         // To compensate for the mistake described below, multiply that by a bit.
+        var dt = Time.deltaTime * 1000f;
         self.whirlAngle += self.whirlAngleDelta * dt * 4f;
         self.whirlScale += self.whirlScaleDelta * dt;
         if (self.whirlScale < 0) self.whirlScale = 0;
