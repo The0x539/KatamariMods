@@ -27,7 +27,6 @@
     </Reference>
     <Reference Include="Rewired_Core">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\katamari_Data\Managed\Rewired_Core.dll</HintPath>
-      <Publicize>True</Publicize>
 	</Reference>
   </ItemGroup>
 </Project>
