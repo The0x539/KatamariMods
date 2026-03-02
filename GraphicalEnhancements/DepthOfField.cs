@@ -132,6 +132,8 @@ static class DepthOfField {
         depthCamera.CopyFrom(ctx.camera);
         depthCamera.SetTargetBuffers(colorTexture.colorBuffer, depthTexture.depthBuffer);
 
+        var renderers = new List<Renderer>();
+
         if (GlobalWork.Instance.player[0].f32Alpha == 0) {
             foreach (var prop in GlobalWork.instance.listProp) {
                 if (prop == null) continue;
@@ -139,12 +141,18 @@ static class DepthOfField {
 
                 // For reasons that remain unknown to me, disabling the renderer only in a gYm_OujiSetAlpha prefix
                 // doesn't fully work, and leads to the objects here drawing to the depth buffer. Frustrating!
-                foreach (var r in prop.mRenderers) r.enabled = false;
-                foreach (var r in prop.smRenderers) r.enabled = false;
+                foreach (var r in prop.mRenderers) {
+                    if (r.enabled) renderers.Add(r);
+                }
+                foreach (var r in prop.smRenderers) {
+                    if (r.enabled) renderers.Add(r);
+                }
             }
         }
 
+        foreach (var r in renderers) r.enabled = false;
         depthCamera.Render();
+        foreach (var r in renderers) r.enabled = true;
 
         RenderTexture.active = Shader.GetGlobalTexture("_CameraDepthTexture") as RenderTexture;
         var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth");
