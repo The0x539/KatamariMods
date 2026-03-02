@@ -60,7 +60,7 @@ static class DepthOfField {
 
             if (prop.mRenderers?[0]?.material?.shader?.name == "CustomCloud") {
                 clouds.Add(prop);
-            } else if (prop.u16MonoNameIdx == Define.MONO_IDX_CLOUD02_G) {
+            } else if (prop.u16MonoNameIdx is Define.MONO_IDX_CLOUD02_G or Define.MONO_IDX_CLOUD04_G) {
                 clouds.Add(prop);
             }
         }
