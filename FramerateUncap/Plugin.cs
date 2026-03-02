@@ -298,12 +298,28 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.gYm_Game2dRequestWhirlpool))]
-    public static void UnpatchWhirlpoolTimer(ref int time) {
+    public static bool WhirlpoolStart(GameManager __instance, ref int time, ref float scaleS, ref float scaleE, float angleS, float angleE) {
+        __instance.isEnableWhirlpool = true;
+
         // Things that initialize it to 75 (or 76) are already "patched",
         // since those callers read the value from s32Timer,
         // whose value already gets patched by PatchTimerIncrements.
         // The only other value the game uses is 30.
         if (time == 30) time = 1000;
+        scaleS *= 2;
+        scaleE *= 2;
+
+        // The vanilla code multiplies the timer by 2.
+        // It does this because all the things that start the timer operate on a 30 Hz cycle,
+        // while the whirlpool instead gets animated at 60.
+        // With the patches, everything just counts milliseconds instead, so this becomes unnecessary.
+        __instance.whirlTime = time;
+        __instance.whirlScaleDelta = (scaleE - scaleS) / time;
+        __instance.whirlAngleDelta = (angleE - angleS) / time;
+        __instance.whirlScale = scaleS;
+        __instance.whirlAngle = angleS;
+
+        return false;
     }
 
     [HarmonyPrefix]
@@ -333,7 +349,7 @@ public sealed class Plugin : BaseUnityPlugin {
         // The original code divides by 4 for the angle change.
         // To compensate for the mistake described below, multiply that by a bit.
         var dt = Time.deltaTime * 1000f;
-        self.whirlAngle += self.whirlAngleDelta * dt * 4f;
+        self.whirlAngle += self.whirlAngleDelta * dt * 2f;
         self.whirlScale += self.whirlScaleDelta * dt;
         if (self.whirlScale < 0) self.whirlScale = 0;
 
