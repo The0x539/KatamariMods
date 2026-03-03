@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GraphicalEnhancements;
 
@@ -50,9 +51,10 @@ static class QualityRenderTargets {
     [HarmonyPatch(typeof(CameraKatamari), nameof(CameraKatamari.Setup))]
     public static void AntialiasKatamariResultImage(CameraKatamari __instance) {
         var descriptor = CameraKatamari._rTexture.descriptor;
+        var name = CameraKatamari._rTexture.name;
         CameraKatamari._rTexture.Release();
         descriptor.msaaSamples = 4;
-        var rt = new RenderTexture(descriptor);
+        var rt = new RenderTexture(descriptor) { name = name };
         __instance._camera.targetTexture = CameraKatamari._rTexture = rt;
         if (__instance._rImage != null) __instance._rImage.texture = rt;
     }
@@ -72,6 +74,32 @@ static class QualityRenderTargets {
                           new(OpCodes.Callvirt, setAllowMSAA))
             .SetOpcodeAndAdvance(OpCodes.Ldc_I4_1)
             .Instructions();
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.Awake))]
+    public static void MsaaPausesCameras(PauseMenu __instance) {
+        __instance.objKatamariCamera.GetComponent<Camera>().allowMSAA = true;
+        __instance.propCamera.allowMSAA = true;
+
+        var descriptor = __instance.propCamera.targetTexture.descriptor;
+        descriptor.msaaSamples = QualitySetting.antialiasingValue[QualitySetting.Instance.statusNo[4]];
+        var rt = new RenderTexture(descriptor) { name = __instance.propCamera.targetTexture.name };
+        __instance.propCamera.targetTexture = rt;
+        __instance.objUIPause.transform.Find("ImageProp/CollectProp_2D").GetComponent<RawImage>().texture = rt;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(HUDController), nameof(HUDController.Awake))]
+    public static void MsaaHudCameras(HUDController __instance) {
+        __instance.topCamera.allowMSAA = true;
+        __instance.propCamera.allowMSAA = true;
+
+        var descriptor = __instance.propCamera.targetTexture.descriptor;
+        descriptor.msaaSamples = QualitySetting.antialiasingValue[QualitySetting.Instance.statusNo[4]];
+        var rt = new RenderTexture(descriptor) { name = __instance.propCamera.targetTexture.name };
+        __instance.propCamera.targetTexture = rt;
+        __instance.objUICanvas.transform.Find("CollectedProp/CollectProp_2D").GetComponent<RawImage>().texture = rt;
     }
 
     private static int GetWidth() => Screen.currentResolution.width;
