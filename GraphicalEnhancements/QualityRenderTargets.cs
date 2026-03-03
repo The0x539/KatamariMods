@@ -7,14 +7,14 @@ using UnityEngine;
 
 namespace GraphicalEnhancements;
 
-static class HighResRenderTargets {
+static class QualityRenderTargets {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.gTj_ResultWait))]
     [HarmonyPatch(typeof(CameraKatamari), nameof(CameraKatamari.GetTexture2DInner))]
     [HarmonyPatch(typeof(CameraKatamari), nameof(CameraKatamari.Setup))]
     public static IEnumerable<CodeInstruction> HiResKatamariPortrait(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
-        var getWidth = AccessTools.Method(typeof(HighResRenderTargets), nameof(GetWidth));
-        var getHeight = AccessTools.Method(typeof(HighResRenderTargets), nameof(GetHeight));
+        var getWidth = AccessTools.Method(typeof(QualityRenderTargets), nameof(GetWidth));
+        var getHeight = AccessTools.Method(typeof(QualityRenderTargets), nameof(GetHeight));
 
         // We need to supersample it a bit because MSAA only applies to face edges, not along sharp lines in textures.
         // This game's art style has... a lot of sharp lines in textures.
@@ -55,6 +55,23 @@ static class HighResRenderTargets {
         var rt = new RenderTexture(descriptor);
         __instance._camera.targetTexture = CameraKatamari._rTexture = rt;
         if (__instance._rImage != null) __instance._rImage.texture = rt;
+    }
+
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(CameraKatamari), nameof(CameraKatamari.Setup))]
+    [HarmonyPatch(typeof(MonoOnlyCamera), nameof(MonoOnlyCamera.SetTargetTexture))]
+    [HarmonyPatch(typeof(UIFixedCamera), nameof(UIFixedCamera.Start))]
+    [HarmonyPatch(typeof(UIMonoCamera), nameof(UIMonoCamera.SetTargetTextureDonotAddCamera))]
+    public static IEnumerable<CodeInstruction> MsaaEverywhere(IEnumerable<CodeInstruction> instructions) {
+        var setAllowMSAA = AccessTools.PropertySetter(typeof(Camera), nameof(Camera.allowMSAA));
+
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldc_I4_0),
+                          new(OpCodes.Callvirt, setAllowMSAA))
+            .SetOpcodeAndAdvance(OpCodes.Ldc_I4_1)
+            .Instructions();
     }
 
     private static int GetWidth() => Screen.currentResolution.width;
