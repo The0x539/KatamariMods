@@ -63,6 +63,7 @@ static class DepthOfField {
     }
 
     private static Camera depthCamera = null!;
+    private static Camera smokeCamera = null!;
 
     // TODO: Split the code that's not really DoF related into another guy
     [HarmonyTranspiler]
@@ -160,6 +161,7 @@ static class DepthOfField {
         RenderTexture.active = source;
         RedrawJungle();
         RedrawClouds();
+        RedrawSmoke(ctx, source);
     }
 
     private static void RedrawJungle() {
@@ -188,6 +190,21 @@ static class DepthOfField {
             renderer.material.SetPass(0);
             Graphics.DrawMeshNow(mesh, obj.transform.localToWorldMatrix);
         }
+    }
+
+    private static readonly int smokeLayerMask = LayerMask.GetMask("TransparentFX");
+
+    private static void RedrawSmoke(PostProcessingContext ctx, RenderTexture target) {
+        if (smokeCamera == null) {
+            smokeCamera = new GameObject("Smoke Camera").AddComponent<Camera>();
+            smokeCamera.enabled = false;
+        }
+
+        smokeCamera.CopyFrom(ctx.camera);
+        smokeCamera.clearFlags = CameraClearFlags.Nothing;
+        smokeCamera.cullingMask = smokeLayerMask;
+        smokeCamera.targetTexture = target;
+        smokeCamera.Render();
     }
 
     // I don't quite understand why patching SetShaderSimple to not set the shader

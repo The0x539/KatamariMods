@@ -83,6 +83,28 @@ public static class SpecialDrawPatches {
         }
     }
 
+    private static readonly int smokeLayerId = LayerMask.NameToLayer("TransparentFX");
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(ParticleManager), nameof(ParticleManager.Start))]
+    public static void SetSmokeLayer(ParticleManager __instance) {
+        foreach (var fx in __instance.VisualFXMapping) {
+            if (fx.VisualFXPrefab is not GameObject prefab) continue;
+
+            if (prefab.GetComponent<ParticleSystemRenderer>()?.mesh?.name == "Ef_Smoke") {
+                prefab.layer = smokeLayerId;
+            }
+        }
+
+        foreach (var prop in GlobalWork.Instance.listProp) {
+            if (prop == null) continue;
+
+            if (prop.effectType == AttachableProp.eEffectType.Smoke) {
+                prop.effectObject.layer = smokeLayerId;
+            }
+        }
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))]
     public static void AddSpecialDrawActivator(GameManager __instance) {
