@@ -1,6 +1,8 @@
 ﻿using HarmonyLib;
 
+using System;
 using System.Collections.Generic;
+using System.Configuration;
 
 using UnityEngine;
 
@@ -80,6 +82,12 @@ public static class SpecialDrawPatches {
             if (matches && prop.gameObject.GetComponent<SpecialDraw>() == null) {
                 prop.gameObject.AddComponent<SpecialDraw>();
             }
+
+            // Piggybacking on the wrong function, but it seems like ParticleManager.Start runs too early.
+            // Oh well. Whatever gets the job done.
+            if (prop.effectType == AttachableProp.eEffectType.Smoke) {
+                prop.effectObject.layer = smokeLayerId;
+            }
         }
     }
 
@@ -93,14 +101,6 @@ public static class SpecialDrawPatches {
 
             if (prefab.GetComponent<ParticleSystemRenderer>()?.mesh?.name == "Ef_Smoke") {
                 prefab.layer = smokeLayerId;
-            }
-        }
-
-        foreach (var prop in GlobalWork.Instance.listProp) {
-            if (prop == null) continue;
-
-            if (prop.effectType == AttachableProp.eEffectType.Smoke) {
-                prop.effectObject.layer = smokeLayerId;
             }
         }
     }
