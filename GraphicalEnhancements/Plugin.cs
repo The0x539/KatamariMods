@@ -19,6 +19,7 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(DepthOfField));
         Harmony.CreateAndPatchAll(typeof(QualityRenderTargets));
         Harmony.CreateAndPatchAll(typeof(ShadowAngle));
+        Harmony.CreateAndPatchAll(typeof(SpecialDrawPatches));
     }
 
     // Without this patch, the Katamari and Prince still get "drawn" during the Royal Rainbow exit animation.

@@ -40,32 +40,6 @@ static class DepthOfField {
                 cam.gameObject.AddComponent<UpdateDof>();
             }
         }
-
-        cloudsGathered = false;
-    }
-
-    private static bool cloudsGathered = true;
-    private static readonly HashSet<AttachableProp> clouds = [];
-
-    private static void GatherClouds() {
-        if (cloudsGathered) return;
-
-        clouds.Clear();
-        var gw = GlobalWork.Instance;
-        for (var i = 0; i < gw.listProp.Length; i++) {
-            if (!gw.activeProp[i]) continue;
-            var prop = gw.listProp[i];
-            if (prop.mIsAttachedToKatamari) continue;
-            if (prop.mRenderers?.Length is 0 or null) continue;
-
-            if (prop.mRenderers?[0]?.material?.shader?.name == "CustomCloud") {
-                clouds.Add(prop);
-            } else if (prop.u16MonoNameIdx is Define.MONO_IDX_CLOUD02_G or Define.MONO_IDX_CLOUD04_G) {
-                clouds.Add(prop);
-            }
-        }
-
-        cloudsGathered = true;
     }
 
     [HarmonyPrefix]
@@ -114,8 +88,7 @@ static class DepthOfField {
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void DepthPassToFixDof(PostProcessingBehaviour __instance, out RenderTexture? __state) {
-        __state = null;
+    public static void DepthPassToFixDof(PostProcessingBehaviour __instance, RenderTexture source) {
         if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) return;
 
         var ctx = __instance.m_Context;
@@ -149,6 +122,11 @@ static class DepthOfField {
                 }
             }
         }
+        foreach (var obj in SpecialDraw.instances) {
+            if (obj.SpecialThisFrame) {
+                renderers.Add(obj.Prop.mRenderers[0]);
+            }
+        }
 
         foreach (var r in renderers) r.enabled = false;
         depthCamera.Render();
@@ -167,16 +145,16 @@ static class DepthOfField {
         }
 
         ctx.renderTextureFactory.Release(colorTexture);
-
-        // Prepare to redraw certain objects, namely clouds and Jungle, *after* the main post processing.
-        __state = depthTexture;
+        ctx.renderTextureFactory.Release(depthTexture);
     }
 
     // TODO: Similarly, manually draw the "dust" particles spawned when you roll
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void RedrawAOExempt(PostProcessingBehaviour __instance, in RenderTexture __state, RenderTexture destination) {
-        if (__state is not RenderTexture depthTexture) return;
+    public static void RedrawAOExempt(PostProcessingBehaviour __instance, RenderTexture destination) {
+        if (Shader.GetGlobalTexture("_CameraDepthTexture") is not RenderTexture depthTexture) return;
+        Console.WriteLine("hi");
+
         var ctx = __instance.m_Context;
 
         Graphics.SetRenderTarget(destination.colorBuffer, depthTexture.depthBuffer);
@@ -184,12 +162,9 @@ static class DepthOfField {
         GL.LoadProjectionMatrix(ctx.camera.projectionMatrix);
         RedrawJungle();
 
-        // Need to introduce a small depth bias so that the redrawn clouds don't Z-fight with the ones underneath with scuffed AO.
+        // Need to introduce a small depth bias so that the redrawn clouds don't Z-fight with the scuffed AO underneath.
         GL.LoadProjectionMatrix(Matrix4x4.Translate(new(0, 0, -0.00001f)) * ctx.camera.projectionMatrix);
         RedrawClouds();
-
-        // I'm supposed to do this, right? Then why is it throwing an exception?
-        //ctx.renderTextureFactory.Release(depthTexture);
     }
 
     private static void RedrawJungle() {
@@ -210,19 +185,13 @@ static class DepthOfField {
     }
 
     private static void RedrawClouds() {
-        GatherClouds();
-        if (clouds.Count == 0) return;
+        foreach (var obj in SpecialDraw.instances) {
+            if (!obj.SpecialThisFrame) continue;
 
-        foreach (var cloud in clouds) {
-            if (cloud.IsAttachedToKatamari) continue;
-
-            var renderer = cloud.mRenderers[0];
-            if (!renderer.isVisible || !renderer.enabled) continue;
-
+            var renderer = obj.Prop.mRenderers[0];
             var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
             renderer.material.SetPass(0);
-            //Material.GetDefaultMaterial().SetPass(0);
-            Graphics.DrawMeshNow(mesh, cloud.transform.localToWorldMatrix);
+            Graphics.DrawMeshNow(mesh, obj.transform.localToWorldMatrix);
         }
     }
 
