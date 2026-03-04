@@ -105,7 +105,7 @@ static class QualityRenderTargets {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(MonoScene), nameof(MonoScene.Awake))]
     public static void HiResCollectionImages(MonoScene __instance) {
-        var dim = 256 * GetHeight() / 1080;
+        var dim = 512 * GetHeight() / 1080;
         var descriptor = new RenderTextureDescriptor(dim, dim) { depthBufferBits = 24, msaaSamples = MsaaSamples };
 
         for (var i = 0; i < __instance.renderTexture.Length; i++) {
