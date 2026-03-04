@@ -76,14 +76,15 @@ static class QualityRenderTargets {
             .Instructions();
     }
 
+    private static int MsaaSamples => QualitySetting.antialiasingValue[QualitySetting.Instance.statusNo[4]];
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.Awake))]
     public static void MsaaPausesCameras(PauseMenu __instance) {
         __instance.objKatamariCamera.GetComponent<Camera>().allowMSAA = true;
         __instance.propCamera.allowMSAA = true;
 
-        var descriptor = __instance.propCamera.targetTexture.descriptor;
-        descriptor.msaaSamples = QualitySetting.antialiasingValue[QualitySetting.Instance.statusNo[4]];
+        var descriptor = __instance.propCamera.targetTexture.descriptor with { msaaSamples = MsaaSamples };
         var rt = new RenderTexture(descriptor) { name = __instance.propCamera.targetTexture.name };
         __instance.propCamera.targetTexture = rt;
         __instance.objUIPause.transform.Find("ImageProp/CollectProp_2D").GetComponent<RawImage>().texture = rt;
@@ -95,11 +96,23 @@ static class QualityRenderTargets {
         __instance.topCamera.allowMSAA = true;
         __instance.propCamera.allowMSAA = true;
 
-        var descriptor = __instance.propCamera.targetTexture.descriptor;
-        descriptor.msaaSamples = QualitySetting.antialiasingValue[QualitySetting.Instance.statusNo[4]];
+        var descriptor = __instance.propCamera.targetTexture.descriptor with { msaaSamples = MsaaSamples };
         var rt = new RenderTexture(descriptor) { name = __instance.propCamera.targetTexture.name };
         __instance.propCamera.targetTexture = rt;
         __instance.objUICanvas.transform.Find("CollectedProp/CollectProp_2D").GetComponent<RawImage>().texture = rt;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(MonoScene), nameof(MonoScene.Awake))]
+    public static void HiResCollectionImages(MonoScene __instance) {
+        var dim = 256 * GetHeight() / 1080;
+        var descriptor = new RenderTextureDescriptor(dim, dim) { depthBufferBits = 24, msaaSamples = MsaaSamples };
+
+        for (var i = 0; i < __instance.renderTexture.Length; i++) {
+            __instance.renderTexture[i].Release();
+            __instance.renderTexture[i] = new(descriptor);
+            __instance.renderTexture[i].Create();
+        }
     }
 
     private static int GetWidth() => Screen.currentResolution.width;
