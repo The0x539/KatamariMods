@@ -85,10 +85,9 @@ static class DepthOfField {
             .Instructions();
     }
 
-
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void DepthPassToFixDof(PostProcessingBehaviour __instance, RenderTexture source) {
+    public static void ManualDepthPass(PostProcessingBehaviour __instance, RenderTexture source, RenderTexture destination) {
         if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) return;
 
         var ctx = __instance.m_Context;
@@ -99,15 +98,10 @@ static class DepthOfField {
             depthCamera.enabled = false;
         }
 
-        var colorTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 0, RenderTextureFormat.R8, name: "Manual Depth Pass - Color");
-        var depthTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 24, RenderTextureFormat.Depth, name: "Manual Depth Pass - Depth");
-
-        depthCamera.CopyFrom(ctx.camera);
-        depthCamera.SetTargetBuffers(colorTexture.colorBuffer, depthTexture.depthBuffer);
-
-        var renderers = new List<Renderer>();
+        var renderersToSkip = new List<Renderer>();
 
         if (GlobalWork.Instance.player[0].f32Alpha == 0) {
+            // This might be slightly expensive but should only happen during the end-of-level Royal Rainbow animation, not during gameplay.
             foreach (var prop in GlobalWork.instance.listProp) {
                 if (prop == null) continue;
                 if (!prop.mIsAttachedToKatamari) continue;
@@ -115,28 +109,38 @@ static class DepthOfField {
                 // For reasons that remain unknown to me, disabling the renderer only in a gYm_OujiSetAlpha prefix
                 // doesn't fully work, and leads to the objects here drawing to the depth buffer. Frustrating!
                 foreach (var r in prop.mRenderers) {
-                    if (r.enabled) renderers.Add(r);
+                    if (r.enabled) renderersToSkip.Add(r);
                 }
                 foreach (var r in prop.smRenderers) {
-                    if (r.enabled) renderers.Add(r);
+                    if (r.enabled) renderersToSkip.Add(r);
                 }
             }
         }
         foreach (var obj in SpecialDraw.instances) {
             if (obj.SpecialThisFrame) {
-                renderers.Add(obj.Prop.mRenderers[0]);
+                renderersToSkip.Add(obj.Prop.mRenderers[0]);
             }
         }
 
-        foreach (var r in renderers) r.enabled = false;
-        depthCamera.Render();
-        foreach (var r in renderers) r.enabled = true;
+        var manualColorTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 0, RenderTextureFormat.R8, name: "Manual Depth Pass - Color");
+        var manualDepthTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 24, RenderTextureFormat.Depth, name: "Manual Depth Pass - Depth");
 
-        RenderTexture.active = Shader.GetGlobalTexture("_CameraDepthTexture") as RenderTexture;
+        depthCamera.CopyFrom(ctx.camera);
+        depthCamera.SetTargetBuffers(manualColorTexture.colorBuffer, manualDepthTexture.depthBuffer);
+
+        foreach (var r in renderersToSkip) r.enabled = false;
+        depthCamera.Render();
+        foreach (var r in renderersToSkip) r.enabled = true;
+
+        var trueDepthTexture = (RenderTexture)Shader.GetGlobalTexture("_CameraDepthTexture");
+        RenderTexture.active = trueDepthTexture;
         var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth");
         blitToDepth.SetPass(0);
-        blitToDepth.SetTexture("_MainTex", depthTexture);
+        blitToDepth.SetTexture("_MainTex", manualDepthTexture);
         DrawQuad();
+
+        ctx.renderTextureFactory.Release(manualColorTexture);
+        ctx.renderTextureFactory.Release(manualDepthTexture);
 
         if (__instance.m_AmbientOcclusion.active) {
             var cb = new CommandBuffer();
@@ -144,26 +148,12 @@ static class DepthOfField {
             Graphics.ExecuteCommandBuffer(cb);
         }
 
-        ctx.renderTextureFactory.Release(colorTexture);
-        ctx.renderTextureFactory.Release(depthTexture);
-    }
+        // TODO: Similarly, manually draw the "dust/smoke" particles spawned when you roll and from smokestacks
 
-    // TODO: Similarly, manually draw the "dust" particles spawned when you roll
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void RedrawAOExempt(PostProcessingBehaviour __instance, RenderTexture destination) {
-        if (Shader.GetGlobalTexture("_CameraDepthTexture") is not RenderTexture depthTexture) return;
-        Console.WriteLine("hi");
-
-        var ctx = __instance.m_Context;
-
-        Graphics.SetRenderTarget(destination.colorBuffer, depthTexture.depthBuffer);
+        RenderTexture.active = source;
         GL.SetViewMatrix(ctx.camera.worldToCameraMatrix);
         GL.LoadProjectionMatrix(ctx.camera.projectionMatrix);
         RedrawJungle();
-
-        // Need to introduce a small depth bias so that the redrawn clouds don't Z-fight with the scuffed AO underneath.
-        GL.LoadProjectionMatrix(Matrix4x4.Translate(new(0, 0, -0.00001f)) * ctx.camera.projectionMatrix);
         RedrawClouds();
     }
 
