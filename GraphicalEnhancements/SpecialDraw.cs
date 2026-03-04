@@ -36,7 +36,10 @@ public sealed class SpecialDraw : MonoBehaviour {
         if (prop.mRenderers == null) return;
         if (prop.mRenderers.Length == 0) return;
 
-        prop.mRenderers[0].enabled = false;
+        var renderer = prop.mRenderers[0];
+        if (!renderer.isVisible) return;
+
+        renderer.enabled = false;
         this.specialThisFrame = true;
     }
 
