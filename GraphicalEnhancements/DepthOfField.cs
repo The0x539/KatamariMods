@@ -148,11 +148,16 @@ static class DepthOfField {
             Graphics.ExecuteCommandBuffer(cb);
         }
 
+        GL.SetViewMatrix(ctx.camera.worldToCameraMatrix);
+        GL.LoadProjectionMatrix(ctx.camera.projectionMatrix);
+
+        // Now that SSAO is done, it's safe to draw the clouds to the depth buffer so that DoF blurs them correctly.
+        RenderTexture.active = trueDepthTexture;
+        RedrawClouds();
+
         // TODO: Similarly, manually draw the "dust/smoke" particles spawned when you roll and from smokestacks
 
         RenderTexture.active = source;
-        GL.SetViewMatrix(ctx.camera.worldToCameraMatrix);
-        GL.LoadProjectionMatrix(ctx.camera.projectionMatrix);
         RedrawJungle();
         RedrawClouds();
     }
