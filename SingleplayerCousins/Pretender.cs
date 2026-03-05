@@ -502,8 +502,8 @@ internal static class PretenderLoader {
     }
 
     private static void LoadNormals(Assimp.Mesh aMesh, Mesh uMesh) {
-        if (aMesh.HasNormals && false) {
-            var normals = aMesh.Normals.Select(n => -n.ToUnity()).ToList();
+        if (aMesh.HasNormals) {
+            var normals = aMesh.Normals.Select(n => n.ToUnity()).ToList();
             uMesh.SetNormals(normals);
         } else {
             uMesh.RecalculateNormals();
