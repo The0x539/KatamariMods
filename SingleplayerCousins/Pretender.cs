@@ -327,6 +327,7 @@ internal static class PretenderLoader {
         }
 
         var nodes = new Stack<Assimp.Node>();
+        var newBones = new List<Assimp.Node>();
         nodes.Push(scene.RootNode);
         while (nodes.Count > 0) {
             var node = nodes.Pop();
@@ -335,11 +336,24 @@ internal static class PretenderLoader {
                 bone.transform.localPosition = position.ToUnity();
                 //bone.transform.rotation = Quaternion.Inverse(rotation.ToUnity());
                 //bone.transform.localScale = scale.ToUnity();
+            } else if (node.Name.StartsWith("JNT_")) {
+                newBones.Add(node);
             }
 
             foreach (var child in node.Children) {
                 nodes.Push(child);
             }
+        }
+
+        foreach (var node in newBones) {
+            var bone = new GameObject(node.Name);
+            bones.Add(bone.name, bone.transform);
+        }
+        foreach (var node in newBones) {
+            var bone = bones[node.Name];
+            bone.SetParent(bones[node.Parent.Name]);
+            node.Transform.Decompose(out var scale, out var rotation, out var position);
+            bone.transform.localPosition = position.ToUnity();
         }
 
         foreach (var aMesh in scene.Meshes) {
