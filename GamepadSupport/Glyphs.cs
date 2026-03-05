@@ -111,6 +111,12 @@ public static class Glyphs {
     [HarmonyPatch(typeof(UIKinoko), nameof(UIKinoko.Start))]
     public static void UseKeyImageCheck(UIKinoko __instance) {
         SetDashIcons(__instance._go_guidePlay.transform.Find("tame_icon/icon/pad_joy-con"));
+        var rotateIcon = __instance._go_guideMenu.transform.Find("Text_Choice2/Image_icon_ps").gameObject;
+        rotateIcon.AddComponent<KeyImageCheck>().SetIcon(KeyMap.StickRightUp);
+
+        var rotateIcon2 = Object.Instantiate(rotateIcon, rotateIcon.transform.parent);
+        rotateIcon2.GetComponent<KeyImageCheck>().SetIcon(KeyMap.StickRightDown);
+        rotateIcon2.SetActive(true);
     }
 
     [HarmonyPostfix]
