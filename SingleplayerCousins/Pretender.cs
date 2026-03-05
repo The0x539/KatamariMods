@@ -2,6 +2,8 @@
 
 using HarmonyLib;
 
+using SingleplayerCousins.Cousins;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -61,6 +63,13 @@ public sealed class Pretender {
         var ouji = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
         PretenderLoader.ApplyModel(ouji, this.FilePath);
         ouji.name = $"OUJI{this.Id:00}-{this.Name}";
+
+        switch (this.Id) {
+            case (int)PretenderId.Dega:
+                ouji.AddComponent<Dega>();
+                break;
+        }
+
         return ouji;
     }
 
