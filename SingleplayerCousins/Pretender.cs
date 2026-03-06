@@ -365,6 +365,10 @@ internal static class PretenderLoader {
             bone.transform.localPosition = position.ToUnity();
         }
 
+        // Without this, extra bones get destroyed upon loading the title scene for some unclear reason,
+        // despite the fact that they are obviously part of the character's hierarchy, which otherwise persists.
+        UnityObject.DontDestroyOnLoad(ouji);
+
         foreach (var aMesh in scene.Meshes) {
             var bodyPart = new GameObject(aMesh.Name);
             bodyPart.transform.SetParent(body_root);
