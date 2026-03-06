@@ -1,12 +1,14 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace GamepadSupport.SteamInput;
 
 public readonly unsafe struct ISteamInput {
+#pragma warning disable CS0169
+#pragma warning disable CS0649
     private readonly void* ptr;
+#pragma warning restore
 
     public static readonly ISteamInput Instance = SteamAPI_SteamInput_v006();
 
@@ -47,7 +49,11 @@ internal static class ISteamInputBindings {
 }
 
 internal readonly unsafe struct LPUtf8Str {
+#pragma warning disable CS0169
+#pragma warning disable CS0649
     private readonly byte* ptr;
+#pragma warning restore
+
 
     public unsafe readonly override string ToString() {
         if (this.ptr == null) return "";
