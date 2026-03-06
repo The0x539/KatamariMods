@@ -115,6 +115,20 @@ static class QualityRenderTargets {
         }
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(NameSelector), nameof(NameSelector.Start))]
+    public static void HiResCollectionListImage(NameSelector __instance) {
+        var dim = 512 * GetHeight() / 1080;
+        var descriptor = new RenderTextureDescriptor(dim, dim) { depthBufferBits = 24, msaaSamples = MsaaSamples };
+        var rt = new RenderTexture(descriptor);
+
+        __instance.rt.Release();
+        __instance.rt = rt;
+        rt.Create();
+        __instance._monoOnlyCamera.SetTargetTexture(rt);
+        __instance._rImage_viewer.texture = rt;
+    }
+
     private static int GetWidth() => Screen.currentResolution.width;
     private static int GetHeight() => Screen.currentResolution.height;
 }
