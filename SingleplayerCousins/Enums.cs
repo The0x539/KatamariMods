@@ -31,6 +31,7 @@ public enum PretenderId {
     Dega = 25, START = Dega,
     Belle = 26,
     Colonq = 27,
+    Soyo = 28,
 
     DYNAMIC = 40,
 }
