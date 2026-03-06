@@ -449,14 +449,21 @@ internal static class PretenderLoader {
     }
 
     public static void ApplyVanta(GameObject ouji) {
-        // He draws fine ingame, but not in the main menu scene.
-        // There, he gets some lighting.
-        // TODO: use a Jungle-like approach in UI_MainMenu & co. to get him to draw as properly black there.
-
         var bodyMat = UnityObject.Instantiate(Material.GetDefaultMaterial());
-        bodyMat.color = Color.black;
-        foreach (var smr in ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
-            smr.material = bodyMat;
+        if (ouji.scene.name is null) {
+            // TODO: For some reason, this doesn't work properly in the versus mode selector preview.
+            Jungle.Dress(ouji, ["antena_m", "body_m", "hand_m", "head_m", "leg_m", "nose_m"]);
+            var mr = ouji.transform.Find("JungleBoardEnding/JungleBoardPanel").GetComponent<MeshRenderer>();
+            mr.material.mainTexture = Texture2D.blackTexture;
+            mr.transform.parent.gameObject.name = "JungleBoardEnding(Clone)";
+            //UnityObject.Destroy(mr.transform.parent.GetComponent<Jungle.FaceCamera>());
+            UnityObject.DontDestroyOnLoad(ouji);
+        } else {
+            Console.WriteLine("Nope, " + ouji.scene.name);
+            bodyMat.color = Color.black;
+            foreach (var smr in ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
+                smr.sharedMaterial = bodyMat;
+            }
         }
 
         var faceMat = UnityObject.Instantiate(bodyMat);
@@ -464,7 +471,7 @@ internal static class PretenderLoader {
         faceMat.EnableKeyword("_EMISSION");
         faceMat.SetColor("_EmissionColor", Color.white);
         foreach (var smr in ouji.transform.Find("face_root/face").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
-            smr.material = faceMat;
+            smr.sharedMaterial = faceMat;
         }
     }
 

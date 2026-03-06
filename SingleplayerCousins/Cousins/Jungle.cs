@@ -49,7 +49,7 @@ public static class Jungle {
     // so as a workaround, stick the actual yielding method elsewhere.
     internal static IEnumerator LoadPrefabs() => Prefabs.Init();
 
-    public static void Dress(GameObject ouji) {
+    public static void Dress(GameObject ouji, string[]? bodyPartNames = null) {
         if (Prefabs.billboard == null || Prefabs.material == null) return;
 
         var billboard = Object.Instantiate(Prefabs.billboard);
@@ -62,7 +62,7 @@ public static class Jungle {
         billboard.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Default");
 
         var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
-            .AllWithNames("head_tawara_m", "body01_m", "hand_m");
+            .AllWithNames(bodyPartNames ?? ["head_tawara_m", "body01_m", "hand_m"]);
 
         var sceneName = ouji.scene.name;
         if (sceneName == "Result2") {
@@ -189,9 +189,14 @@ public static class Jungle {
             euler = AccessTools.Method(typeof(Quaternion), nameof(Quaternion.Euler), [typeof(Vector3)]),
             setRotation = AccessTools.PropertySetter(typeof(Transform), nameof(Transform.rotation)),
             cameraPlayer = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector._cameraPlayer)),
-            lookAt = AccessTools.Method(typeof(Transform), nameof(Transform.LookAt), [typeof(Transform)]);
+            lookAt = AccessTools.Method(typeof(Transform), nameof(Transform.LookAt), [typeof(Transform)]),
+            jungleOrVanta = AccessTools.Method(typeof(Jungle), nameof(JungleOrVanta));
 
         return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldc_I4_S, (sbyte)Cousin.Jungle),
+                          new(OpCodes.Bne_Un))
+            .InsertAndAdvance([new(OpCodes.Call, jungleOrVanta)])
             // Find: this.objBillboard.transform.rotation = Quaternion.Euler(Vector3.zero);
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
@@ -211,6 +216,11 @@ public static class Jungle {
                               new(OpCodes.Call, lookAt))
             .Instructions();
     }
+
+    public static int JungleOrVanta(int id) => id switch {
+        (int)Cousin.Jungle or (int)PretenderId.Vanta => (int)Cousin.Jungle,
+        _ => id,
+    };
 
     // This is a big improvement, but for some reason, the transition from the title screen to the home planet still has a jump,
     // because the billboard is positioned too high up during that animation? Like there's some kind of additional offset.
