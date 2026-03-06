@@ -370,6 +370,7 @@ internal static class PretenderLoader {
 
         foreach (var node in newBones) {
             var bone = new GameObject(node.Name);
+            bone.hideFlags = HideFlags.HideAndDontSave;
             bones.Add(bone.name, bone.transform);
         }
         foreach (var node in newBones) {
@@ -378,10 +379,6 @@ internal static class PretenderLoader {
             node.Transform.Decompose(out var scale, out var rotation, out var position);
             bone.transform.localPosition = position.ToUnity();
         }
-
-        // Without this, extra bones get destroyed upon loading the title scene for some unclear reason,
-        // despite the fact that they are obviously part of the character's hierarchy, which otherwise persists.
-        UnityObject.DontDestroyOnLoad(ouji);
 
         foreach (var aMesh in scene.Meshes) {
             var bodyPart = new GameObject(aMesh.Name);
@@ -464,10 +461,14 @@ internal static class PretenderLoader {
             var tex = new Texture2D(1, 1);
             tex.SetPixel(0, 0, new Color(0, 0, 0, 1));
             tex.Apply();
+            tex.hideFlags = HideFlags.HideAndDontSave;
 
             mr.material.mainTexture = tex;
+            mr.material.hideFlags = HideFlags.HideAndDontSave;
             mr.transform.parent.gameObject.name = "JungleBoardEnding(Clone)";
-            UnityObject.DontDestroyOnLoad(ouji);
+
+            mr.gameObject.hideFlags = HideFlags.HideAndDontSave;
+            mr.transform.parent.gameObject.hideFlags = HideFlags.HideAndDontSave;
         } else {
             bodyMat.color = Color.black;
             foreach (var smr in ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
