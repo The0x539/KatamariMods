@@ -457,15 +457,18 @@ internal static class PretenderLoader {
     public static void ApplyVanta(GameObject ouji) {
         var bodyMat = UnityObject.Instantiate(Material.GetDefaultMaterial());
         if (ouji.scene.name is null) {
-            // TODO: For some reason, this doesn't work properly in the versus mode selector preview.
             Jungle.Dress(ouji, ["antena_m", "body_m", "hand_m", "head_m", "leg_m", "nose_m"]);
             var mr = ouji.transform.Find("JungleBoardEnding/JungleBoardPanel").GetComponent<MeshRenderer>();
-            mr.material.mainTexture = Texture2D.blackTexture;
+
+            // Texture.blackTexture has 0 in the alpha channel, which doesn't work in menus.
+            var tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, new Color(0, 0, 0, 1));
+            tex.Apply();
+
+            mr.material.mainTexture = tex;
             mr.transform.parent.gameObject.name = "JungleBoardEnding(Clone)";
-            //UnityObject.Destroy(mr.transform.parent.GetComponent<Jungle.FaceCamera>());
             UnityObject.DontDestroyOnLoad(ouji);
         } else {
-            Console.WriteLine("Nope, " + ouji.scene.name);
             bodyMat.color = Color.black;
             foreach (var smr in ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
                 smr.sharedMaterial = bodyMat;
