@@ -6,5 +6,8 @@
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 		<Nullable>enable</Nullable>
 		<TargetFramework>net35</TargetFramework>
+		<OutputPath>$(SolutionDir)/out</OutputPath>
+		<UseCommonOutputDirectory>true</UseCommonOutputDirectory>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
 </Project>
