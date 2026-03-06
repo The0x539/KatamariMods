@@ -49,6 +49,8 @@ public sealed class Pretender {
             var p = new Pretender { Id = id, Name = name, FilePath = path, BallFilePath = ballPath };
             pretenders.Add(id, p);
         }
+
+        pretenders.Add((int)PretenderId.Vanta, new Pretender { Id = (int)PretenderId.Vanta, Name = "Vanta" });
     }
 
     public int Id { get; init; } = 0;
@@ -61,8 +63,14 @@ public sealed class Pretender {
     public GameObject Reify() {
         var name = "OUJI16"; // June is a pretty Prince-shaped character who's also unlocked from the start, so a good candidate
         var ouji = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
-        PretenderLoader.ApplyModel(ouji, this.FilePath);
         ouji.name = $"OUJI{this.Id:00}-{this.Name}";
+
+        if (this.Id == (int)PretenderId.Vanta) {
+            PretenderLoader.ApplyVanta(ouji);
+            return ouji;
+        }
+
+        PretenderLoader.ApplyModel(ouji, this.FilePath);
 
         switch (this.Id) {
             case (int)PretenderId.Dega:
@@ -438,6 +446,26 @@ internal static class PretenderLoader {
             part.enabled = false;
         }
         bones["JNT_antenna"].GetChild(0).gameObject.SetActive(false);
+    }
+
+    public static void ApplyVanta(GameObject ouji) {
+        // He draws fine ingame, but not in the main menu scene.
+        // There, he gets some lighting.
+        // TODO: use a Jungle-like approach in UI_MainMenu & co. to get him to draw as properly black there.
+
+        var bodyMat = UnityObject.Instantiate(Material.GetDefaultMaterial());
+        bodyMat.color = Color.black;
+        foreach (var smr in ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
+            smr.material = bodyMat;
+        }
+
+        var faceMat = UnityObject.Instantiate(bodyMat);
+        faceMat.color = Color.white;
+        faceMat.EnableKeyword("_EMISSION");
+        faceMat.SetColor("_EmissionColor", Color.white);
+        foreach (var smr in ouji.transform.Find("face_root/face").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
+            smr.material = faceMat;
+        }
     }
 
     public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
