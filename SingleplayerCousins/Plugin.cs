@@ -229,7 +229,11 @@ public sealed class Plugin : BaseUnityPlugin {
         if (oujiName == old.name) return;
 
         GameObject prefab;
-        if (Pretender.pretenders.TryGetValue(idx, out var pretender)) {
+
+        var itoko = GlobalWork.Instance.objItoko;
+        if (itoko != null && itoko.Length >= idx && itoko[idx - 1] != null) {
+            prefab = itoko[idx - 1];
+        } else if (Pretender.pretenders.TryGetValue(idx, out var pretender)) {
             prefab = pretender.Reify();
         } else {
             prefab = AssetBundleSimulator.Instance.LoadAsset<GameObject>(oujiName, oujiName);
