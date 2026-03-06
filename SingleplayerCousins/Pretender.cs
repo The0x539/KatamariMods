@@ -19,7 +19,9 @@ namespace SingleplayerCousins;
 
 public sealed class Pretender {
     public static readonly Dictionary<int, Pretender> pretenders;
-    public static readonly int maxID = 24;
+    private static int maxID = 24;
+
+    public static int MaxID => maxID;
 
     static Pretender() {
         pretenders = [];
@@ -41,16 +43,20 @@ public sealed class Pretender {
                 id = dynamicId++;
             }
 
-            maxID = Math.Max(maxID, id);
-
-            var ballPath = path.Replace(".fbx", ".ball.fbx");
-            if (!File.Exists(ballPath)) ballPath = null;
-
-            var p = new Pretender { Id = id, Name = name, FilePath = path, BallFilePath = ballPath };
-            pretenders.Add(id, p);
+            Register(id, name, path);
         }
 
-        pretenders.Add((int)PretenderId.Vanta, new Pretender { Id = (int)PretenderId.Vanta, Name = "Vanta" });
+        Register((int)PretenderId.Vanta, "Vanta", "");
+    }
+
+    private static void Register(int id, string name, string path) {
+        maxID = Math.Max(maxID, id);
+
+        var ballPath = path.Replace(".fbx", ".ball.fbx");
+        if (!File.Exists(ballPath)) ballPath = null;
+
+        var p = new Pretender { Id = id, Name = name, FilePath = path, BallFilePath = ballPath };
+        pretenders.Add(id, p);
     }
 
     public int Id { get; init; } = 0;
@@ -98,7 +104,7 @@ public static class PretenderPatches {
     public static void InitItoko(GlobalWork __instance) {
         if (__instance.objItoko.Length > 24) return;
 
-        var newArr = new GameObject[Pretender.maxID];
+        var newArr = new GameObject[Pretender.MaxID];
 
         for (var i = 0; i < 24; i++) {
             newArr[i] = __instance.objItoko[i];
@@ -125,7 +131,7 @@ public static class PretenderPatches {
     public static void AddToOujiArray(SI_GAME siGame) {
         if (siGame.oujiArray.Length > 24) return;
 
-        var newArr = new int[Pretender.maxID];
+        var newArr = new int[Pretender.MaxID];
 
         for (var i = 0; i < 24; i++) {
             newArr[i] = siGame.oujiArray[i];
