@@ -4,7 +4,7 @@
 		<PackageReference Include="BepInEx.Core" />
 	</ItemGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL\BepInEx\patchers" />
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="Exists($(GameDir))">
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\patchers" />
 	</Target>
 </Project>
