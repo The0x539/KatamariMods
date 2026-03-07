@@ -30,7 +30,16 @@ public class KonamiCode : MonoBehaviour {
         } else if (pad.IsDown(sequence[this.sequenceIndex])) {
             this.sequenceIndex++;
         } else if (pad.IsAnyDown()) {
-            this.Reset();
+            if (pad.IsDown(KeyMap.Up)) {
+                if (this.sequenceIndex == 2) {
+                    // If UP is pressed 3 or more times in a row, stay "stuck" expecting the following down.
+                } else {
+                    // If a sequence is interrupted by UP rather than another button, treat it as the start of another attempt.
+                    this.sequenceIndex = 1;
+                }
+            } else {
+                this.Reset();
+            }
         }
     }
 }
