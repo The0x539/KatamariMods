@@ -370,6 +370,7 @@ internal static class PretenderLoader {
 
         foreach (var node in newBones) {
             var bone = new GameObject(node.Name);
+            // This hideFlags is load-bearing for e.g. Dega's tail
             bone.hideFlags = HideFlags.HideAndDontSave;
             bones.Add(bone.name, bone.transform);
         }
@@ -383,6 +384,7 @@ internal static class PretenderLoader {
         foreach (var aMesh in scene.Meshes) {
             var bodyPart = new GameObject(aMesh.Name);
             bodyPart.transform.SetParent(body_root);
+            // This hideFlags is load-bearing for all custom-model pretenders (everyone except Vanta at the time of writing)
             bodyPart.hideFlags = HideFlags.HideAndDontSave;
 
             var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
@@ -455,20 +457,18 @@ internal static class PretenderLoader {
         var bodyMat = UnityObject.Instantiate(Material.GetDefaultMaterial());
         if (ouji.scene.name is null) {
             Jungle.Dress(ouji, ["antena_m", "body_m", "hand_m", "head_m", "leg_m", "nose_m"]);
-            var mr = ouji.transform.Find("JungleBoardEnding/JungleBoardPanel").GetComponent<MeshRenderer>();
+            var billboard = ouji.transform.Find("JungleBoardEnding/JungleBoardPanel").GetComponent<MeshRenderer>();
 
             // Texture.blackTexture has 0 in the alpha channel, which doesn't work in menus.
             var tex = new Texture2D(1, 1);
             tex.SetPixel(0, 0, new Color(0, 0, 0, 1));
             tex.Apply();
-            tex.hideFlags = HideFlags.HideAndDontSave;
+            billboard.material.mainTexture = tex;
 
-            mr.material.mainTexture = tex;
-            mr.material.hideFlags = HideFlags.HideAndDontSave;
-            mr.transform.parent.gameObject.name = "JungleBoardEnding(Clone)";
-
-            mr.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            mr.transform.parent.gameObject.hideFlags = HideFlags.HideAndDontSave;
+            // These hideFlags assignments are both load-bearing for the billboard
+            // It seems to even be important that it applies to the GameObject and not a component. Yikes.
+            billboard.gameObject.hideFlags = HideFlags.HideAndDontSave;
+            billboard.transform.parent.gameObject.hideFlags = HideFlags.HideAndDontSave;
         } else {
             bodyMat.color = Color.black;
             foreach (var smr in ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {

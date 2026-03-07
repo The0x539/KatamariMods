@@ -189,14 +189,9 @@ public static class Jungle {
             euler = AccessTools.Method(typeof(Quaternion), nameof(Quaternion.Euler), [typeof(Vector3)]),
             setRotation = AccessTools.PropertySetter(typeof(Transform), nameof(Transform.rotation)),
             cameraPlayer = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector._cameraPlayer)),
-            lookAt = AccessTools.Method(typeof(Transform), nameof(Transform.LookAt), [typeof(Transform)]),
-            jungleOrVanta = AccessTools.Method(typeof(Jungle), nameof(JungleOrVanta));
+            lookAt = AccessTools.Method(typeof(Transform), nameof(Transform.LookAt), [typeof(Transform)]);
 
         return new CodeMatcher(instructions)
-            .MatchForward(false,
-                          new(OpCodes.Ldc_I4_S, (sbyte)Cousin.Jungle),
-                          new(OpCodes.Bne_Un))
-            .InsertAndAdvance([new(OpCodes.Call, jungleOrVanta)])
             // Find: this.objBillboard.transform.rotation = Quaternion.Euler(Vector3.zero);
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
@@ -216,11 +211,6 @@ public static class Jungle {
                               new(OpCodes.Call, lookAt))
             .Instructions();
     }
-
-    public static int JungleOrVanta(int id) => id switch {
-        (int)Cousin.Jungle or (int)PretenderId.Vanta => (int)Cousin.Jungle,
-        _ => id,
-    };
 
     // This is a big improvement, but for some reason, the transition from the title screen to the home planet still has a jump,
     // because the billboard is positioned too high up during that animation? Like there's some kind of additional offset.
