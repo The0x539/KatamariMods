@@ -79,6 +79,9 @@ public sealed class Pretender {
             case (int)PretenderId.Dega:
                 ouji.AddComponent<Dega>();
                 break;
+            case (int)PretenderId.Soyo:
+                ouji.AddComponent<PreventArmatureExplosion>();
+                break;
         }
 
         return ouji;
