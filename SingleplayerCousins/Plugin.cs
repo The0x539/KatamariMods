@@ -266,20 +266,23 @@ public sealed class Plugin : BaseUnityPlugin {
         var oldAnimator = old.GetComponent<Animator>();
         animator.runtimeAnimatorController = oldAnimator.runtimeAnimatorController;
 
-        if (idx == (int)Cousin.Jungle) {
-            try {
+        switch (idx) {
+            case (int)Cousin.Jungle:
                 Jungle.Dress(ouji);
-            } catch (Exception e) {
-                e.LogDetailed();
-            }
-        } else if (idx == (int)Cousin.Marny) {
-            ouji.AddComponent<Marny>();
-        } else if (idx == (int)Cousin.Dipp) {
-            // This is exceptionally dumb.
-            // Ideally I'd simply "merge" the animation controllers,
-            // as the one that Dipp loads in with has his animation clip(s)
-            // for animating the texture, but it seems like Unity makes that fundamentally impossible for some reason.
-            ouji.AddComponent<Dipp>();
+                break;
+            case (int)Cousin.Marny:
+                ouji.AddComponent<Marny>();
+                break;
+            case (int)Cousin.Dipp:
+                // This is exceptionally dumb.
+                // Ideally I'd simply "merge" the animation controllers,
+                // as the one that Dipp loads in with has his animation clip(s)
+                // for animating the texture, but it seems like Unity makes that fundamentally impossible for some reason.
+                ouji.AddComponent<Dipp>();
+                break;
+            case (int)PretenderId.Vanta:
+                Vanta.Dress(ouji);
+                break;
         }
 
         try {

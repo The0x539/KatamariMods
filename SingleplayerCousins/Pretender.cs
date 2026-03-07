@@ -71,9 +71,7 @@ public sealed class Pretender {
         var ouji = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
         ouji.name = $"OUJI{this.Id:00}-{this.Name}";
 
-        if (this.Id == (int)PretenderId.Vanta) {
-            PretenderLoader.ApplyVanta(ouji);
-        } else {
+        if (this.Id != (int)PretenderId.Vanta) {
             PretenderLoader.ApplyModel(ouji, this.FilePath);
         }
 
@@ -91,7 +89,8 @@ public sealed class Pretender {
         var ball = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
 
         if (this.Id == (int)PretenderId.Vanta) {
-            PretenderLoader.ApplyBallVanta(ball);
+            // TODO: Depth hack similar to the player skin
+            Vanta.DressBall(ball);
         } else {
             PretenderLoader.ApplyBallModel(ball, this.BallFilePath ?? "");
         }
@@ -119,6 +118,16 @@ public static class PretenderPatches {
         }
 
         __instance.objItoko = newArr;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KinokoRotator), nameof(KinokoRotator.CloneItoko))]
+    public static void DressVantaOnMushroom(KinokoRotator __instance) {
+        foreach (var ouji in __instance._list_dataOuji) {
+            if (ouji.kinokoMover.OujiIndex == (int)PretenderId.Vanta) {
+                Vanta.Dress(ouji.objOuji);
+            }
+        }
     }
 
     [HarmonyPostfix]
@@ -216,7 +225,11 @@ public static class PretenderPatches {
             }
             player.animController = newArr;
 
-            return pretender.Reify();
+            var ouji = pretender.Reify();
+            if (pretender.Id == (int)PretenderId.Vanta) {
+                Vanta.Dress(ouji);
+            }
+            return ouji;
         } else {
             var name = player.oujiName;
             return AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
@@ -458,40 +471,6 @@ internal static class PretenderLoader {
         bones["JNT_antenna"].GetChild(0).gameObject.SetActive(false);
     }
 
-    public static void ApplyVanta(GameObject ouji) {
-        var bodyMat = UnityObject.Instantiate(Material.GetDefaultMaterial());
-        if (ouji.scene.name is null) {
-            Jungle.Dress(ouji, ["antena_m", "body_m", "hand_m", "head_m", "leg_m", "nose_m"]);
-            var billboard = ouji.transform.Find("JungleBoardEnding/JungleBoardPanel").GetComponent<MeshRenderer>();
-
-            // Texture.blackTexture has 0 in the alpha channel, which doesn't work in menus.
-            var tex = new Texture2D(1, 1);
-            tex.SetPixel(0, 0, new Color(0, 0, 0, 1));
-            tex.Apply();
-            billboard.material.mainTexture = tex;
-
-            // These hideFlags assignments are both load-bearing for the billboard
-            // It seems to even be important that it applies to the GameObject and not a component. Yikes.
-            billboard.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            billboard.transform.parent.gameObject.hideFlags = HideFlags.HideAndDontSave;
-        } else {
-            bodyMat.color = Color.black;
-            foreach (var smr in ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
-                smr.sharedMaterial = bodyMat;
-            }
-        }
-
-        var faceMat = UnityObject.Instantiate(bodyMat);
-        faceMat.color = Color.white;
-        faceMat.EnableKeyword("_EMISSION");
-        faceMat.SetColor("_EmissionColor", Color.white);
-        foreach (var smr in ouji.transform.Find("face_root/face").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
-            smr.sharedMaterial = faceMat;
-        }
-
-        ouji.transform.Find("JNT_root/JNT_waist/JNT_spine_01/JNT_spine_02/JNT_neck/JNT_head/JNT_antenna/Ef_Highlight").gameObject.SetActive(false);
-    }
-
     public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
         var filter = ball.GetComponent<MeshFilter>();
         var renderer = ball.GetComponent<MeshRenderer>();
@@ -512,12 +491,6 @@ internal static class PretenderLoader {
 
         filter.mesh = uMesh;
         renderer.material = uMaterial;
-    }
-
-    public static void ApplyBallVanta(GameObject ball) {
-        var mat = UnityObject.Instantiate(Material.GetDefaultMaterial());
-        mat.color = Color.black;
-        ball.GetComponent<MeshRenderer>().material = mat;
     }
 
     private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat) {
