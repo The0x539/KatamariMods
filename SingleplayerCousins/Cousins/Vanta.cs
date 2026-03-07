@@ -12,8 +12,6 @@ public static class Vanta {
     private static readonly string[] billboardScenes = ["Title3", "UI_MainMenu", "UI_OujiStar", "Result2"];
 
     public static void Dress(GameObject ouji) {
-        //System.Console.WriteLine($"Vanta.Dress in scene {ouji.scene.name}");
-
         Material? bodyMat = null;
         if (billboardScenes.Contains(ouji.scene.name)) {
             Jungle.Dress(ouji, ["antena_m", "body_m", "hand_m", "head_m", "leg_m", "nose_m"]);

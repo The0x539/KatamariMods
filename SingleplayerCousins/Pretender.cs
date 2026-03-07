@@ -89,7 +89,6 @@ public sealed class Pretender {
         var ball = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
 
         if (this.Id == (int)PretenderId.Vanta) {
-            // TODO: Depth hack similar to the player skin
             Vanta.DressBall(ball);
         } else {
             PretenderLoader.ApplyBallModel(ball, this.BallFilePath ?? "");
