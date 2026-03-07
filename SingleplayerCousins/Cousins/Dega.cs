@@ -8,6 +8,9 @@ public sealed class Dega : MonoBehaviour {
 
     public void Awake() {
         this.tail = this.transform.Find("JNT_root/JNT_waist/JNT_tail");
+        if (this.gameObject.GetComponent<PreventArmatureExplosion>() == null) {
+            this.gameObject.AddComponent<PreventArmatureExplosion>();
+        }
     }
 
     // TODO: Animate multiple joints (probably 3-4?) along the tail's length rather than treating it as one solid object
