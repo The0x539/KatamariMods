@@ -483,6 +483,8 @@ internal static class PretenderLoader {
         foreach (var smr in ouji.transform.Find("face_root/face").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
             smr.sharedMaterial = faceMat;
         }
+
+        ouji.transform.Find("JNT_root/JNT_waist/JNT_spine_01/JNT_spine_02/JNT_neck/JNT_head/JNT_antenna/Ef_Highlight").gameObject.SetActive(false);
     }
 
     public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
