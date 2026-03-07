@@ -64,7 +64,7 @@ public sealed class Pretender {
     public string FilePath { get; init; } = "";
     public string? BallFilePath { get; init; } = null;
 
-    public bool HasBall => this.BallFilePath != null;
+    public bool HasBall => this.BallFilePath != null || this.Id == (int)PretenderId.Vanta;
 
     public GameObject Reify() {
         var name = "OUJI16"; // June is a pretty Prince-shaped character who's also unlocked from the start, so a good candidate
@@ -73,10 +73,9 @@ public sealed class Pretender {
 
         if (this.Id == (int)PretenderId.Vanta) {
             PretenderLoader.ApplyVanta(ouji);
-            return ouji;
+        } else {
+            PretenderLoader.ApplyModel(ouji, this.FilePath);
         }
-
-        PretenderLoader.ApplyModel(ouji, this.FilePath);
 
         switch (this.Id) {
             case (int)PretenderId.Dega:
@@ -90,7 +89,13 @@ public sealed class Pretender {
     public GameObject ReifyBall() {
         var name = "core_01";
         var ball = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
-        PretenderLoader.ApplyBallModel(ball, this.BallFilePath ?? "");
+
+        if (this.Id == (int)PretenderId.Vanta) {
+            PretenderLoader.ApplyBallVanta(ball);
+        } else {
+            PretenderLoader.ApplyBallModel(ball, this.BallFilePath ?? "");
+        }
+
         return ball;
     }
 }
@@ -491,7 +496,6 @@ internal static class PretenderLoader {
         var filter = ball.GetComponent<MeshFilter>();
         var renderer = ball.GetComponent<MeshRenderer>();
 
-
         var aMat = scene.Materials[0];
         var uTex = LoadTexture(scene, aMat);
         var uMaterial = UnityObject.Instantiate(renderer.material);
@@ -508,6 +512,12 @@ internal static class PretenderLoader {
 
         filter.mesh = uMesh;
         renderer.material = uMaterial;
+    }
+
+    public static void ApplyBallVanta(GameObject ball) {
+        var mat = UnityObject.Instantiate(Material.GetDefaultMaterial());
+        mat.color = Color.black;
+        ball.GetComponent<MeshRenderer>().material = mat;
     }
 
     private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat) {
