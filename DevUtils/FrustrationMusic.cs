@@ -7,10 +7,10 @@ using System.Collections.Generic;
 namespace DevUtils;
 
 public static class FrustrationMusic {
-    private static readonly Dictionary<GAMEINFO_MIS, bool> playedThisSession = new() {
-        [GAMEINFO_MIS.GAMEINFO_MIS_17] = false, // Ursa Major
-        [GAMEINFO_MIS.GAMEINFO_MIS_19] = false, // Taurus
-        [GAMEINFO_MIS.GAMEINFO_MIS_21] = false, // Polaris
+    private static readonly Dictionary<int, bool> playedThisSession = new() {
+        [Define.GAMEINFO_M_URSA_MAJOR] = false,
+        [Define.GAMEINFO_M_TAURUS] = false,
+        [Define.GAMEINFO_M_POLARIS] = false,
     };
 
     [HarmonyPrefix]
@@ -22,7 +22,7 @@ public static class FrustrationMusic {
         if (gWork.u8GameMode != GI_GMODE.GI_GMODE_NORMAL) return;
         if (gWork.u8GameInfoMode != GAMEINFO_MODE.GAMEINFO_MODE_1P) return;
 
-        var mission = gWork.playMission;
+        var mission = (int)gWork.playMission;
         // If not present in the dictionary, then this isn't a level that this patch cares about.
         if (!playedThisSession.TryGetValue(mission, out var playedBefore)) return;
         playedThisSession[mission] = true;
