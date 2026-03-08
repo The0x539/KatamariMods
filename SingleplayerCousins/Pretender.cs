@@ -339,25 +339,20 @@ public static class PretenderPatches {
         return AssetBundleSimulator.instance.LoadAsset<GameObject>(name, name);
     }
 
-    [HarmonyPrefix]
+    [HarmonyPostfix]
     [HarmonyPatch(typeof(Entity_king_text), nameof(Entity_king_text.GetLocaliseText))]
-    public static bool OverrideLocalization(string id, int local, ref string __result) {
-        if (local != (int)LANGUAGE.ENGLISH) return true;
+    public static void OverrideLocalization(string id, int local, ref string __result) {
+        if (local != (int)LANGUAGE.ENGLISH) return;
 
         if (Plugin.OujiId == (int)PretenderId.Dega) {
-            if (id == "OT_OBJ_0512") {
-                __result = "Bud";
-                return false;
-            } else if (id == "OT_OBJ_1365") {
-                __result = "Bodega, Japan";
-                return false;
-            } else if (id == "OT_OBJ_1348") {
-                __result = "Bodega Sign";
-                return false;
-            }
+            __result = id switch {
+                "OT_OBJ_0512" => "Bud",
+                "OT_OBJ_1365" => "Bodega, Japan",
+                "OT_OBJ_1348" => "Bodega Sign",
+                "UI_SYS_002" => __result.Replace("Kata", "Rrata"),
+                _ => __result,
+            };
         }
-
-        return true;
     }
 }
 
