@@ -2,11 +2,6 @@
 
 using HarmonyLib;
 
-using System.Collections.Generic;
-using System.Reflection.Emit;
-
-using UnityEngine;
-
 namespace GraphicalEnhancements;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
