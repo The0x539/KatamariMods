@@ -29,12 +29,18 @@ static class DepthOfField {
             // This should probably be a graphics option
             ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
 
-            // This game uses a rather distant far-clip-plane value of 8000 due to how the gameplay works.
-            // Doing this causes the ambient occlusion effect's first shader to experience some precision-related errors
-            // if it tries to use the low-precision depth information from the DepthNormals texture.
-            // This setting tells the SSAO effect to use the output of a dedicated depth pass instead of DepthNormals,
-            // which the vanilla game didn't have working, but my patches get into a usable state.
-            ppb.profile.ambientOcclusion.settings = ppb.profile.ambientOcclusion.settings with { highPrecision = true };
+            ppb.profile.ambientOcclusion.settings = ppb.profile.ambientOcclusion.settings with {
+                // This game uses a rather distant far-clip-plane value of 8000 due to how the gameplay works.
+                // Doing this causes the ambient occlusion effect's first shader to experience some precision-related errors
+                // if it tries to use the low-precision depth information from the DepthNormals texture.
+                // This setting tells the SSAO effect to use the output of a dedicated depth pass instead of DepthNormals,
+                // which the vanilla game didn't have working, but my patches get into a usable state.
+                highPrecision = true,
+                intensity = 0.45f,
+                radius = 0.3f,
+                // This should maybe be configurable ingame.
+                sampleCount = AmbientOcclusionModel.SampleCount.Low, // 6 "samples", as opposed to the default of Lowest = 3
+            };
 
             if (cam.GetComponent<UpdateDof>() == null) {
                 cam.gameObject.AddComponent<UpdateDof>();
