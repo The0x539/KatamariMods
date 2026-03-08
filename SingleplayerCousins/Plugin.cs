@@ -155,13 +155,19 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(OujiStarCharacter), nameof(OujiStarCharacter.EnableMainMenu))]
     public static void ReplaceInHomePlanetMenus(OujiStarCharacter __instance) {
         var osc = __instance;
-        ReplaceOuji(osc._uiMonoCamera._go_ouji, OujiId, o => {
-            osc._uiMonoCamera._go_ouji = o.ouji;
+
+        if (osc._uiMonoCamera is not UIMonoCamera camera) {
+            Console.WriteLine("Ope!");
+            return;
+        }
+
+        ReplaceOuji(camera._go_ouji, OujiId, o => {
+            camera._go_ouji = o.ouji;
             var uiPresent = osc._uiOujiStarPresent;
             uiPresent._animator_ouji = o.animator;
             uiPresent._uiOujiWear = o.wear;
             uiPresent._go_oujiPresentParent = o.presents;
-            ScaleCamera(osc._uiMonoCamera);
+            ScaleCamera(camera);
         });
     }
 
