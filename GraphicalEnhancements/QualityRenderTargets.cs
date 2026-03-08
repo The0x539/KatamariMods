@@ -99,7 +99,10 @@ static class QualityRenderTargets {
         var descriptor = __instance.propCamera.targetTexture.descriptor with { msaaSamples = MsaaSamples };
         var rt = new RenderTexture(descriptor) { name = __instance.propCamera.targetTexture.name };
         __instance.propCamera.targetTexture = rt;
-        __instance.objUICanvas.transform.Find("CollectedProp/CollectProp_2D").GetComponent<RawImage>().texture = rt;
+
+        if (__instance.objUICanvas.transform.Find("CollectedProp/CollectProp_2D") is Transform collectedProp) {
+            collectedProp.GetComponent<RawImage>().texture = rt;
+        }
     }
 
     [HarmonyPostfix]
