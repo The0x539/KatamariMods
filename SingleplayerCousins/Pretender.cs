@@ -1,4 +1,6 @@
-﻿using DefineEnum;
+﻿using BepInEx.Configuration;
+
+using DefineEnum;
 
 using HarmonyLib;
 
@@ -104,6 +106,42 @@ public sealed class Pretender {
 public static class PretenderPatches {
     private static readonly MethodInfo loadGameObject = typeof(AssetBundleSimulator).GetMethod("LoadAsset").MakeGenericMethod(typeof(GameObject));
     private static readonly MethodInfo assetBundleSimulatorInstance = AccessTools.PropertyGetter(typeof(AssetBundleSimulator), nameof(AssetBundleSimulator.Instance));
+
+    private static readonly ConfigEntry<string> entryPretenderKatamariLevels = Plugin.configFile.Bind("Pretenders", "Levels to use custom katamari in", "2, Moon");
+
+    private static HashSet<GAMEINFO_MIS> ParsePklConfig(string pklConfig) {
+        var ret = new HashSet<GAMEINFO_MIS>();
+        foreach (var word in pklConfig.Split(',')) {
+            int mission = word.Trim().ToLower() switch {
+                "1" => (int)GAMEINFO_MIS.GAMEINFO_MIS_01,
+                "2" => (int)GAMEINFO_MIS.GAMEINFO_MIS_02,
+                "3" => (int)GAMEINFO_MIS.GAMEINFO_MIS_04, // missions 3 and 4 are swapped in the game data
+                "4" => (int)GAMEINFO_MIS.GAMEINFO_MIS_03,
+                "5" => (int)GAMEINFO_MIS.GAMEINFO_MIS_05,
+                "6" => (int)GAMEINFO_MIS.GAMEINFO_MIS_06,
+                "7" => (int)GAMEINFO_MIS.GAMEINFO_MIS_07,
+                "8" => (int)GAMEINFO_MIS.GAMEINFO_MIS_08,
+                "9" => (int)GAMEINFO_MIS.GAMEINFO_MIS_09,
+                "10" or "moon" => Define.GAMEINFO_MIS_MOON,
+                "cancer" => Define.GAMEINFO_M_CANCER,
+                "cygnus" => Define.GAMEINFO_M_CYGNUS,
+                "corona borealis" => Define.GAMEINFO_M_CORONA_BOREALIS,
+                "pisces" => Define.GAMEINFO_M_PISCES,
+                "virgo" => Define.GAMEINFO_M_VIRGO,
+                "gemini" => Define.GAMEINFO_M_GEMINI,
+                "ursa major" => Define.GAMEINFO_M_URSA_MAJOR,
+                "taurus" => Define.GAMEINFO_M_TAURUS,
+                "polaris" => Define.GAMEINFO_M_POLARIS,
+                _ => -1,
+            };
+            if (mission == -1) {
+                Console.WriteLine($"Warning: Unknown mission `{word.Trim()}`. Ignoring.");
+                continue;
+            }
+            ret.Add((GAMEINFO_MIS)mission);
+        }
+        return ret;
+    }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GlobalWork), nameof(GlobalWork.InitItoko))]
@@ -270,9 +308,25 @@ public static class PretenderPatches {
         10, 19, 6, 4, 7
     ];
 
+    private static bool ShouldUseOujiCore(Player p) {
+        var gw = p.gWork;
+        if (gw.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS) return true;
+        if (gw.u8GameType == GI_GAMETYPE.GI_GAMETYPE_X) return true;
+
+        if (p.oujiNo == 1) return false; // When playing as the Prince, match vanilla behavior only
+
+        Plugin.configFile.Reload();
+        var pklConfig = entryPretenderKatamariLevels.Value;
+        if (pklConfig.ToLower().Contains("all") || pklConfig.Contains("*")) return true;
+        var missions = ParsePklConfig(pklConfig);
+        if (missions.Contains(gw.playMission)) return true;
+
+        return false;
+    }
+
     public static GameObject ChooseCoreImpl(Player p) {
         var i = (int)p.gWork.playMission;
-        if (p.gWork.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS || p.gWork.u8GameType == GI_GAMETYPE.GI_GAMETYPE_X) {
+        if (ShouldUseOujiCore(p)) {
             if (p.oujiNo < oujiCores.Length) {
                 i = oujiCores[p.oujiNo];
             } else if (Pretender.pretenders.TryGetValue(p.oujiNo, out var pretender)) {
