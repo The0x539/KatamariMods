@@ -300,4 +300,33 @@ public static class Glyphs {
         self.OnOff = true;
         self.onOff = false;
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(TutorialPadKeyboardCheck), nameof(TutorialPadKeyboardCheck.Set))]
+    public static void DecideWhetherToFixMeteorGlyph(TutorialPadKeyboardCheck __instance, out bool __state) {
+        __state = InputController.Instance.Pad(__instance.playerIndex).IconType != __instance.iconType;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TutorialPadKeyboardCheck), nameof(TutorialPadKeyboardCheck.Set))]
+    public static void FixMeteorGlyph(TutorialPadKeyboardCheck __instance, bool __state) {
+        if (!__state) return;
+
+        var label = __instance.transform.parent.Find("Text_buttonInfo").GetComponent<UIControllerTextLocalizer>();
+        var idx = label.keyMap switch {
+            KeyMap.Up => 0,
+            KeyMap.Right => 1,
+            KeyMap.Down => 2,
+            KeyMap.Left => 3,
+            _ => 4,
+        };
+        if (idx >= 4) return;
+        if (__instance.iconType == IconType.Keybord) return;
+
+        // yes this ternary is redundant after the check above, but whatever
+        var icons = __instance.iconType == IconType.Keybord ? __instance.objKeyboard : __instance.objGamePad;
+        for (var i = 0; i < 4; i++) {
+            icons[i].SetActive(i == idx);
+        }
+    }
 }
