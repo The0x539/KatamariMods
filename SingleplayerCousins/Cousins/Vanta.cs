@@ -9,7 +9,13 @@ namespace SingleplayerCousins.Cousins;
 public static class Vanta {
     // Some scenes have lighting set up such that we will need to use the Jungle billboard setup.
     // However, for other scenes, including main gameplay, it's easier and more reliable to just use the standard material in black mode.
-    private static readonly string[] billboardScenes = ["Title3", "UI_MainMenu", "UI_OujiStar", "Result2"];
+    private static readonly string[] billboardScenes = [
+        "Title3",
+        "UI_MainMenu",
+        "UI_OujiStar",
+        "Result2",
+        "UI_Star",
+    ];
 
     public static void Dress(GameObject ouji) {
         Material? bodyMat = null;
