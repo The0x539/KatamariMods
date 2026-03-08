@@ -6,10 +6,10 @@ using MyGame;
 using MyGame.InputStatus;
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Emit;
 
 using UnityEngine;
-using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -246,6 +246,32 @@ static class IngameOptions {
             .MatchForward(false, [new(OpCodes.Brtrue)])
             .SetOpcodeAndAdvance(OpCodes.Brfalse)
             .Instructions();
+    }
+
+    private static GameObject GetPauseBackdrop()
+        => SceneManager.GetSceneByName("UI_Pause")
+            .GetRootGameObjects()
+            .First(o => o.name == "UI")
+            .transform
+            .GetChild(1)
+            .GetChild(0)
+            .gameObject;
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualityManager), nameof(QualityManager.Start))]
+    public static void HideBackdrop(QualityManager __instance) {
+        if (!SceneManager.GetSceneByName("GameMain").isLoaded) return;
+
+        __instance.transform.Find("Canvas/RawImage").gameObject.SetActive(false);
+        GetPauseBackdrop().SetActive(false);
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualityManager), nameof(QualityManager.Close))]
+    public static void RestoreBackdrop() {
+        if (!SceneManager.GetSceneByName("GameMain").isLoaded) return;
+
+        GetPauseBackdrop().SetActive(true);
     }
 
     /*
