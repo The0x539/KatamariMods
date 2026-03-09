@@ -220,8 +220,8 @@ public static class PretenderPatches {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Player), nameof(Player.Start))]
-    public static IEnumerable<CodeInstruction> LoadIngamePlayer(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL LoadIngamePlayer(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Call, assetBundleSimulatorInstance),
                           new(OpCodes.Ldarg_0), new(OpCodes.Ldfld),
@@ -235,8 +235,8 @@ public static class PretenderPatches {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(CharacterCloneController), nameof(CharacterCloneController.Update))]
-    public static IEnumerable<CodeInstruction> LoadIngameClone(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL LoadIngameClone(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Call, assetBundleSimulatorInstance),
                           new(OpCodes.Ldarg_0), new(OpCodes.Ldfld), new(OpCodes.Ldfld),
@@ -276,8 +276,8 @@ public static class PretenderPatches {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Player), nameof(Player.Start))]
-    public static IEnumerable<CodeInstruction> ChooseCore(IEnumerable<CodeInstruction> instructions) {
-        var matcher = new CodeMatcher(instructions);
+    public static IL ChooseCore(IL il) {
+        var matcher = new CodeMatcher(il);
 
         var start = matcher
             .MatchForward(false,

@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -136,10 +135,10 @@ public static class Jungle {
     [HarmonyPatch(typeof(SelectManager), nameof(SelectManager.Start))]
     [HarmonyPatch(typeof(StarSky), nameof(StarSky.Start))]
     [HarmonyPatch(typeof(MoonMovieSelector), nameof(MoonMovieSelector.Start), MethodType.Enumerator)]
-    public static IEnumerable<CodeInstruction> FixJungleInLecture(IEnumerable<CodeInstruction> instructions) {
+    public static IL FixJungleInLecture(IL il) {
         var newRenderTexture = AccessTools.Constructor(typeof(RenderTexture), [typeof(int), typeof(int), typeof(int)]);
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldc_I4),
                           new(OpCodes.Ldc_I4),
@@ -180,7 +179,7 @@ public static class Jungle {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.Update))]
-    public static IEnumerable<CodeInstruction> TweakVanillaBillboardRotation(IEnumerable<CodeInstruction> instructions) {
+    public static IL TweakVanillaBillboardRotation(IL il) {
         MemberInfo
             objBillboard = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.objBillboard)),
             getObjectTransform = AccessTools.PropertyGetter(typeof(GameObject), nameof(GameObject.transform)),
@@ -191,7 +190,7 @@ public static class Jungle {
             cameraPlayer = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector._cameraPlayer)),
             lookAt = AccessTools.Method(typeof(Transform), nameof(Transform.LookAt), [typeof(Transform)]);
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             // Find: this.objBillboard.transform.rotation = Quaternion.Euler(Vector3.zero);
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),

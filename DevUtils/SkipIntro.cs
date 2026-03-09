@@ -63,10 +63,10 @@ public static class SkipIntro {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start), MethodType.Enumerator)]
-    public static IEnumerable<CodeInstruction> SkipMovie(IEnumerable<CodeInstruction> instructions) {
+    public static IL SkipMovie(IL il) {
         var playMove = AccessTools.Method(typeof(UIMoviePlayer), nameof(UIMoviePlayer.PlayMove));
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             .MatchForward(false, new CodeMatch(OpCodes.Callvirt, playMove))
             .Repeat(cm => cm
                 .RemoveInstruction()

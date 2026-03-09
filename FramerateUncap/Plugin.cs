@@ -2,7 +2,6 @@
 
 using HarmonyLib;
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -47,13 +46,13 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
-    public static IEnumerable<CodeInstruction> Uncap(IEnumerable<CodeInstruction> instructions) {
+    public static IL Uncap(IL il) {
         var deltaFrame = AccessTools.Field(typeof(GameManager), nameof(GameManager.deltaFrame));
         var mSimulation = AccessTools.Field(typeof(GameManager), nameof(GameManager.mSimulation));
         var sCtrlWhirlpool = AccessTools.Method(typeof(GameManager), nameof(GameManager.sCtrl_Whirlpool));
         var thirtieth = 0.03333333f;
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             // 408: this.sCtrl_Whirlpool()
             // In this case, rather than removing the if statement,
             // just remove the call and use a postfix to insert one without the condition.
@@ -130,12 +129,12 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sStartEffectMain))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sVSCancel))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sResultMain))]
-    public static IEnumerable<CodeInstruction> PatchTimerIncrements(IEnumerable<CodeInstruction> instructions) {
+    public static IL PatchTimerIncrements(IL il) {
         var timers = new List<object> { s32Time, s32VsTime, s32VSTime, tutoTimer };
         var loadsTimer = new CodeMatch(OpCodes.Ldfld) { operands = timers };
         var storesTimer = new CodeMatch(OpCodes.Stfld) { operands = timers };
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             // Match all code patterns that increment or decrement a timer by 1
             .MatchForward(false,
                           loadsTimer,
@@ -169,8 +168,8 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameOver))]
-    public static IEnumerable<CodeInstruction> TimerFixup1(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL TimerFixup1(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldfld, s32Time),
                           new(OpCodes.Ldc_I4_S, (sbyte)60),
@@ -182,9 +181,9 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sTutoTitle))]
-    public static IEnumerable<CodeInstruction> TimerFixup2(IEnumerable<CodeInstruction> instructions, ILGenerator gen) {
+    public static IL TimerFixup2(IL il, ILGenerator gen) {
         // Old C#: if (s32Timer == 22 frames)
-        var matcher = new CodeMatcher(instructions)
+        var matcher = new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldfld, tutoTimer),
                           new(OpCodes.Ldc_I4_S, (sbyte)22),
@@ -227,8 +226,8 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sStartEffectMain))]
-    public static IEnumerable<CodeInstruction> TimerFixup3(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL TimerFixup3(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldfld, s32VsTime),
                           new(OpCodes.Ldc_I4_S, (sbyte)30),
@@ -241,8 +240,8 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
-    public static IEnumerable<CodeInstruction> TimerFixup4(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL TimerFixup4(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
                           new(OpCodes.Dup),
@@ -284,8 +283,8 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameClear))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sVSCancel))]
-    public static IEnumerable<CodeInstruction> DeltaTimeRainbowAndVsZoom(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL DeltaTimeRainbowAndVsZoom(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldfld) { operands = { f32Scale, f32KataAlpha, f32VSScale } },
                           new(OpCodes.Ldc_R4),
@@ -299,14 +298,14 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
-    public static IEnumerable<CodeInstruction> DeltaTimePropUpdates(IEnumerable<CodeInstruction> instructions) {
+    public static IL DeltaTimePropUpdates(IL il) {
         List<object> timers = [
             AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait)),
             AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait2)),
             AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.s16EscapeTimer)),
         ];
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldc_I4_S, 30),
                           new(OpCodes.Stfld) { operands = timers })
@@ -330,8 +329,8 @@ public sealed class Plugin : BaseUnityPlugin {
     // as the single-frame suppression of the triggers doesn't properly take effect.
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.PauseProc))]
-    public static IEnumerable<CodeInstruction> FixExitingPrinceView(IEnumerable<CodeInstruction> instructions) {
-        var m = new CodeMatcher(instructions);
+    public static IL FixExitingPrinceView(IL il) {
+        var m = new CodeMatcher(il);
 
         var triggerClear = AccessTools.Method(typeof(Player), nameof(Player.TriggerClear));
         var doPS2ControllerSimulation = AccessTools.Method(typeof(Player), nameof(Player.DoPS2ControllerSimulation));

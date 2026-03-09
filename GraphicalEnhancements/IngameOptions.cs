@@ -5,7 +5,6 @@ using HarmonyLib;
 using MyGame;
 using MyGame.InputStatus;
 
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
 
@@ -39,8 +38,8 @@ static class IngameOptions {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.PauseProc))]
-    public static IEnumerable<CodeInstruction> AddGuy(IEnumerable<CodeInstruction> instructions) {
-        var matcher = new CodeMatcher(instructions);
+    public static IL AddGuy(IL il) {
+        var matcher = new CodeMatcher(il);
 
         matcher
             .MatchForward(false,
@@ -213,11 +212,11 @@ static class IngameOptions {
     // since this is fiddling with graphics and shouldn't depend on time scale.
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(QualityManager), nameof(QualityManager.ISetup), MethodType.Enumerator)]
-    public static IEnumerable<CodeInstruction> FixSoftlock(IEnumerable<CodeInstruction> instructions) {
+    public static IL FixSoftlock(IL il) {
         var wfs = AccessTools.Constructor(typeof(WaitForSeconds), [typeof(float)]);
         var wfsr = AccessTools.Constructor(typeof(WaitForSecondsRealtime), [typeof(float)]);
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             .MatchForward(false, new CodeMatch(OpCodes.Newobj, wfs))
             .Repeat(cm => cm.SetOperandAndAdvance(wfsr))
             .Instructions();
@@ -241,8 +240,8 @@ static class IngameOptions {
     // checking if gWork.renderTexture is null to decide whether to iterate through it
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.Release))]
-    public static IEnumerable<CodeInstruction> FixRelease(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL FixRelease(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false, [new(OpCodes.Brtrue)])
             .SetOpcodeAndAdvance(OpCodes.Brfalse)
             .Instructions();

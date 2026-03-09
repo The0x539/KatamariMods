@@ -74,7 +74,7 @@ static class DepthOfField {
     // TODO: Split the code that's not really DoF related into another guy
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnPreRender))]
-    public static IEnumerable<CodeInstruction> TakeControlOfSSAO(IEnumerable<CodeInstruction> instructions) {
+    public static IL TakeControlOfSSAO(IL il) {
         // Normally, the ambient occlusion effect schedules its stuff to run during CameraEvent.BeforeImageEffectsOpaque.
         // However, it's VERY difficult to get non–command buffer–flavored code to run immediately before this,
         // and command buffer code can't really "draw the whole world" the way we need to.
@@ -82,7 +82,7 @@ static class DepthOfField {
         // This means that there's nothing that runs in between that step and the OnRenderImage "camera message".
         // As such, we can just surgically remove the normal "TryExecuteCommandBuffer" invocation here,
         // and instead manually execute the command buffer "right away" after we do our depth-pass fix hack thing.
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
                           new(OpCodes.Ldarg_0),
@@ -217,9 +217,9 @@ static class DepthOfField {
     // results in things being transparent "too often".
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
-    public static IEnumerable<CodeInstruction> NoSimpleShader(IEnumerable<CodeInstruction> instructions) {
+    public static IL NoSimpleShader(IL il) {
         var isReqSimple = AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.isReqSimple));
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldc_I4_1),
                           new(OpCodes.Stfld, isReqSimple))

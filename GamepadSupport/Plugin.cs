@@ -4,7 +4,6 @@ using HarmonyLib;
 
 using MyGame;
 
-using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -78,10 +77,10 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(InputController), nameof(InputController.Setup))]
-    public static IEnumerable<CodeInstruction> UseMyGuy(IEnumerable<CodeInstruction> instructions) {
+    public static IL UseMyGuy(IL il) {
         static MethodInfo addComponent<T>() => AccessTools.Method(typeof(GameObject), nameof(GameObject.AddComponent), null, [typeof(T)]);
 
-        return new CodeMatcher(instructions)
+        return new CodeMatcher(il)
             .MatchForward(false, new CodeMatch(OpCodes.Callvirt, addComponent<InputPadRewired>()))
             .SetOperandAndAdvance(addComponent<InputPadSDL3>())
             .Instructions();
@@ -97,8 +96,8 @@ public sealed class Plugin : BaseUnityPlugin {
     // Remove the "userdatastore" setup
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
-    public static IEnumerable<CodeInstruction> SuppressRewiredB(IEnumerable<CodeInstruction> instructions) {
-        var matcher = new CodeMatcher(instructions);
+    public static IL SuppressRewiredB(IL il) {
+        var matcher = new CodeMatcher(il);
         return matcher
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
@@ -110,8 +109,8 @@ public sealed class Plugin : BaseUnityPlugin {
     // Reroute "ReInput.controllers.joystickCount" to my SDL replacement since the `.controllers` part goes awry
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.ControllerCheck))]
-    public static IEnumerable<CodeInstruction> SuppressRewiredC(IEnumerable<CodeInstruction> instructions) {
-        return new CodeMatcher(instructions)
+    public static IL SuppressRewiredC(IL il) {
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Call, AccessTools.PropertyGetter(typeof(Rewired.ReInput), nameof(Rewired.ReInput.controllers))),
                           new(OpCodes.Callvirt, AccessTools.PropertyGetter(typeof(Rewired.ReInput.ControllerHelper), nameof(Rewired.ReInput.ControllerHelper.joystickCount))))
