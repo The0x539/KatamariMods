@@ -115,7 +115,8 @@ public sealed class Plugin : BaseUnityPlugin {
         f32KataAlpha = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32KataAlpha)),
         getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime)),
         fieldDeltaMillis = AccessTools.Field(typeof(Plugin), nameof(deltaMillis)),
-        f32VSScale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32VSScale));
+        f32VSScale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32VSScale)),
+        s32SepaTime = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32SepaTime));
 
     // Some stuff is fine to stay capped at 30 or 60, but anything called by sMain() or that touches the same timers
     // will need to be updated accordingly.
@@ -237,6 +238,48 @@ public sealed class Plugin : BaseUnityPlugin {
                 .SetInstruction(new(OpCodes.Ldc_I4, 1000))) // 30 frames -> 1000 ms
             .Instructions();
     }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
+    public static IEnumerable<CodeInstruction> TimerFixup4(IEnumerable<CodeInstruction> instructions) {
+        return new CodeMatcher(instructions)
+            .MatchForward(false,
+                          new(OpCodes.Ldarg_0),
+                          new(OpCodes.Dup),
+                          new(OpCodes.Ldfld, s32SepaTime),
+                          new(OpCodes.Ldc_I4_1),
+                          new(OpCodes.Sub),
+                          new(OpCodes.Stfld, s32SepaTime))
+            .Advance(1)
+            .RemoveInstructions(5)
+            .Insert([new(OpCodes.Call, AccessTools.Method(typeof(Plugin), nameof(DecrementSepaTimer)))])
+            .Instructions();
+    }
+
+    private static void DecrementSepaTimer(GameManager gm) {
+        gm.s32SepaTime -= deltaMillis;
+        if (gm.s32SepaTime < 0) gm.s32SepaTime = 0;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.gYm_SepaRequest))]
+    public static void TimerFixup4B(ref int time) {
+        time = (time * 1000) / 30;
+    }
+
+    /*
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
+    public static void Troubleshoot(GameManager __instance) {
+        if (__instance.s32SepaTime != 0) {
+            Console.WriteLine($"sepa time: {__instance.s32SepaTime} / {__instance.s32SepaRequestTime}");
+            Console.WriteLine($"sepa request time: {__instance.s32SepaRequestTime}");
+            var num27 = (float)__instance.s32SepaTime / (float)__instance.s32SepaRequestTime;
+            num27 = 1f - num27;
+            Console.WriteLine($"ratio, timer: {__instance.gWork.f32SeparateRatio} {__instance.separateTimer}");
+        }
+    }
+    */
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameClear))]
