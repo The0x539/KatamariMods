@@ -16,7 +16,7 @@ public sealed class Dega : MonoBehaviour {
     // TODO: Animate multiple joints (probably 3-4?) along the tail's length rather than treating it as one solid object
 
     public void Update() {
-        this.theta += Time.deltaTime;
+        this.theta += Time.unscaledDeltaTime;
         float x = 4 * Mathf.Sin(this.theta * 0.431f + 1.365f), // Frequency and phase chosen arbitrarily to stop the axes from harmonizing
               y = 50 * Mathf.Sin(this.theta) - 35,             // The tail on the model naturally faces ~30-35 degrees to the left.
               z = 5 * Mathf.Sin(this.theta * 0.789f + 2.718f);

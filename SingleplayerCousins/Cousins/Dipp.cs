@@ -27,13 +27,15 @@ public sealed class Dipp : MonoBehaviour {
     private int posIndex = 0;
 
     public void Update() {
-        this.timer += Time.deltaTime;
-        if (this.timer < 0.5) return;
-        this.timer -= 0.5f;
+        this.timer += Time.unscaledDeltaTime;
 
-        foreach (var m in this.materials) {
-            m.mainTextureOffset = positions[this.posIndex];
+        while (this.timer >= 0.5f) {
+            this.timer -= 0.5f;
+
+            foreach (var m in this.materials) {
+                m.mainTextureOffset = positions[this.posIndex];
+            }
+            this.posIndex = (this.posIndex + 1) % positions.Length;
         }
-        this.posIndex = (this.posIndex + 1) % positions.Length;
     }
 }
