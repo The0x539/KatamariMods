@@ -2,8 +2,6 @@
 
 using UnityEngine;
 
-using UnityObject = UnityEngine.Object;
-
 namespace SingleplayerCousins.Cousins;
 
 public static class Vanta {

@@ -166,10 +166,10 @@ static class IngameOptions {
         var guide = __instance.objGuidePause;
         var back = guide.transform.GetChild(0);
 
-        var settings = Object.Instantiate(back);
+        var settings = UnityObject.Instantiate(back);
         settings.name = "Text_Settings";
 
-        Object.Destroy(settings.GetComponent<UITextLocalizer>());
+        UnityObject.Destroy(settings.GetComponent<UITextLocalizer>());
         settings.GetComponent<Text>().text = "Settings";
 
         settings.SetParent(guide.transform, worldPositionStays: false);
@@ -291,7 +291,7 @@ static class IngameOptions {
     [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
     private static void AddSoundPrompt(KatamariPauseController __instance) {
         var graphics = __instance.transform.Find("Canvas/MainMenuPC/RawImage3").gameObject;
-        var sound = Object.Instantiate(graphics, graphics.transform.parent);
+        var sound = UnityObject.Instantiate(graphics, graphics.transform.parent);
         sound.name = "RawImage4_Sound";
         sound.GetComponent<RectTransform>().Translate(new(-180, 0));
         sound.GetComponentInChildren<UITextLocalizer>().textID = "OT_CTG_014";

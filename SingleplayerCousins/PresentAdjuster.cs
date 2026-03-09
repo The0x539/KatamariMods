@@ -59,7 +59,7 @@ public sealed class PresentAdjuster : MonoBehaviour {
             bones[idx] = child.transform;
         }
 
-        smr.bones = bones;
+        this.smr.bones = bones;
     }
 
     private Cousin DetermineCousin() {

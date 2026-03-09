@@ -101,10 +101,10 @@ static class ExtraOptions {
                 var existing = get(name);
                 if (existing != null) {
                     existing.SetParent(null);
-                    Object.Destroy(existing.gameObject);
+                    UnityObject.Destroy(existing.gameObject);
                 }
 
-                var obj = Object.Instantiate(prefab, prefab.parent); // TODO: I didn't know this overload exists and should use it in more places.
+                var obj = UnityObject.Instantiate(prefab, prefab.parent); // TODO: I didn't know this overload exists and should use it in more places.
                 obj.name = name;
                 obj.Translate(offset);
                 return obj;
@@ -123,7 +123,7 @@ static class ExtraOptions {
             if (localized) {
                 label.GetComponent<UITextLocalizer>().textID = name;
             } else {
-                Object.Destroy(label.GetComponent<UITextLocalizer>());
+                UnityObject.Destroy(label.GetComponent<UITextLocalizer>());
                 label.GetComponent<Text>().text = name;
             }
         }

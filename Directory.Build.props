@@ -10,4 +10,14 @@
 		<UseCommonOutputDirectory>true</UseCommonOutputDirectory>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
+
+	<Target Name="ReferencePatchUtils" BeforeTargets="CoreCompile">
+		<PropertyGroup>
+			<IncludeUtils Condition="%(PackageReference.Identity) == 'UnityEngine.Modules'">1</IncludeUtils>
+		</PropertyGroup>
+
+		<ItemGroup Condition="$(IncludeUtils) == 1">
+			<Compile Include="$(SolutionDir)/PatchUtils.cs" />
+		</ItemGroup>
+	</Target>
 </Project>

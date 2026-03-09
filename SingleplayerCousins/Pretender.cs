@@ -15,8 +15,6 @@ using System.Reflection.Emit;
 
 using UnityEngine;
 
-using UnityObject = UnityEngine.Object;
-
 namespace SingleplayerCousins;
 
 public sealed class Pretender {

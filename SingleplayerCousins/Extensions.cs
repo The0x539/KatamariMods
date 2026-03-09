@@ -14,12 +14,12 @@ internal static class Extensions {
         return ret;
     }
 
-    public static T? FirstWithName<T>(this IEnumerable<T> objects, string name) where T : Object {
+    public static T? FirstWithName<T>(this IEnumerable<T> objects, string name) where T : UnityObject {
         foreach (var obj in objects) if (obj?.name == name) return obj;
         return null;
     }
 
-    public static List<T> AllWithNames<T>(this IEnumerable<T> objects, params string[] names) where T : Object {
+    public static List<T> AllWithNames<T>(this IEnumerable<T> objects, params string[] names) where T : UnityObject {
         var list = new List<T>();
         foreach (var obj in objects) {
             if (obj != null && names.Contains(obj.name)) {
@@ -29,7 +29,7 @@ internal static class Extensions {
         return list;
     }
 
-    public static int IndexOf<T>(this T[] objects, string name) where T : Object {
+    public static int IndexOf<T>(this T[] objects, string name) where T : UnityObject {
         for (var i = 0; i < objects.Length; i++) {
             if (objects[i].name == name) {
                 return i;

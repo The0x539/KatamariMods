@@ -120,7 +120,7 @@ public static class Glyphs {
             icon.gameObject.AddComponent<KeyImageCheck>().SetIcon(KeyMap.StickRightUp);
         }
 
-        var rotateIcon2 = Object.Instantiate(icons[0], textChoice2);
+        var rotateIcon2 = UnityObject.Instantiate(icons[0], textChoice2);
         rotateIcon2.GetComponent<KeyImageCheck>().SetIcon(KeyMap.StickRightDown);
         rotateIcon2.gameObject.SetActive(icons.Any(x => x.gameObject.activeSelf));
     }
