@@ -67,7 +67,7 @@ static class ExtraOptions {
     [HarmonyPatch(typeof(QualitySetting), MethodType.Constructor)]
     public static void ExposeExtraSettings(QualitySetting __instance) {
         var items = __instance.itemName;
-        items.Add(["16x", "1x", "2x", "4x", "8x"]);
+        //items.Add(["16x", "1x", "2x", "4x", "8x"]);
         items.Add(fpsValues.Select(n => n.ToString()).ToList());
     }
 
@@ -131,13 +131,14 @@ static class ExtraOptions {
         LinkFocus(previous, get("TextItem0"));
     }
 
+    const int ROW_MAX_FPS = 8;
+
     private static string GetSettingName(int row, out bool localized) {
         localized = true;
         switch (row) {
             case 6: return "UI_SYS_215"; // Depth of Field
             case 7: return "UI_SYS_278"; // Vignette
-            case 8: return "UI_SYS_213"; // Anisotropic Filtering
-            case 9:
+            case ROW_MAX_FPS:
                 localized = false;
                 return "Max FPS";
             default:
@@ -154,7 +155,7 @@ static class ExtraOptions {
     }
 
     private static int GetTargetFPS(QualitySetting qs) {
-        return qs.statusNo.Length >= 9 ? fpsValues[qs.statusNo[9]] : 120;
+        return qs.statusNo.Length > ROW_MAX_FPS ? fpsValues[qs.statusNo[ROW_MAX_FPS]] : 120;
     }
 
     [HarmonyPostfix]
