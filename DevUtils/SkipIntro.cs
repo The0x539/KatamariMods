@@ -87,7 +87,7 @@ public static class SkipIntro {
         }
 
         __instance._isSkip = true;
-        __instance.StartCoroutine(LoadDirectlyIntoLevelCoroutine(mission));
+        GlobalWork.Instance.StartCoroutine(LoadDirectlyIntoLevelCoroutine(mission));
     }
 
     public static System.Collections.IEnumerator LoadDirectlyIntoLevelCoroutine(int mission) {
