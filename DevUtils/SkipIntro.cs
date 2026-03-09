@@ -64,7 +64,7 @@ public static class SkipIntro {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start), MethodType.Enumerator)]
     public static IL SkipMovie(IL il) {
-        var playMove = AccessTools.Method(typeof(UIMoviePlayer), nameof(UIMoviePlayer.PlayMove));
+        var playMove = Member.Method<UIMoviePlayer>(mp => mp.PlayMove(""));
 
         return new CodeMatcher(il)
             .MatchForward(false, new CodeMatch(OpCodes.Callvirt, playMove))

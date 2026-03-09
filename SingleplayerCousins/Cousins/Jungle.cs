@@ -136,7 +136,7 @@ public static class Jungle {
     [HarmonyPatch(typeof(StarSky), nameof(StarSky.Start))]
     [HarmonyPatch(typeof(MoonMovieSelector), nameof(MoonMovieSelector.Start), MethodType.Enumerator)]
     public static IL FixJungleInLecture(IL il) {
-        var newRenderTexture = AccessTools.Constructor(typeof(RenderTexture), [typeof(int), typeof(int), typeof(int)]);
+        var newRenderTexture = Member.Constructor(() => new RenderTexture(1920, 1080, 24));
 
         return new CodeMatcher(il)
             .MatchForward(false,
@@ -181,14 +181,14 @@ public static class Jungle {
     [HarmonyPatch(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.Update))]
     public static IL TweakVanillaBillboardRotation(IL il) {
         MemberInfo
-            objBillboard = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector.objBillboard)),
-            getObjectTransform = AccessTools.PropertyGetter(typeof(GameObject), nameof(GameObject.transform)),
-            getComponentTransform = AccessTools.PropertyGetter(typeof(Component), nameof(Component.transform)),
-            getZero = AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.zero)),
-            euler = AccessTools.Method(typeof(Quaternion), nameof(Quaternion.Euler), [typeof(Vector3)]),
-            setRotation = AccessTools.PropertySetter(typeof(Transform), nameof(Transform.rotation)),
-            cameraPlayer = AccessTools.Field(typeof(KinokoItokoSelector), nameof(KinokoItokoSelector._cameraPlayer)),
-            lookAt = AccessTools.Method(typeof(Transform), nameof(Transform.LookAt), [typeof(Transform)]);
+            objBillboard = Member.Field<KinokoItokoSelector>(sel => sel.objBillboard),
+            getObjectTransform = Member.Getter<GameObject>(o => o.transform),
+            getComponentTransform = Member.Getter<Component>(c => c.transform),
+            getZero = Member.Getter(() => Vector3.zero),
+            euler = Member.Method(() => Quaternion.Euler(Vector3.zero)),
+            setRotation = Member.Setter<Transform>(t => t.rotation),
+            cameraPlayer = Member.Field<KinokoItokoSelector>(sel => sel._cameraPlayer),
+            lookAt = Member.Method<Transform>(t => t.LookAt(t));
 
         return new CodeMatcher(il)
             // Find: this.objBillboard.transform.rotation = Quaternion.Euler(Vector3.zero);

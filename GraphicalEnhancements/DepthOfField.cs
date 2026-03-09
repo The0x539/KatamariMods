@@ -86,7 +86,7 @@ static class DepthOfField {
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
                           new(OpCodes.Ldarg_0),
-                          new(OpCodes.Ldfld, AccessTools.Field(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.m_AmbientOcclusion))),
+                          new(OpCodes.Ldfld, Member.Field<PostProcessingBehaviour>(ppb => ppb.m_AmbientOcclusion)),
                           new(OpCodes.Call))
             .RemoveInstructions(4)
             .Instructions();
@@ -218,11 +218,10 @@ static class DepthOfField {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
     public static IL NoSimpleShader(IL il) {
-        var isReqSimple = AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.isReqSimple));
         return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldc_I4_1),
-                          new(OpCodes.Stfld, isReqSimple))
+                          new(OpCodes.Stfld, Member.Field<AttachableProp>(ap => ap.isReqSimple)))
             .SetOpcodeAndAdvance(OpCodes.Ldc_I4_0)
             .Instructions();
     }

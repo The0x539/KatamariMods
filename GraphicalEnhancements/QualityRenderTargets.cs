@@ -13,8 +13,8 @@ static class QualityRenderTargets {
     [HarmonyPatch(typeof(CameraKatamari), nameof(CameraKatamari.GetTexture2DInner))]
     [HarmonyPatch(typeof(CameraKatamari), nameof(CameraKatamari.Setup))]
     public static IL HiResKatamariPortrait(IL il, ILGenerator generator) {
-        var getWidth = AccessTools.Method(typeof(QualityRenderTargets), nameof(GetWidth));
-        var getHeight = AccessTools.Method(typeof(QualityRenderTargets), nameof(GetHeight));
+        var getWidth = Member.Method(() => GetWidth());
+        var getHeight = Member.Method(() => GetHeight());
 
         // We need to supersample it a bit because MSAA only applies to face edges, not along sharp lines in textures.
         // This game's art style has... a lot of sharp lines in textures.
@@ -65,7 +65,7 @@ static class QualityRenderTargets {
     [HarmonyPatch(typeof(UIFixedCamera), nameof(UIFixedCamera.Start))]
     [HarmonyPatch(typeof(UIMonoCamera), nameof(UIMonoCamera.SetTargetTextureDonotAddCamera))]
     public static IL MsaaEverywhere(IL il) {
-        var setAllowMSAA = AccessTools.PropertySetter(typeof(Camera), nameof(Camera.allowMSAA));
+        var setAllowMSAA = Member.Setter<Camera>(c => c.allowMSAA);
 
         return new CodeMatcher(il)
             .MatchForward(false,

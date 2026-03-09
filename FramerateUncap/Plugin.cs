@@ -47,9 +47,10 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
     public static IL Uncap(IL il) {
-        var deltaFrame = AccessTools.Field(typeof(GameManager), nameof(GameManager.deltaFrame));
-        var mSimulation = AccessTools.Field(typeof(GameManager), nameof(GameManager.mSimulation));
-        var sCtrlWhirlpool = AccessTools.Method(typeof(GameManager), nameof(GameManager.sCtrl_Whirlpool));
+        MemberInfo
+            deltaFrame = Member.Field<GameManager>(gm => gm.deltaFrame),
+            mSimulation = Member.Field<GameManager>(gm => gm.mSimulation),
+            sCtrlWhirlpool = Member.Method<GameManager>(gm => gm.sCtrl_Whirlpool());
         var thirtieth = 0.03333333f;
 
         return new CodeMatcher(il)
@@ -104,18 +105,18 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     private static readonly MemberInfo
-        s32Time = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32Time)),
-        s32VsTime = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32VsTime)),
-        s32VSTime = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32VSTime)), // ಠ_ಠ
-        tutoTimer = AccessTools.Field(typeof(SI_TUTORIAL), nameof(SI_TUTORIAL.s32Timer)),
-        gWork = AccessTools.Field(typeof(GameManager), nameof(GameManager.gWork)),
-        siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial)),
-        f32Scale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32Scale)),
-        f32KataAlpha = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32KataAlpha)),
-        getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime)),
-        fieldDeltaMillis = AccessTools.Field(typeof(Plugin), nameof(deltaMillis)),
-        f32VSScale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32VSScale)),
-        s32SepaTime = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32SepaTime));
+        s32Time = Member.Field<GameManager>(gm => gm.s32Time),
+        s32VsTime = Member.Field<GameManager>(gm => gm.s32VsTime),
+        s32VSTime = Member.Field<GameManager>(gm => gm.s32VSTime), // ಠ_ಠ
+        tutoTimer = Member.Field<SI_TUTORIAL>(tut => tut.s32Timer),
+        gWork = Member.Field<GameManager>(gm => gm.gWork),
+        siTutorial = Member.Field<GlobalWork>(gw => gw.siTutorial),
+        f32Scale = Member.Field<GameManager>(gm => gm.f32Scale),
+        f32KataAlpha = Member.Field<GameManager>(gm => gm.f32KataAlpha),
+        getDeltaTime = Member.Getter(() => Time.deltaTime),
+        fieldDeltaMillis = Member.Field(() => Plugin.deltaMillis),
+        f32VSScale = Member.Field<GameManager>(gm => gm.f32VSScale),
+        s32SepaTime = Member.Field<GameManager>(gm => gm.s32SepaTime);
 
     // Some stuff is fine to stay capped at 30 or 60, but anything called by sMain() or that touches the same timers
     // will need to be updated accordingly.
@@ -251,7 +252,7 @@ public sealed class Plugin : BaseUnityPlugin {
                           new(OpCodes.Stfld, s32SepaTime))
             .Advance(1)
             .RemoveInstructions(5)
-            .Insert([new(OpCodes.Call, AccessTools.Method(typeof(Plugin), nameof(DecrementSepaTimer)))])
+            .Insert([new(OpCodes.Call, Member.Method((GameManager gm) => DecrementSepaTimer(gm)))])
             .Instructions();
     }
 
@@ -300,9 +301,9 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
     public static IL DeltaTimePropUpdates(IL il) {
         List<object> timers = [
-            AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait)),
-            AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.checkSimpleWait2)),
-            AccessTools.Field(typeof(AttachableProp), nameof(AttachableProp.s16EscapeTimer)),
+            Member.Field<AttachableProp>(ap => ap.checkSimpleWait),
+            Member.Field<AttachableProp>(ap => ap.checkSimpleWait2),
+            Member.Field<AttachableProp>(ap => ap.s16EscapeTimer),
         ];
 
         return new CodeMatcher(il)
@@ -332,8 +333,8 @@ public sealed class Plugin : BaseUnityPlugin {
     public static IL FixExitingPrinceView(IL il) {
         var m = new CodeMatcher(il);
 
-        var triggerClear = AccessTools.Method(typeof(Player), nameof(Player.TriggerClear));
-        var doPS2ControllerSimulation = AccessTools.Method(typeof(Player), nameof(Player.DoPS2ControllerSimulation));
+        var triggerClear = Member.Method<Player>(p => p.TriggerClear());
+        var doPS2ControllerSimulation = Member.Method<Player>(p => p.DoPS2ControllerSimulation());
 
         var secondCall = m.MatchForward(false, new CodeMatch(OpCodes.Callvirt, triggerClear)).Instruction;
         var firstCall = m.MatchBack(false, new CodeMatch(OpCodes.Callvirt, doPS2ControllerSimulation)).Instruction;

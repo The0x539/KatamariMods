@@ -78,7 +78,7 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(InputController), nameof(InputController.Setup))]
     public static IL UseMyGuy(IL il) {
-        static MethodInfo addComponent<T>() => AccessTools.Method(typeof(GameObject), nameof(GameObject.AddComponent), null, [typeof(T)]);
+        static MethodInfo addComponent<T>() where T : Component => Member.Method<GameObject>(o => o.AddComponent<T>());
 
         return new CodeMatcher(il)
             .MatchForward(false, new CodeMatch(OpCodes.Callvirt, addComponent<InputPadRewired>()))
@@ -101,7 +101,7 @@ public sealed class Plugin : BaseUnityPlugin {
         return matcher
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
-                          new(OpCodes.Call, AccessTools.Field(typeof(KatamariPauseController), nameof(KatamariPauseController.GetJoystickData))))
+                          new(OpCodes.Call, Member.Method<KatamariPauseController>(kpc => kpc.GetJoystickData())))
             .RemoveInstructionsInRange(0, matcher.Pos - 1)
             .Instructions();
     }
@@ -112,12 +112,12 @@ public sealed class Plugin : BaseUnityPlugin {
     public static IL SuppressRewiredC(IL il) {
         return new CodeMatcher(il)
             .MatchForward(false,
-                          new(OpCodes.Call, AccessTools.PropertyGetter(typeof(Rewired.ReInput), nameof(Rewired.ReInput.controllers))),
-                          new(OpCodes.Callvirt, AccessTools.PropertyGetter(typeof(Rewired.ReInput.ControllerHelper), nameof(Rewired.ReInput.ControllerHelper.joystickCount))))
+                          new(OpCodes.Call, Member.Getter(() => Rewired.ReInput.controllers)),
+                          new(OpCodes.Callvirt, Member.Getter<Rewired.ReInput.ControllerHelper>(ch => ch.joystickCount)))
             .Repeat(cm => cm
                 .RemoveInstructions(2)
                 .Insert(new(OpCodes.Ldc_I4_0),
-                        new(OpCodes.Call, AccessTools.Method(typeof(Plugin), nameof(GetConnectCount)))))
+                        new(OpCodes.Call, Member.Method(() => GetConnectCount(0)))))
             .Instructions();
     }
 

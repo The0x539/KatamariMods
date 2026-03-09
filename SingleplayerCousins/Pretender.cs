@@ -102,8 +102,8 @@ public sealed class Pretender {
 }
 
 public static class PretenderPatches {
-    private static readonly MethodInfo loadGameObject = typeof(AssetBundleSimulator).GetMethod("LoadAsset").MakeGenericMethod(typeof(GameObject));
-    private static readonly MethodInfo assetBundleSimulatorInstance = AccessTools.PropertyGetter(typeof(AssetBundleSimulator), nameof(AssetBundleSimulator.Instance));
+    private static readonly MethodInfo loadGameObject = Member.Method<AssetBundleSimulator>(s => s.LoadAsset<GameObject>("", ""));
+    private static readonly MethodInfo assetBundleSimulatorInstance = Member.Getter(() => AssetBundleSimulator.Instance);
 
     private static readonly ConfigEntry<string> entryPretenderKatamariLevels = Plugin.configFile.Bind("Pretenders", "Levels to use custom katamari in", "2, Moon");
 
@@ -229,7 +229,7 @@ public static class PretenderPatches {
                           new(OpCodes.Callvirt, loadGameObject))
             .RemoveInstructions(6)
             .InsertAndAdvance(new(OpCodes.Ldarg_0),
-                              new(OpCodes.Call, AccessTools.Method(typeof(PretenderPatches), nameof(LoadIngameImpl), [typeof(Player)])))
+                              new(OpCodes.Call, Member.Method((Player p) => LoadIngameImpl(p))))
             .Instructions();
     }
 
@@ -244,7 +244,7 @@ public static class PretenderPatches {
                           new(OpCodes.Callvirt, loadGameObject))
             .SetOpcodeAndAdvance(OpCodes.Nop).RemoveInstructions(7)
             .InsertAndAdvance(new(OpCodes.Ldarg_0),
-                              new(OpCodes.Call, AccessTools.Method(typeof(PretenderPatches), nameof(LoadIngameImpl), [typeof(CharacterCloneController)])))
+                              new(OpCodes.Call, Member.Method((CharacterCloneController c) => LoadIngameImpl(c))))
             .Instructions();
     }
 
@@ -282,8 +282,8 @@ public static class PretenderPatches {
         var start = matcher
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
-                          new(OpCodes.Ldfld, AccessTools.Field(typeof(Player), nameof(Player.gWork))),
-                          new(OpCodes.Ldfld, AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.playMission))))
+                          new(OpCodes.Ldfld, Member.Field<Player>(p => p.gWork)),
+                          new(OpCodes.Ldfld, Member.Field<GlobalWork>(gw => gw.playMission)))
             .Pos;
 
         var end = matcher
@@ -294,7 +294,7 @@ public static class PretenderPatches {
             .Start()
             .Advance(start + 1)
             .RemoveInstructionsInRange(start + 1, end)
-            .InsertAndAdvance([new(OpCodes.Call, AccessTools.Method(typeof(PretenderPatches), nameof(PretenderPatches.ChooseCoreImpl)))]);
+            .InsertAndAdvance([new(OpCodes.Call, Member.Method((Player p) => ChooseCoreImpl(p)))]);
 
         return matcher.Instructions();
     }

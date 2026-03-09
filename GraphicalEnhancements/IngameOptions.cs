@@ -44,10 +44,10 @@ static class IngameOptions {
         matcher
             .MatchForward(false,
                           new(OpCodes.Ldc_I4_7),
-                          new(OpCodes.Callvirt, AccessTools.Method(typeof(InputPadBase), nameof(InputPadBase.IsDown))))
+                          new(OpCodes.Callvirt, Member.Method<InputPadBase>(ipb => ipb.IsDown(KeyMap.A))))
             .MatchBack(false,
                        new(OpCodes.Ldarg_0),
-                       new(OpCodes.Ldfld, AccessTools.Field(typeof(PauseMenu), nameof(PauseMenu.input))));
+                       new(OpCodes.Ldfld, Member.Field<PauseMenu>(pm => pm.input)));
 
         var start = matcher.Pos;
         var end = matcher.MatchForward(false, [new(OpCodes.Stloc_S)]).Pos;
@@ -60,14 +60,14 @@ static class IngameOptions {
             .Advance(start)
             .Insert(new(OpCodes.Ldarg_0),
                     new(OpCodes.Ldloc_3),
-                    new(OpCodes.Call, AccessTools.Method(typeof(IngameOptions), nameof(PauseMenuPatchA))),
+                    new(OpCodes.Call, Member.Method((PauseMenu pm, int pIdx) => PauseMenuPatchA(pm, pIdx))),
                     new(OpCodes.Stloc_S, flagLocalVar));
 
         matcher
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
-                          new(OpCodes.Ldfld, AccessTools.Field(typeof(PauseMenu), nameof(PauseMenu.gWork))),
-                          new(OpCodes.Ldfld, AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.u8GameMode))),
+                          new(OpCodes.Ldfld, Member.Field<PauseMenu>(pm => pm.gWork)),
+                          new(OpCodes.Ldfld, Member.Field<GlobalWork>(gw => gw.u8GameMode)),
                           new(OpCodes.Ldc_I4_2),
                           new(OpCodes.Beq));
 
@@ -81,7 +81,7 @@ static class IngameOptions {
             .Start()
             .Advance(start)
             .Insert(new(OpCodes.Ldarg_0),
-                    new(OpCodes.Call, AccessTools.Method(typeof(IngameOptions), nameof(PauseMenuPatchB))));
+                    new(OpCodes.Call, Member.Method((PauseMenu pm) => PauseMenuPatchB(pm))));
 
         return matcher.Instructions();
     }
@@ -213,8 +213,8 @@ static class IngameOptions {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(QualityManager), nameof(QualityManager.ISetup), MethodType.Enumerator)]
     public static IL FixSoftlock(IL il) {
-        var wfs = AccessTools.Constructor(typeof(WaitForSeconds), [typeof(float)]);
-        var wfsr = AccessTools.Constructor(typeof(WaitForSecondsRealtime), [typeof(float)]);
+        var wfs = Member.Constructor(() => new WaitForSeconds(0f));
+        var wfsr = Member.Constructor(() => new WaitForSecondsRealtime(0f));
 
         return new CodeMatcher(il)
             .MatchForward(false, new CodeMatch(OpCodes.Newobj, wfs))
