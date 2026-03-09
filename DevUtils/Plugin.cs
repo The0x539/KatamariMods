@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using BepInEx.Configuration;
 
 using HarmonyLib;
 
@@ -8,7 +9,11 @@ namespace DevUtils;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Plugin : BaseUnityPlugin {
+    public static ConfigFile configFile = null!;
+
     public void Awake() {
+        configFile = this.Config;
+
         Application.runInBackground = true;
 
         Harmony.CreateAndPatchAll(this.GetType());
