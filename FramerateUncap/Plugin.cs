@@ -241,7 +241,7 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
-    public static IL TimerFixup4(IL il) {
+    public static IL FixSplitscreenSeparatorEasing(IL il) {
         return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
@@ -250,36 +250,35 @@ public sealed class Plugin : BaseUnityPlugin {
                           new(OpCodes.Ldc_I4_1),
                           new(OpCodes.Sub),
                           new(OpCodes.Stfld, s32SepaTime))
-            .Advance(1)
-            .RemoveInstructions(5)
-            .Insert([new(OpCodes.Call, Member.Method((GameManager gm) => DecrementSepaTimer(gm)))])
+            .RemoveMatching(new(OpCodes.Ldc_I4_1),
+                            new(OpCodes.Sub))
+            .Insert([new(OpCodes.Call, Member.Method(() => DecrementSepaTimer(0)))])
+            .RemoveMatching(new(OpCodes.Ldc_R4, 0.017453292f),
+                            new(OpCodes.Mul),
+                            new(OpCodes.Call, Member.Method(() => Mathf.Sin(0f))))
+            .Insert([new(OpCodes.Call, Member.Method(() => EaseSeparator(0f)))])
+            // Skip the misguided 1-second lerp that would otherwise "kick in" after the original sine lerp fails to do its job.
+            .MatchForward(false,
+                          new(OpCodes.Ldc_R4, 0f),
+                          new(OpCodes.Stfld, Member.Field<GameManager>(gm => gm.separateTimer)))
+            .SetOperandAndAdvance(1.0001f) // 1.0 triggers a different codepath that doesn't do the right thing.
             .Instructions();
     }
 
-    private static void DecrementSepaTimer(GameManager gm) {
-        gm.s32SepaTime -= deltaMillis;
-        if (gm.s32SepaTime < 0) gm.s32SepaTime = 0;
+    private static int DecrementSepaTimer(int n) {
+        n -= deltaMillis;
+        if (n < 0) n = 0;
+        return n;
     }
+
+    private static float EaseSeparator(float t) => Mathf.Cos(t * Mathf.PI) * -0.5f + 0.5f;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.gYm_SepaRequest))]
-    public static void TimerFixup4B(ref int time) {
-        time = (time * 1000) / 30;
+    public static void UseMillisecondsForSplitscreenTimer(ref int time) {
+        time *= 1000;
+        time /= 30;
     }
-
-    /*
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
-    public static void Troubleshoot(GameManager __instance) {
-        if (__instance.s32SepaTime != 0) {
-            Console.WriteLine($"sepa time: {__instance.s32SepaTime} / {__instance.s32SepaRequestTime}");
-            Console.WriteLine($"sepa request time: {__instance.s32SepaRequestTime}");
-            var num27 = (float)__instance.s32SepaTime / (float)__instance.s32SepaRequestTime;
-            num27 = 1f - num27;
-            Console.WriteLine($"ratio, timer: {__instance.gWork.f32SeparateRatio} {__instance.separateTimer}");
-        }
-    }
-    */
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameClear))]
