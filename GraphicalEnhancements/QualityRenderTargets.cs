@@ -99,8 +99,18 @@ static class QualityRenderTargets {
         var rt = new RenderTexture(descriptor) { name = __instance.propCamera.targetTexture.name };
         __instance.propCamera.targetTexture = rt;
 
-        if (__instance.objUICanvas.transform.Find("CollectedProp/CollectProp_2D") is Transform collectedProp) {
-            collectedProp.GetComponent<RawImage>().texture = rt;
+        var canvas = __instance.objUICanvas.transform;
+        var overlayNames = new[] {
+            "CollectedProp",
+            "MsgArrow",
+            "MsgArrow2",
+            "MsgArrow_result"
+        };
+        foreach (var name in overlayNames) {
+            if (canvas.Find(name) is not Transform hudElement) continue;
+            var hudImage = hudElement.Find("CollectProp_2D") ?? hudElement.Find("CollectProp_2D (1)");
+            if (hudImage?.GetComponent<RawImage>() is not RawImage img) continue;
+            img.texture = rt;
         }
     }
 
