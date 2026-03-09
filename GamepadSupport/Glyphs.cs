@@ -312,7 +312,8 @@ public static class Glyphs {
     public static void FixMeteorGlyph(TutorialPadKeyboardCheck __instance, bool __state) {
         if (!__state) return;
 
-        var label = __instance.transform.parent.Find("Text_buttonInfo").GetComponent<UIControllerTextLocalizer>();
+        var label = __instance.transform.parent.Find("Text_buttonInfo")?.GetComponent<UIControllerTextLocalizer>();
+        if (label == null) return; // Avoids false positives in other scenes
         var idx = label.keyMap switch {
             KeyMap.Up => 0,
             KeyMap.Right => 1,
