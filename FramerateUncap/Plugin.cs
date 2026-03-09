@@ -298,6 +298,22 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     [HarmonyTranspiler]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sVolumeDiff_Main))]
+    public static IL DeltaTimeSizeDiffSpin(IL il) {
+        return new CodeMatcher(il)
+            .MatchForward(false,
+                          new(OpCodes.Ldfld, Member.Field<GlobalManager>(gm => gm.collectRot)),
+                          new(OpCodes.Ldc_R4),
+                          new(OpCodes.Add))
+            .Advance(2)
+            .Insert(new(OpCodes.Call, Member.Getter(() => Time.unscaledDeltaTime)),
+                    new(OpCodes.Ldc_R4, 30f),
+                    new(OpCodes.Mul),
+                    new(OpCodes.Mul))
+            .Instructions();
+    }
+
+    [HarmonyTranspiler]
     [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
     public static IL DeltaTimePropUpdates(IL il) {
         List<object> timers = [
