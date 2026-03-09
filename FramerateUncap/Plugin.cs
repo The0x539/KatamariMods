@@ -107,13 +107,15 @@ public sealed class Plugin : BaseUnityPlugin {
     private static readonly MemberInfo
         s32Time = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32Time)),
         s32VsTime = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32VsTime)),
+        s32VSTime = AccessTools.Field(typeof(GameManager), nameof(GameManager.s32VSTime)), // ಠ_ಠ
         tutoTimer = AccessTools.Field(typeof(SI_TUTORIAL), nameof(SI_TUTORIAL.s32Timer)),
         gWork = AccessTools.Field(typeof(GameManager), nameof(GameManager.gWork)),
         siTutorial = AccessTools.Field(typeof(GlobalWork), nameof(GlobalWork.siTutorial)),
         f32Scale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32Scale)),
         f32KataAlpha = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32KataAlpha)),
         getDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime)),
-        fieldDeltaMillis = AccessTools.Field(typeof(Plugin), nameof(deltaMillis));
+        fieldDeltaMillis = AccessTools.Field(typeof(Plugin), nameof(deltaMillis)),
+        f32VSScale = AccessTools.Field(typeof(GameManager), nameof(GameManager.f32VSScale));
 
     // Some stuff is fine to stay capped at 30 or 60, but anything called by sMain() or that touches the same timers
     // will need to be updated accordingly.
@@ -125,8 +127,10 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameOver))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sTutoTitle))]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sStartEffectMain))]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sVSCancel))]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sResultMain))]
     public static IEnumerable<CodeInstruction> PatchTimerIncrements(IEnumerable<CodeInstruction> instructions) {
-        var timers = new List<object> { s32Time, s32VsTime, tutoTimer };
+        var timers = new List<object> { s32Time, s32VsTime, s32VSTime, tutoTimer };
         var loadsTimer = new CodeMatch(OpCodes.Ldfld) { operands = timers };
         var storesTimer = new CodeMatch(OpCodes.Stfld) { operands = timers };
 
@@ -236,10 +240,11 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sGameClear))]
-    public static IEnumerable<CodeInstruction> DeltaTimeRainbow(IEnumerable<CodeInstruction> instructions) {
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.sVSCancel))]
+    public static IEnumerable<CodeInstruction> DeltaTimeRainbowAndVsZoom(IEnumerable<CodeInstruction> instructions) {
         return new CodeMatcher(instructions)
             .MatchForward(false,
-                          new(OpCodes.Ldfld) { operands = { f32Scale, f32KataAlpha } },
+                          new(OpCodes.Ldfld) { operands = { f32Scale, f32KataAlpha, f32VSScale } },
                           new(OpCodes.Ldc_R4),
                           new() { opcodes = { OpCodes.Add, OpCodes.Sub } })
             .Repeat(cm => cm
