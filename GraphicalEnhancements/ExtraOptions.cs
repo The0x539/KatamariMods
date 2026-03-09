@@ -164,9 +164,11 @@ static class ExtraOptions {
 
         if (SceneManager.GetSceneByName("GameMain").isLoaded) {
             var ppb = Camera.main.GetComponent<PostProcessingBehaviour>();
-            ppb.profile.ambientOcclusion.enabled = __instance.IsSsao;
-            ppb.profile.depthOfField.enabled = __instance.IsDOF;
-            ppb.profile.vignette.enabled = __instance.IsVignette;
+            if (ppb != null) {
+                ppb.profile.ambientOcclusion.enabled = __instance.IsSsao;
+                ppb.profile.depthOfField.enabled = __instance.IsDOF;
+                ppb.profile.vignette.enabled = __instance.IsVignette;
+            }
         }
 
         foreach (var prop in GlobalWork.Instance.listProp ?? []) {
