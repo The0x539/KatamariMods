@@ -34,6 +34,19 @@ public class Plugin : BaseUnityPlugin {
         isMouse = false;
     }
 
+    // When a "non-skippable" / "passive" / "background" message is visible,
+    // it's possible to "buffer" a message skip by pressing START.
+    // This is a bug that's haunted me for weeks, assuming it was my mod's fault because of how sporadically I would encounter it.
+    // Fix the bug by clearing the relevant flags whenever there's no message present.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(MsgSys), nameof(MsgSys.Update))]
+    public static void FixSkipBuffering(MsgSys __instance) {
+        if (__instance.u8Job == 0) {
+            __instance.isKeySkip = false;
+            __instance.isSelectDown = false;
+        }
+    }
+
     /*
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GlobalManager), nameof(GlobalManager.LoadSinglePlayerGame))]
