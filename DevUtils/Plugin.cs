@@ -1,7 +1,11 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 
+using DefineEnum;
+
 using HarmonyLib;
+
+using System.Collections;
 
 using UnityEngine;
 
@@ -46,6 +50,31 @@ public class Plugin : BaseUnityPlugin {
             __instance.isKeySkip = false;
             __instance.isSelectDown = false;
         }
+    }
+
+    // This patch is a great example of how much more code it takes
+    // to figure out what exactly to patch than ends up in the final result.
+    // This started with trying to make it so that the *animation* for crossing a size threshold triggered multiple times.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GlobalManager), nameof(GlobalManager.SetNextArea))]
+    public static void MultiAreaChange(GlobalManager __instance) {
+        var gw = __instance.gWork;
+        if (gw.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS) return;
+
+        var threshold = gw.changeArea[gw.playArea];
+        var size = gw.katamariDiameterInt[Define.PLAYER_1] / 10f;
+        var shouldKeepGoing = threshold > 0f && size >= threshold;
+        if (shouldKeepGoing) {
+            gw.StartCoroutine(KeepGoing(gw));
+        }
+    }
+
+    private static IEnumerator KeepGoing(GlobalWork gw) {
+        // Patches welcome if you can figure out how to make this timing tighter while remaining reliable.
+        yield return new WaitForSeconds(2);
+        while (GlobalManager.Instance.sMsgSys.u8Job != 0) yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(2);
+        gw.u8SwMapChange = 1;
     }
 
     /*
