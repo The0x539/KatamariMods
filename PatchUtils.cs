@@ -4,8 +4,11 @@ global using UnityObject = UnityEngine.Object;
 using HarmonyLib;
 
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+
+using UnityEngine;
 
 public static class Member {
     public static MemberInfo Get(LambdaExpression expr) {
@@ -36,6 +39,14 @@ public static class Member {
     public static MethodInfo Setter(Expression<Func<object>> expr) => Property(expr).GetSetMethod();
 
     public static ConstructorInfo Constructor(LambdaExpression expr) => (ConstructorInfo)Get(expr);
+}
+
+public static class UnityExtensions {
+    public static IEnumerable<Transform> Children(this Transform t) {
+        for (var i = 0; i < t.childCount; i++) {
+            yield return t.GetChild(i);
+        }
+    }
 }
 
 public static class CodeMatcherExtensions {
