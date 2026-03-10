@@ -133,6 +133,7 @@ static class IngameOptions {
         var optionsScene = SceneManager.GetSceneByName("Option");
         if (optionsScene.isLoaded) yield break;
         yield return SceneManager.LoadSceneAsync("Option", LoadSceneMode.Additive);
+        if (!optionsScene.IsValid()) optionsScene = SceneManager.GetSceneByName("Option"); // ???
 
         foreach (var obj in optionsScene.GetRootGameObjects()) {
             if (obj.GetComponent<KatamariPauseController>() is not KatamariPauseController kpc) continue;
@@ -267,6 +268,14 @@ static class IngameOptions {
 
         __instance.transform.Find("Canvas/RawImage").gameObject.SetActive(false);
         GetPauseBackdrop().SetActive(false);
+
+        // This camera would otherwise render for 1 frame, and it looks like a glitch.
+        foreach (var camera in Camera.allCameras) {
+            if (camera.gameObject.scene == __instance.gameObject.scene) {
+                camera.enabled = false;
+                break;
+            }
+        }
     }
 
     [HarmonyPostfix]
