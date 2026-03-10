@@ -39,51 +39,54 @@ static class IngameOptions {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.PauseProc))]
     public static IL AddGuy(IL il) {
-        var matcher = new CodeMatcher(il);
-
-        matcher
+        return new CodeMatcher(il)
+            //////// This patch lets you exit the normal pause menu by pressing B, in addition to the usual START.
             .MatchForward(false,
+                          // Locate the first instance of checking whether START is pressed.
                           new(OpCodes.Ldc_I4_7),
                           new(OpCodes.Callvirt, Member.Method<InputPadBase>(ipb => ipb.IsDown(KeyMap.A))))
             .MatchBack(false,
+                       // Backtrack to the most recent access to `this.input`, which is earlier in the same line of C#.
                        new(OpCodes.Ldarg_0),
-                       new(OpCodes.Ldfld, Member.Field<PauseMenu>(pm => pm.input)));
-
-        var start = matcher.Pos;
-        var end = matcher.MatchForward(false, [new(OpCodes.Stloc_S)]).Pos;
-        var flagLocalVar = matcher.Operand;
-
-        // This patch lets you exit the normal pause menu by pressing B, in addition to the usual START.
-        matcher
+                       new(OpCodes.Ldfld, Member.Field<PauseMenu>(pm => pm.input)))
+            .GetPos(out var start)
+            // Find the end of this if-statement, which sets a local variable to 1.
+            .MatchForward(false, [new(OpCodes.Stloc_S)])
+            .GetPos(out var end)
+            // Grab a handle to that local variable, then remove the entire code block.
+            .GetOperand(out var flagLocalVar)
             .RemoveInstructionsInRange(start, end)
+            // Replace the code block with a call to our replacement function.
             .Start()
             .Advance(start)
             .Insert(new(OpCodes.Ldarg_0),
                     new(OpCodes.Ldloc_3),
                     new(OpCodes.Call, Member.Method((PauseMenu pm, int pIdx) => PauseMenuPatchA(pm, pIdx))),
-                    new(OpCodes.Stloc_S, flagLocalVar));
-
-        matcher
+                    new(OpCodes.Stloc_S, flagLocalVar))
+            //////// This patch lets you open the options menu by pressing X/square.
             .MatchForward(false,
+                          // Find: if (this.gWork.u8GameMode != GI_GMODE.TUTORIAL_B) {}
                           new(OpCodes.Ldarg_0),
                           new(OpCodes.Ldfld, Member.Field<PauseMenu>(pm => pm.gWork)),
                           new(OpCodes.Ldfld, Member.Field<GlobalWork>(gw => gw.u8GameMode)),
                           new(OpCodes.Ldc_I4_2),
-                          new(OpCodes.Beq));
-
-        start = matcher.Pos;
-        var endLabel = (Label)matcher.Advance(4).Operand;
-        end = matcher.MatchForward(false, [new() { labels = { endLabel } }]).Pos;
-
-        // This patch lets you open the options menu by pressing X/square.
-        matcher
+                          new(OpCodes.Beq))
+            // Grab the {
+            .GetPos(out start)
+            // Grab the }
+            .Advance(4)
+            .GetOperand(out Label endLabel)
+            // Find the actual location of the }
+            .MatchForward(false, [new() { labels = { endLabel } }])
+            .GetPos(out end)
+            // Remove the entire block
             .RemoveInstructionsInRange(start, end - 1)
+            // Replace it with a call to our function
             .Start()
             .Advance(start)
             .Insert(new(OpCodes.Ldarg_0),
-                    new(OpCodes.Call, Member.Method((PauseMenu pm) => PauseMenuPatchB(pm))));
-
-        return matcher.Instructions();
+                    new(OpCodes.Call, Member.Method((PauseMenu pm) => PauseMenuPatchB(pm))))
+            .Instructions();
     }
 
     private static bool PauseMenuPatchA(PauseMenu self, int pIdx) {

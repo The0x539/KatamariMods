@@ -97,12 +97,12 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
     public static IL SuppressRewiredB(IL il) {
-        var matcher = new CodeMatcher(il);
-        return matcher
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
                           new(OpCodes.Call, Member.Method<KatamariPauseController>(kpc => kpc.GetJoystickData())))
-            .RemoveInstructionsInRange(0, matcher.Pos - 1)
+            .GetPos(out var pos)
+            .RemoveInstructionsInRange(0, pos - 1)
             .Instructions();
     }
 

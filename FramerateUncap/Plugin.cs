@@ -183,46 +183,42 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.sTutoTitle))]
     public static IL TimerFixup2(IL il, ILGenerator gen) {
-        // Old C#: if (s32Timer == 22 frames)
-        var matcher = new CodeMatcher(il)
+        var loc = gen.DeclareLocal(typeof(int));
+
+        return new CodeMatcher(il)
             .MatchForward(false,
+                          // Old C#: if (timer == 22 frames)
                           new(OpCodes.Ldfld, tutoTimer),
                           new(OpCodes.Ldc_I4_S, (sbyte)22),
                           new(OpCodes.Bne_Un))
             .Advance(1)
-            .RemoveInstruction();
-
-        // New C#: if (s32Timer <= 733 ms && s32Timer > 667 ms)
-        var target = (Label)matcher.Operand;
-        var loc = gen.DeclareLocal(typeof(int));
-        matcher
             .RemoveInstruction()
+            .GetOperand(out Label target)
+            .RemoveInstruction()
+            // New C#: if (timer <= 733 ms && timer > 667 ms)
             .Insert(new(OpCodes.Stloc, loc),
                     new(OpCodes.Ldloc, loc),
                     new(OpCodes.Ldc_I4, 733),
                     new(OpCodes.Bgt_Un, target), // the condition fails if s32Timer > 733 ms
                     new(OpCodes.Ldloc, loc),
                     new(OpCodes.Ldc_I4, 667),
-                    new(OpCodes.Ble_Un, target)); // the condition fails if s32Timer <= 667 ms
-
-        matcher
+                    new(OpCodes.Ble_Un, target)) // the condition fails if s32Timer <= 667 ms
             .MatchForward(false,
+                          // Old C#: if (timer == 20 frames)
                           new(OpCodes.Ldfld, tutoTimer),
                           new(OpCodes.Ldc_I4_S, (sbyte)20),
                           new(OpCodes.Bne_Un))
             .Advance(1)
-            .RemoveInstruction();
-
-        target = (Label)matcher.Operand;
-        matcher
             .RemoveInstruction()
+            .GetOperand(out target)
+            .RemoveInstruction()
+            // New C#: if (timer <= 667 ms && timer > 0)
             .Insert(new(OpCodes.Ldc_I4, 667),
                     new(OpCodes.Bgt_Un, target), // the condition fails if s32Timer > 667 ms (possibly superfluous but I'd rather be safe)
                     new(OpCodes.Ldloc, loc), // We already stored it in our personal local variable in the last bit.
                     new(OpCodes.Ldc_I4_0),
-                    new(OpCodes.Ble_Un, target)); // the condition fails if s32Timer <= 0
-
-        return matcher.Instructions();
+                    new(OpCodes.Ble_Un, target)) // the condition fails if s32Timer <= 0
+            .Instructions();
     }
 
     [HarmonyTranspiler]

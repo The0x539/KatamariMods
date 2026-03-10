@@ -277,26 +277,19 @@ public static class PretenderPatches {
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(Player), nameof(Player.Start))]
     public static IL ChooseCore(IL il) {
-        var matcher = new CodeMatcher(il);
-
-        var start = matcher
+        return new CodeMatcher(il)
             .MatchForward(false,
                           new(OpCodes.Ldarg_0),
                           new(OpCodes.Ldfld, Member.Field<Player>(p => p.gWork)),
                           new(OpCodes.Ldfld, Member.Field<GlobalWork>(gw => gw.playMission)))
-            .Pos;
-
-        var end = matcher
+            .GetPos(out var start)
             .MatchForward(false, [new(OpCodes.Callvirt, loadGameObject)])
-            .Pos;
-
-        matcher
+            .GetPos(out var end)
             .Start()
             .Advance(start + 1)
             .RemoveInstructionsInRange(start + 1, end)
-            .InsertAndAdvance([new(OpCodes.Call, Member.Method((Player p) => ChooseCoreImpl(p)))]);
-
-        return matcher.Instructions();
+            .InsertAndAdvance([new(OpCodes.Call, Member.Method((Player p) => ChooseCoreImpl(p)))])
+            .Instructions();
     }
 
     // Copied verbatim from the game.
