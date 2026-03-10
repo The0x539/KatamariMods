@@ -48,7 +48,7 @@ public static class Jungle {
     // so as a workaround, stick the actual yielding method elsewhere.
     internal static IEnumerator LoadPrefabs() => Prefabs.Init();
 
-    public static void Dress(GameObject ouji, string[]? bodyPartNames = null) {
+    public static void Dress(GameObject ouji) {
         if (Prefabs.billboard == null || Prefabs.material == null) return;
 
         var billboard = Object.Instantiate(Prefabs.billboard);
@@ -61,7 +61,7 @@ public static class Jungle {
         billboard.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Default");
 
         var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
-            .AllWithNames(bodyPartNames ?? ["head_tawara_m", "body01_m", "hand_m"]);
+            .AllWithNames("head_tawara_m", "body01_m", "hand_m");
 
         var sceneName = ouji.scene.name;
         if (sceneName == "Result2") {
