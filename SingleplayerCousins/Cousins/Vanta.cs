@@ -13,10 +13,11 @@ public static class Vanta {
     public static void Dress(GameObject ouji) {
         var bodyParts = ouji.transform.Find("body_root").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true);
 
-        var bodyMat = bodyParts[0].material;
+        var bodyMat = bodyParts[1].material;
         bodyMat.color = Color.black;
         bodyMat.mainTexture = blackTexture;
         foreach (var smr in bodyParts) {
+            if (smr.name is "nose_m" or "antena_m") continue;
             smr.sharedMaterial = bodyMat;
         }
 
@@ -28,8 +29,6 @@ public static class Vanta {
         foreach (var smr in ouji.transform.Find("face_root/face").GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)) {
             smr.sharedMaterial = faceMat;
         }
-
-        ouji.transform.Find("JNT_root/JNT_waist/JNT_spine_01/JNT_spine_02/JNT_neck/JNT_head/JNT_antenna/Ef_Highlight").gameObject.SetActive(false);
     }
 
     public static void DressBall(GameObject ball) {
