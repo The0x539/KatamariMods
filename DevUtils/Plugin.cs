@@ -22,6 +22,7 @@ public class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(HideCursor));
         //Harmony.CreateAndPatchAll(typeof(VersusOnEarth));
         Harmony.CreateAndPatchAll(typeof(LocalizationTweaks));
+        Harmony.CreateAndPatchAll(typeof(EarlyOptions));
 
         if (this.Config.Bind("Intro", "Skip", false).Value) {
             Harmony.CreateAndPatchAll(typeof(SkipIntro));

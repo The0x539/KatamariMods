@@ -119,7 +119,7 @@ static class IngameOptions {
         if (self.isActiveDialogReturn) return;
 
         var pad = self.input.Pad(0);
-        if (pad.IsDown(KeyMap.Y) && self.gWork.u8GameMode != GI_GMODE.GI_GMODE_TUTORIAL_B) {
+        if (pad.IsDown(KeyMap.Y) && self.gWork.u8GameMode is not (GI_GMODE.GI_GMODE_TUTORIAL or GI_GMODE.GI_GMODE_TUTORIAL_B)) {
             self.ShowDialog(true);
         } else if (pad.IsDown(KeyMap.X)) {
             self.StartCoroutine(ShowOptionsMenu(self));
@@ -127,8 +127,9 @@ static class IngameOptions {
     }
 
     private static System.Collections.IEnumerator ShowOptionsMenu(PauseMenu pauseMenu) {
-        yield return SceneManager.LoadSceneAsync("Option", LoadSceneMode.Additive);
         var optionsScene = SceneManager.GetSceneByName("Option");
+        if (optionsScene.isLoaded) yield break;
+        yield return SceneManager.LoadSceneAsync("Option", LoadSceneMode.Additive);
 
         foreach (var obj in optionsScene.GetRootGameObjects()) {
             if (obj.GetComponent<KatamariPauseController>() is not KatamariPauseController kpc) continue;
