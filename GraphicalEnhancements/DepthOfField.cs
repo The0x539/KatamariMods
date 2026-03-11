@@ -281,7 +281,7 @@ public sealed class UpdateDof : MonoBehaviour {
         // (That's my only reason for not using normal component fields for this.)
         // Camera distance from the katamari seems to be a pretty good independent variable to use here.
         // "Aperture" is set to X. "Focal length" is set to distance^Y * Z.
-        this.adjuster.localScale = new(0.25f, 0.52f, 5.6f);
+        this.adjuster.localScale = new(0.25f, 0.5f, 5.6f);
     }
 
     public void Update() {
