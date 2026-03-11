@@ -74,9 +74,17 @@ public static class AnisotropicGround {
         // This is very silly, but we need to point-upscale the pixel art terrain texture a bit
         // in order to have it still look sharp in the extreme foreground,
         // while also being subject to anisotropic/trilinear filtering.
-        const int scale = 8;
+        // However, let's avoid doing that for the atlas textures, which have size 2048x2048.
+        if (w <= 128 && h <= 128) {
+            w *= 8;
+            h *= 8;
+        } else {
+            w *= 2;
+            h *= 2;
+        }
 
-        var blitTex = new RenderTexture(w * scale, h * scale, 0);
+        var blitTex = new RenderTexture(w, h, 0);
+        blitTex.Create();
         Graphics.Blit(srcTex, blitTex);
 
         var request = AsyncGPUReadback.Request(blitTex, mipIndex: 0);
@@ -84,9 +92,10 @@ public static class AnisotropicGround {
         var pixels = request.GetData<Color32>();
         blitTex.Release();
 
-        var newTex = new Texture2D(w * scale, h * scale, TextureFormat.RGB24, mipmap: true) {
+        var newTex = new Texture2D(w, h, TextureFormat.RGB24, mipmap: true) {
             filterMode = FilterMode.Trilinear,
             anisoLevel = 16,
+            name = srcTex.name + " (Anisotropic)",
         };
         newTex.SetAllPixels32(pixels.ToArray(), miplevel: 0);
         newTex.Apply(updateMipmaps: true, makeNoLongerReadable: true);
