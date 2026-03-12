@@ -36,6 +36,9 @@ public enum ActionOrigin : int {
     DPadMove,
     DPadNorth, DPadSouth, DPadWest, DPadEast,
     GyroMove, GyroPitch, GyroYaw, GyroRoll,
+
+    PS4_X = 50, PS4_Circle, PS4_Triangle, PS4_Square,
+    PS5_X = 258, PS5_Circle, PS5_Triangle, PS5_Square,
     // I am not writing all of the members. I'm not going to use them.
 }
 
@@ -63,4 +66,19 @@ public enum GlyphSize : int {
     Medium,
     Large,
     COUNT,
+}
+
+// Pick one base style and 
+public enum GlyphStyle : uint {
+    // White shapes with transparent cutout detail.
+    Knockout = 0x0,
+    // White shapes with black detail.
+    Light = 0x1,
+    // Black shapes with white detail.
+    Dark = 0x2,
+
+    // Use monochrome white/black icons like for other inputs, instead of matching device colors.
+    NeutralFaceButtons = 0x10,
+    // Use an "outlined style" for face buttons. Exact meaning of this depends on the other options.
+    OutlinedFaceButtons = 0x20,
 }

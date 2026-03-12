@@ -162,23 +162,35 @@ public static class Glyphs {
     private static readonly Dictionary<string, Texture2D> glyphCache = [];
 
     public static Texture2D LoadGlyphFile(ActionOrigin origin, GlyphSize size) {
-        // TODO: Figure out what the flags argument does. Hopefully it could be of some use for choosing the "theme".
-        string path = ISteamInput.Instance.GetGlyphPNGForActionOrigin(origin, size, 0);
-        {
-            var colorPath = path
-                .Replace("knockout\\ps_button", "light\\ps_color_button")
-                .Replace("knockout\\shared_color_button", "light\\shared_color_button");
-            if (File.Exists(colorPath)) path = colorPath;
-        }
-        if (SceneManager.GetActiveScene().name == "Title2") {
-            path = path.Replace("knockout", "dark");
+        var steam = ISteamInput.Instance;
+
+        GlyphStyle style;
+
+        if (steam.TranslateActionOrigin(InputType.SteamDeck, origin) is >= ActionOrigin.A and <= ActionOrigin.Y) {
+            // Face buttons should be dark detail on a colorful shape.
+            style = GlyphStyle.Light;
+            if (origin is >= ActionOrigin.PS5_X and <= ActionOrigin.PS5_Square) {
+                // PS4 gets colorful face buttons; PS5 does not.
+                origin = steam.TranslateActionOrigin(InputType.PS4, origin);
+            }
+        } else if (SceneManager.GetActiveScene().name == "Title2") {
+            // On the save select screen, everything other than face buttons should be white detail on a dark shape.
+            style = GlyphStyle.Dark;
+        } else {
+            // In most cases, icons should be dark detail on a white shape.
+            style = GlyphStyle.Light;
         }
 
+        string path = steam.GetGlyphPNGForActionOrigin(origin, size, style);
         if (glyphCache.TryGetValue(path, out var existing)) return existing;
 
-        var tex = new Texture2D(0, 0) { wrapMode = TextureWrapMode.Clamp };
+        var tex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap: true) {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Trilinear,
+            name = Path.GetFileNameWithoutExtension(path),
+        };
         var data = File.ReadAllBytes(path);
-        ImageConversion.LoadImage(tex, data);
+        ImageConversion.LoadImage(tex, data, markNonReadable: true);
 
         glyphCache[path] = tex;
         return tex;

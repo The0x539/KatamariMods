@@ -33,10 +33,13 @@ internal static class ISteamInputBindings {
     public static extern void RunFrame(this ISteamInput self);
 
     [DllImport("steam_api64", EntryPoint = "SteamAPI_ISteamInput_GetGlyphForXboxOrigin", CallingConvention = CallingConvention.Cdecl)]
-    internal static extern LPUtf8Str GetGlyphForXboxOrigin(this ISteamInput self, XboxOrigin eOrigin);
+    public static extern LPUtf8Str GetGlyphForXboxOrigin(this ISteamInput self, XboxOrigin eOrigin);
 
     [DllImport("steam_api64", EntryPoint = "SteamAPI_ISteamInput_GetGlyphPNGForActionOrigin", CallingConvention = CallingConvention.Cdecl)]
-    internal static extern LPUtf8Str GetGlyphPNGForActionOrigin(this ISteamInput self, ActionOrigin eOrigin, GlyphSize eSize, uint unFlags);
+    public static extern LPUtf8Str GetGlyphPNGForActionOrigin(this ISteamInput self, ActionOrigin eOrigin, GlyphSize eSize, GlyphStyle unFlags);
+
+    [DllImport("steam_api64", EntryPoint = "SteamAPI_ISteamInput_TranslateActionOrigin", CallingConvention = CallingConvention.Cdecl)]
+    public static extern ActionOrigin TranslateActionOrigin(this ISteamInput self, InputType eDestinationInputType, ActionOrigin eSourceOrigin);
 
     [DllImport("steam_api64", EntryPoint = "SteamAPI_ISteamInput_GetActionOriginFromXboxOrigin", CallingConvention = CallingConvention.Cdecl)]
     internal static extern ActionOrigin GetActionOriginFromXboxOrigin(this ISteamInput self, InputHandle handle, XboxOrigin eOrigin);
