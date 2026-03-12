@@ -417,8 +417,8 @@ internal static class PretenderLoader {
             if (bones.TryGetValue(node.Name, out var bone)) {
                 node.Transform.Decompose(out var scale, out var rotation, out var position);
                 bone.transform.localPosition = position.ToUnity();
-                //bone.transform.rotation = Quaternion.Inverse(rotation.ToUnity());
-                //bone.transform.localScale = scale.ToUnity();
+                bone.transform.localRotation = rotation.ToUnity();
+                bone.transform.localScale = scale.ToUnity();
             } else if (node.Name.StartsWith("JNT_")) {
                 newBones.Add(node);
             }
@@ -439,6 +439,8 @@ internal static class PretenderLoader {
             bone.SetParent(bones[node.Parent.Name]);
             node.Transform.Decompose(out var scale, out var rotation, out var position);
             bone.transform.localPosition = position.ToUnity();
+            bone.transform.localRotation = rotation.ToUnity();
+            bone.transform.localScale = scale.ToUnity();
         }
 
         foreach (var aMesh in scene.Meshes) {
