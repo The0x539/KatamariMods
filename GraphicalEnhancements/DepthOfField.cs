@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 
 using System;
-using System.Collections.Generic;
 using System.Reflection.Emit;
 
 using UnityEngine;
@@ -78,7 +77,7 @@ static class DepthOfField {
     public static IL TakeControlOfSSAO(IL il) {
         // Normally, the ambient occlusion effect schedules its stuff to run during CameraEvent.BeforeImageEffectsOpaque.
         // However, it's VERY difficult to get non–command buffer–flavored code to run immediately before this,
-        // and command buffer code can't really "draw the whole world" the way we need to.
+        // and I haven't gotten the depth buffer fix to work with command buffers.
         // However, we're fortunate in that everything in this game's world uses a basic opaque material.
         // This means that there's nothing that runs in between that step and the OnRenderImage "camera message".
         // As such, we can just surgically remove the normal "TryExecuteCommandBuffer" invocation here,
@@ -93,82 +92,90 @@ static class DepthOfField {
             .Instructions();
     }
 
+    private static RenderTexture? separateDepthBuffer = null;
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.SetTexture))]
+    public static void UseSeparateDepthBuffer(SetupRenderTexture __instance, out bool __runOriginal) {
+        __runOriginal = false;
+        var self = __instance;
+        var setIndex = self.setIndex;
+        self.setIndex = 0;
+        if (setIndex != self.setIndex) {
+            Console.WriteLine("Hi");
+
+            var tex = self.renderTexture[self.setIndex];
+            separateDepthBuffer?.Release();
+            separateDepthBuffer = new RenderTexture(tex.width, tex.height, depth: 32, RenderTextureFormat.Depth) {
+                antiAliasing = tex.antiAliasing,
+                bindTextureMS = true,
+                name = tex.name.Replace("Main", "Depth"),
+            };
+            separateDepthBuffer.Create();
+
+            self.mainCamera.SetTargetBuffers(tex.colorBuffer, separateDepthBuffer.depthBuffer);
+            self.gameManager.GameRenderTexture = tex;
+            self.outputImage.texture = tex;
+        }
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.Release))]
+    public static void ReleaseSeparateDepthBuffer(SetupRenderTexture __instance) {
+        __instance.GetComponent<Camera>().targetTexture = null;
+        separateDepthBuffer?.Release();
+        separateDepthBuffer = null;
+    }
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void ManualDepthPass(PostProcessingBehaviour __instance, RenderTexture source, RenderTexture destination) {
-        if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) return;
-
+    public static void ProvideDepth(PostProcessingBehaviour __instance, ref RenderTexture? source) {
         var ctx = __instance.m_Context;
 
-        if (depthCamera == null) {
-            if (ctx.camera.targetTexture == null) return;
-            depthCamera = new GameObject("Manual Depth Pass").AddComponent<Camera>();
-            depthCamera.enabled = false;
+        if (source == null) {
+            source = ctx.camera.GetComponent<SetupRenderTexture>().renderTexture[0];
         }
 
-        var renderersToSkip = new List<Renderer>();
+        if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) return;
 
-        if (GlobalWork.Instance.player[0].f32Alpha == 0) {
-            // This might be slightly expensive but should only happen during the end-of-level Royal Rainbow animation, not during gameplay.
-            foreach (var prop in GlobalWork.instance.listProp) {
-                if (prop == null) continue;
-                if (!prop.mIsAttachedToKatamari) continue;
+        if (separateDepthBuffer is not RenderTexture srcDepth) return;
+        var dstDepth = (RenderTexture)Shader.GetGlobalTexture("_CameraDepthTexture");
 
-                // For reasons that remain unknown to me, disabling the renderer only in a gYm_OujiSetAlpha prefix
-                // doesn't fully work, and leads to the objects here drawing to the depth buffer. Frustrating!
-                foreach (var r in prop.mRenderers) {
-                    if (r.enabled) renderersToSkip.Add(r);
-                }
-                foreach (var r in prop.smRenderers) {
-                    if (r.enabled) renderersToSkip.Add(r);
-                }
-            }
-        }
-        foreach (var obj in SpecialDraw.instances) {
-            if (obj.SpecialThisFrame) {
-                renderersToSkip.Add(obj.Prop.mRenderers[0]);
-            }
-        }
+        RenderTexture.active = dstDepth;
+        var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth_MSAA");
 
-        var manualColorTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 0, RenderTextureFormat.R8, name: "Manual Depth Pass - Color");
-        var manualDepthTexture = ctx.renderTextureFactory.Get(ctx.width, ctx.height, depthBuffer: 24, RenderTextureFormat.Depth, name: "Manual Depth Pass - Depth");
-
-        depthCamera.CopyFrom(ctx.camera);
-        depthCamera.SetTargetBuffers(manualColorTexture.colorBuffer, manualDepthTexture.depthBuffer);
-
-        foreach (var r in renderersToSkip) r.enabled = false;
-        depthCamera.Render();
-        foreach (var r in renderersToSkip) r.enabled = true;
-
-        var trueDepthTexture = (RenderTexture)Shader.GetGlobalTexture("_CameraDepthTexture");
-        RenderTexture.active = trueDepthTexture;
-        var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth");
+        blitToDepth.SetTexture("_MainTex", srcDepth);
         blitToDepth.SetPass(0);
-        blitToDepth.SetTexture("_MainTex", manualDepthTexture);
+        // TODO: Use GraphicsUtils.quad, following the example set by the AO command buffer.
         DrawQuad();
 
-        ctx.renderTextureFactory.Release(manualColorTexture);
-        ctx.renderTextureFactory.Release(manualDepthTexture);
-
         if (__instance.m_AmbientOcclusion.active) {
+            // For some reason, the AO non-customizably renders to "the current camera target".
+            // For some reason, setting separate color and depth buffers on a camera causes that to not be defined.
+            ctx.camera.targetTexture = source;
+
             var cb = new CommandBuffer();
             __instance.m_AmbientOcclusion.PopulateCommandBuffer(cb);
             Graphics.ExecuteCommandBuffer(cb);
+
+            ctx.camera.SetTargetBuffers(source.colorBuffer, srcDepth.depthBuffer);
         }
 
         GL.SetViewMatrix(ctx.camera.worldToCameraMatrix);
         GL.LoadProjectionMatrix(ctx.camera.projectionMatrix);
 
         // Now that SSAO is done, it's safe to draw the clouds to the depth buffer so that DoF blurs them correctly.
-        RenderTexture.active = trueDepthTexture;
-        RedrawClouds();
-
-        // TODO: Similarly, manually draw the "dust/smoke" particles spawned when you roll and from smokestacks
-
-        RenderTexture.active = source;
+        // However, unlike an earlier version of this code, we're going to need to draw to our "main" depth buffer, because it's antialiased.
+        // Fortunately, just copying again after this is done should be fine and pretty cheap.
+        Graphics.SetRenderTarget(source.colorBuffer, srcDepth.depthBuffer);
         RedrawJungle();
         RedrawClouds();
         RedrawSmoke(ctx, source);
+
+        blitToDepth.SetTexture("_MainTex", srcDepth);
+        blitToDepth.SetPass(0);
+        // TODO: Use GraphicsUtils.quad, following the example set by the AO command buffer.
+        DrawQuad();
     }
 
     private static void RedrawJungle() {

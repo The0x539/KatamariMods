@@ -49,13 +49,14 @@ static class QualityRenderTargets {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(CameraKatamari), nameof(CameraKatamari.Setup))]
     public static void AntialiasKatamariResultImage(CameraKatamari __instance) {
-        var descriptor = CameraKatamari._rTexture.descriptor;
-        var name = CameraKatamari._rTexture.name;
-        CameraKatamari._rTexture.Release();
+        var old = CameraKatamari._rTexture;
+        var descriptor = old.descriptor;
+        var name = old.name;
         descriptor.msaaSamples = 4;
         var rt = new RenderTexture(descriptor) { name = name };
         __instance._camera.targetTexture = CameraKatamari._rTexture = rt;
-        if (__instance._rImage != null) __instance._rImage.texture = rt;
+        __instance._rImage?.texture = rt;
+        old.Release();
     }
 
 
