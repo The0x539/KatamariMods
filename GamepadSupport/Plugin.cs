@@ -1,9 +1,11 @@
 ﻿using BepInEx;
+using BepInEx.Logging;
 
 using HarmonyLib;
 
 using MyGame;
 
+using System;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -17,6 +19,7 @@ namespace GamepadSupport;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
     private static Plugin __instance = null!;
+    public static ManualLogSource Log => __instance.Logger;
 
     public void Awake() {
         __instance = this;
@@ -39,6 +42,14 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     private static void OnConnect(SDL.JoystickID id) {
+        var gamepadType = SDL.Gamepad.GamepadTypeForID(id);
+        Log.LogInfo($"New connection from joystick {id}, type: {gamepadType}");
+
+        if (gamepadType is SDL.GamepadType.SwitchJoyConLeft or SDL.GamepadType.SwitchJoyConRight) {
+            Log.LogWarning("Ignoring individual Joy-Con");
+            return;
+        }
+
         var player = SDL.Gamepad.PlayerIndexForID(id);
 
         // Completely ignore the player index that the gamepad is currently assigned to.
@@ -53,6 +64,8 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     private static void OnDisconnect(SDL.JoystickID id) {
+        Log.LogWarning($"Joystick {id} disconnected");
+
         if (GetPauseMenu() is not PauseMenu menu) return;
         if (menu.sCheckPause() != Define.TRUE) return;
         if (menu.gWork.u8Pause != Define.OFF) return;

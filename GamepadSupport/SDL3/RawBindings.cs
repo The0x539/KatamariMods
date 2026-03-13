@@ -90,6 +90,9 @@ internal static unsafe partial class RawBindings {
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern ulong SDL_GetGamepadSteamHandle(RawGamepad* gamepad);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern GamepadType SDL_GetGamepadTypeForID(JoystickID instanceId);
 }
 
 [Flags]

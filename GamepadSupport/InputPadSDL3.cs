@@ -32,6 +32,7 @@ public sealed class InputPadSDL3 : InputPadBase {
     public void Connect(SDL.JoystickID id) {
         this.inner = new SDL.Gamepad(id);
         this.inner.PlayerIndex = this.ID;
+        Plugin.Log.LogInfo($"Connected joystick {id} for player {this.ID}: {this.Inner.Name}");
         ISteamInput.Instance.RunFrame();
     }
 

@@ -35,6 +35,7 @@ public unsafe class Gamepad : IDisposable {
 
     public static string? NameForID(JoystickID instanceId) => ConvertName(RawBindings.SDL_GetGamepadNameForID(instanceId));
     public static int PlayerIndexForID(JoystickID instanceId) => RawBindings.SDL_GetGamepadPlayerIndexForID(instanceId);
+    public static GamepadType GamepadTypeForID(JoystickID instanceId) => RawBindings.SDL_GetGamepadTypeForID(instanceId);
 
     private static string? ConvertName(byte* ptr) {
         if (ptr == null) return null;
