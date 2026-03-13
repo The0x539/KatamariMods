@@ -24,15 +24,18 @@ public sealed class Plugin : BaseUnityPlugin {
     public void Awake() {
         __instance = this;
 
-        SDL.SDL.InitSubSystem(SDL.InitFlags.Gamepad);
+        SDL.SDL.SetHint("SDL_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS", "1");
+        SDL.SDL.InitSubSystem(SDL.InitFlags.Gamepad | SDL.InitFlags.Sensor);
+
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(Glyphs));
     }
 
     public void Update() {
         while (SDL.SDLEvent.Poll() is SDL.SDLEvent ev) {
-            if (ev.Dispatch() is not SDL.GamepadDeviceEvent gde) continue;
+            var d = ev.Dispatch();
 
+            if (d is not SDL.GamepadDeviceEvent gde) continue;
             if (gde.common.type == SDL.EventType.GamepadAdded) {
                 OnConnect(gde.which);
             } else if (gde.common.type == SDL.EventType.GamepadRemoved) {
@@ -226,5 +229,13 @@ public sealed class Plugin : BaseUnityPlugin {
             self.mainUguiUtility.SetText("TextItemExp3", self.lstGamePad[loc].dispName);
             self.mainUguiUtility.SetTextColor("TextItemExp3", self.textColor[self.playerIndex]);
         }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
+    public static void ExposeMotionControls(KatamariPauseController __instance) {
+        var joyA = __instance.gWork.localKingText.GetLocaliseText("UI_PRN_025", (int)__instance.gWork.language);
+        var joyB = __instance.gWork.localKingText.GetLocaliseText("UI_PRN_026", (int)__instance.gWork.language);
+        __instance.textMoveType = [.. __instance.textMoveType, joyA /* , joyB */];
     }
 }

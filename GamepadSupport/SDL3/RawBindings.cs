@@ -7,6 +7,7 @@ public static unsafe partial class SDL {
     public static void Free(void* mem) => RawBindings.SDL_free(mem);
     public static bool InitSubSystem(InitFlags flags) => RawBindings.SDL_InitSubSystem(flags);
     public static string GetError() => Marshal.PtrToStringAnsi((nint)RawBindings.SDL_GetError());
+    public static bool SetHint(string name, string value) => RawBindings.SDL_SetHint(name, value);
 }
 
 internal static unsafe partial class RawBindings {
@@ -93,6 +94,18 @@ internal static unsafe partial class RawBindings {
 
     [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern GamepadType SDL_GetGamepadTypeForID(JoystickID instanceId);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern SDLBool SDL_GamepadHasSensor(RawGamepad* gamepad, SensorType type);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern SDLBool SDL_SetGamepadSensorEnabled(RawGamepad* gamepad, SensorType type, bool enabled);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern SDLBool SDL_GetGamepadSensorData(RawGamepad* gamepad, SensorType type, float* data, int numValues);
+
+    [DllImport("SDL3", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern SDLBool SDL_SetHint([MarshalAs(UnmanagedType.LPStr)] string name, [MarshalAs(UnmanagedType.LPStr)] string value);
 }
 
 [Flags]

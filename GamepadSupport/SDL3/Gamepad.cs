@@ -3,6 +3,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+using UnityEngine;
+
 namespace GamepadSupport.SDL3;
 
 internal partial struct RawGamepad { }
@@ -56,6 +58,21 @@ public unsafe class Gamepad : IDisposable {
     public short GetAxis(GamepadAxis axis) => RawBindings.SDL_GetGamepadAxis(this.ptr, axis);
     public bool GetButton(GamepadButton button) => RawBindings.SDL_GetGamepadButton(this.ptr, button);
     public void Rumble(ushort lo, ushort hi, uint duration) => RawBindings.SDL_RumbleGamepad(this.ptr, lo, hi, duration).ThrowIfFalse();
+    public bool HasSensor(SensorType type) => RawBindings.SDL_GamepadHasSensor(this.ptr, type);
+    public void SetSensorEnabled(SensorType type, bool enabled) => RawBindings.SDL_SetGamepadSensorEnabled(this.ptr, type, enabled).ThrowIfFalse();
+
+    public void GetSensorData(SensorType type, float[] data) {
+        fixed (float* dataPtr = data) {
+            RawBindings.SDL_GetGamepadSensorData(this.ptr, type, dataPtr, data.Length).ThrowIfFalse();
+        }
+    }
+
+    public void GetSensorData(SensorType type, out Vector3 v) {
+        v = Vector3.zero;
+        fixed (Vector3* xyz = &v) {
+            RawBindings.SDL_GetGamepadSensorData(this.ptr, type, (float*)xyz, 3);
+        }
+    }
 
     public InputHandle Steam => new(RawBindings.SDL_GetGamepadSteamHandle(this.ptr));
 

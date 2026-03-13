@@ -21,6 +21,11 @@ public sealed class InputPadSDL3 : InputPadBase {
     private readonly float[] axes = new float[(int)SDL.GamepadAxis.COUNT];
     private uint buttons;
 
+    private static readonly SDL.SensorType[] motionSensors = [
+        SDL.SensorType.AccelLeft, SDL.SensorType.AccelRight,
+        SDL.SensorType.GyroLeft, SDL.SensorType.GyroRight,
+    ];
+
     static InputPadSDL3() {
         ISteamInput.Instance.Init();
     }
@@ -32,8 +37,30 @@ public sealed class InputPadSDL3 : InputPadBase {
     public void Connect(SDL.JoystickID id) {
         this.inner = new SDL.Gamepad(id);
         this.inner.PlayerIndex = this.ID;
+
+        if (this.inner.GamepadType == SDL.GamepadType.SwitchJoyConPair && this.HasAllMotionSensors()) {
+            // TODO: Only enable when motion controls are chosen, to save bandwidth and battery
+            this.SetMotionSensorsEnabled(true);
+        }
+
         Plugin.Log.LogInfo($"Connected joystick {id} for player {this.ID}: {this.Inner.Name}");
         ISteamInput.Instance.RunFrame();
+    }
+
+    private bool HasAllMotionSensors() {
+        foreach (var sensor in motionSensors) {
+            if (!this.Inner.HasSensor(sensor)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private bool SetMotionSensorsEnabled(bool enabled) {
+        foreach (var sensor in motionSensors) {
+            this.Inner.SetSensorEnabled(sensor, enabled);
+        }
+        return true;
     }
 
     // Corresponds to MyGame.InputStatus.KeyMap
@@ -175,7 +202,7 @@ public sealed class InputPadSDL3 : InputPadBase {
     }
 
     public override void Tick() {
-        if (!this.Enabled) return;
+        if (!this.Enabled || this.inner == null) return;
 
         this.ReadAxes();
         this.ReadButtons();
@@ -192,5 +219,19 @@ public sealed class InputPadSDL3 : InputPadBase {
         var select = (this.buttons & 0b01) != 0;
         var cancel = (this.buttons & 0b10) != 0;
         this.PushSelectCancel(select, cancel);
+
+        if (this.PadMode == PadMode.Dual) {
+            this.TickMotion();
+        }
+    }
+
+    private void TickMotion() {
+        this.Inner.GetSensorData(SDL.SensorType.AccelLeft, out var l);
+        this.Inner.GetSensorData(SDL.SensorType.AccelRight, out var r);
+        const float ratio = 1 / 9.80665f; // convert from meters/sec² to g-force
+        l *= ratio;
+        r *= ratio;
+        this.PushSensorAccelerationLeft(r.x, r.z, r.y); // no idea why they're supposed to get swapped
+        this.PushSensorAccelerationRight(l.x, l.z, l.y);
     }
 }
