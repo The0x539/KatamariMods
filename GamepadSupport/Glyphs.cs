@@ -53,8 +53,10 @@ public static class Glyphs {
         }
 
         try {
-            if (IsStickIcon(__instance, out var origin)) {
-                __result = LoadGlyph(sdl, origin);
+            if (IsStickIcon(__instance, out var xboxOrigin)) {
+                __result = LoadGlyph(sdl, xboxOrigin);
+            } else if (IsMeteorDpadIcon(__instance, out var steamOrigin)) {
+                __result = LoadGlyphFile(steamOrigin, GlyphSize.Large, forceStyle: GlyphStyle.Knockout);
             } else {
                 __result = LoadGlyph(sdl, _iconKeyType);
             }
@@ -161,7 +163,7 @@ public static class Glyphs {
 
     private static readonly Dictionary<string, Texture2D> glyphCache = [];
 
-    public static Texture2D LoadGlyphFile(ActionOrigin origin, GlyphSize size) {
+    public static Texture2D LoadGlyphFile(ActionOrigin origin, GlyphSize size, GlyphStyle? forceStyle = null) {
         var steam = ISteamInput.Instance;
 
         GlyphStyle style;
@@ -181,7 +183,7 @@ public static class Glyphs {
             style = GlyphStyle.Light;
         }
 
-        string path = steam.GetGlyphPNGForActionOrigin(origin, size, style);
+        string path = steam.GetGlyphPNGForActionOrigin(origin, size, forceStyle ?? style);
         if (glyphCache.TryGetValue(path, out var existing)) return existing;
 
         var tex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap: true) {
@@ -303,6 +305,21 @@ public static class Glyphs {
 
         var siblingName = k.transform.parent.GetChild(idx + 1).name;
         return siblingName is "Image_icon_up" or "Image_icon_up (1)" or "Image_icon (1)" or "ImageKeyboardUp (1)";
+    }
+
+    private static bool IsMeteorDpadIcon(KeyImageCheck k, out ActionOrigin steamOrigin) {
+        steamOrigin = ActionOrigin.None;
+        if (k.transform.parent?.name != "Guide_meteor") return false;
+
+        steamOrigin = k.iconKeyType switch {
+            KeyMap.Up => ActionOrigin.SC_DPadNorth,
+            KeyMap.Down => ActionOrigin.SC_DPadSouth,
+            KeyMap.Left => ActionOrigin.SC_DPadEast,
+            KeyMap.Right => ActionOrigin.SC_DPadWest,
+            _ => ActionOrigin.None,
+        };
+
+        return steamOrigin != ActionOrigin.None;
     }
 
     public static void SetIcon(this KeyImageCheck self, KeyMap key) {

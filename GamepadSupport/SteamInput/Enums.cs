@@ -39,6 +39,8 @@ public enum ActionOrigin : int {
 
     PS4_X = 50, PS4_Circle, PS4_Triangle, PS4_Square,
     PS5_X = 258, PS5_Circle, PS5_Triangle, PS5_Square,
+    SC_DPadNorth = 14, SC_DPadSouth, SC_DPadEast, SC_DPadWest,
+
     // I am not writing all of the members. I'm not going to use them.
 }
 
