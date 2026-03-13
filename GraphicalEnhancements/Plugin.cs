@@ -2,6 +2,11 @@
 
 using HarmonyLib;
 
+using System.Collections.Generic;
+using System.Linq;
+
+using UnityEngine;
+
 namespace GraphicalEnhancements;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
@@ -24,7 +29,7 @@ public sealed class Plugin : BaseUnityPlugin {
     // (This would also affect the depth of field, but that's probably a lot harder to notice than the ghost.)
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.gYm_OujiSetAlpha))]
-    public static void UpdateKatamariVisibility(GameManager __instance, int player, ref float alpha) {
+    public static void UpdateKatamariVisibility(GameManager __instance, int player, float alpha) {
         var playerObj = __instance.gWork.player[player];
         var visibleBefore = playerObj.f32Alpha > 0;
         var visibleAfter = alpha > 0;
@@ -41,5 +46,38 @@ public sealed class Plugin : BaseUnityPlugin {
         foreach (var effect in playerObj.effectKiraKira ?? []) {
             effect.gameObject.SetActive(active);
         }
+
+        // Here be dragons.
+        if (active) {
+            foreach (var obj in GlobalWork.Instance.listProp) {
+                if (obj != null && obj.GetComponent<MemoryAlpha>() is MemoryAlpha memory) {
+                    foreach (var renderer in memory.renderers) {
+                        renderer?.enabled = true;
+                    }
+                }
+            }
+        } else {
+            foreach (var obj in GlobalWork.Instance.listProp) {
+                if (obj == null || !obj.IsAttachedToKatamari) continue;
+
+                var memory = obj.gameObject.AddComponent<MemoryAlpha>();
+                memory.renderers ??= [];
+
+                IEnumerable<Renderer>
+                    mRenderers = obj.mRenderers ?? [],
+                    smRenderers = obj.smRenderers ?? [];
+
+                foreach (var renderer in mRenderers.Concat(smRenderers)) {
+                    if (renderer != null && renderer.enabled) {
+                        renderer.enabled = false;
+                        memory.renderers.Add(renderer);
+                    }
+                }
+            }
+        }
     }
+}
+
+public sealed class MemoryAlpha : MonoBehaviour {
+    public List<Renderer> renderers = [];
 }

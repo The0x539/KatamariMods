@@ -102,8 +102,6 @@ static class DepthOfField {
         var setIndex = self.setIndex;
         self.setIndex = 0;
         if (setIndex != self.setIndex) {
-            Console.WriteLine("Hi");
-
             var tex = self.renderTexture[self.setIndex];
             separateDepthBuffer?.Release();
             separateDepthBuffer = new RenderTexture(tex.width, tex.height, depth: 32, RenderTextureFormat.Depth) {
