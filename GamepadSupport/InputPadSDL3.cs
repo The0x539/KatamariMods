@@ -35,7 +35,13 @@ public sealed class InputPadSDL3 : InputPadBase {
     }
 
     public void Connect(SDL.JoystickID id) {
-        this.inner = new SDL.Gamepad(id);
+        var sdl = new SDL.Gamepad(id);
+        if (sdl.Name is null or "") {
+            Plugin.Log.LogError($"Joystick {id} has blank name. Ignoring on the assumption that it's invalid.");
+            return;
+        }
+
+        this.inner = sdl;
         this.inner.PlayerIndex = this.ID;
 
         if (this.inner.GamepadType == SDL.GamepadType.SwitchJoyConPair && this.HasAllMotionSensors()) {
