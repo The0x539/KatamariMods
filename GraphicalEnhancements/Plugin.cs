@@ -76,6 +76,12 @@ public sealed class Plugin : BaseUnityPlugin {
             }
         }
     }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(EarchObject), nameof(EarchObject.Start))]
+    public static void AnisotropicEarthObjects(EarchObject __instance) {
+        __instance.GetComponent<MeshRenderer>().material.mainTexture.anisoLevel = 16;
+    }
 }
 
 public sealed class MemoryAlpha : MonoBehaviour {
