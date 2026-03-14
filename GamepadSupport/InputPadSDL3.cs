@@ -81,8 +81,8 @@ public sealed class InputPadSDL3 : InputPadBase {
         SDL.GamepadButton.Start,
         SDL.GamepadButton.LeftStick,
         SDL.GamepadButton.RightStick,
-        SDL.GamepadButton.COUNT, // left trigger
-        SDL.GamepadButton.COUNT, // right trigger
+        SDL.GamepadButton.Misc3, // left trigger
+        SDL.GamepadButton.Misc4, // right trigger
         SDL.GamepadButton.COUNT, // home
         SDL.GamepadButton.LeftPaddle1, // left joycon, left shoulder
         SDL.GamepadButton.LeftPaddle2, // left joycon, right shoulder

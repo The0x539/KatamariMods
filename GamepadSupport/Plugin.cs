@@ -4,8 +4,8 @@ using BepInEx.Logging;
 using HarmonyLib;
 
 using MyGame;
+using MyGame.InputStatus;
 
-using System;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -237,5 +237,34 @@ public sealed class Plugin : BaseUnityPlugin {
         var joyA = __instance.gWork.localKingText.GetLocaliseText("UI_PRN_025", (int)__instance.gWork.language);
         var joyB = __instance.gWork.localKingText.GetLocaliseText("UI_PRN_026", (int)__instance.gWork.language);
         __instance.textMoveType = [.. __instance.textMoveType, joyA /* , joyB */];
+    }
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(Player), nameof(Player.DoStickSimulation2))]
+    public static IL AchievableMotionFlip(IL il) {
+        return new CodeMatcher(il)
+            .End()
+            .MatchBack(false,
+                       new(OpCodes.Ldarg_0),
+                       new(OpCodes.Ldfld, Member.Field<Player>(p => p.playerNo)))
+            .Advance(1)
+            .Insert(new(OpCodes.Dup),
+                    new(OpCodes.Call, Member.Method((Player p) => AchievableMotionFlipImpl(p))))
+            .Instructions();
+    }
+
+    public static void AchievableMotionFlipImpl(Player self) {
+        if (self.inputMoveType != GlobalWork.eMoveType.Motion) return;
+
+        var pad = self.input.Pad(self.controllerNo);
+        var bothPush = pad.IsPush(KeyMap.L2) && pad.IsPush(KeyMap.R2);
+        var eitherDown = pad.IsDown(KeyMap.L2) || pad.IsDown(KeyMap.R2);
+
+        if (bothPush && eitherDown) {
+            self.controllerLeftStickX = self.controllerLeftStickY = self.controllerRightStickX = self.controllerRightStickY = 0;
+            self.controllerLeftStickClickIsDown = self.controllerRightStickClickIsDown = true;
+            self.controllerLeftStickClickDown = pad.IsDown(KeyMap.L2);
+            self.controllerRightStickClickDown = pad.IsDown(KeyMap.R2);
+        }
     }
 }
