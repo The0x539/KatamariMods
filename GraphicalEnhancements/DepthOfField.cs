@@ -78,9 +78,6 @@ static class DepthOfField {
         }
     }
 
-    private static Camera depthCamera = null!;
-    private static Camera smokeCamera = null!;
-
     // TODO: Split the code that's not really DoF related into another guy
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnPreRender))]
@@ -202,6 +199,7 @@ static class DepthOfField {
 
     private static readonly int smokeLayerMask = LayerMask.GetMask("TransparentFX");
 
+    private static Camera smokeCamera = null!;
     private static void RedrawSmoke(PostProcessingContext ctx, RenderTexture target) {
         if (smokeCamera == null) {
             smokeCamera = new GameObject("Smoke Camera").AddComponent<Camera>();
