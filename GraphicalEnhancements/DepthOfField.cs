@@ -143,9 +143,7 @@ static class DepthOfField {
         var blitToDepth = ctx.materialFactory.Get("Hidden/BlitToDepth_MSAA");
 
         blitToDepth.SetTexture("_MainTex", srcDepth);
-        blitToDepth.SetPass(0);
-        // TODO: Use GraphicsUtils.quad, following the example set by the AO command buffer.
-        DrawQuad();
+        GraphicsUtils.Blit(blitToDepth, 0);
 
         if (__instance.m_AmbientOcclusion.active) {
             // For some reason, the AO non-customizably renders to "the current camera target".
@@ -171,9 +169,7 @@ static class DepthOfField {
         RedrawSmoke(ctx, source);
 
         blitToDepth.SetTexture("_MainTex", srcDepth);
-        blitToDepth.SetPass(0);
-        // TODO: Use GraphicsUtils.quad, following the example set by the AO command buffer.
-        DrawQuad();
+        GraphicsUtils.Blit(blitToDepth, 0);
     }
 
     private static void RedrawJungle() {
@@ -183,13 +179,13 @@ static class DepthOfField {
         var mesh = new Mesh();
         foreach (var name in new[] { "head_tawara_m", "body01_m", "hand_m" }) {
             var bodyPart = player.objOuji.transform.Find("body_root/" + name).GetComponent<SkinnedMeshRenderer>();
-            bodyPart.material.SetPass(0);
+            bodyPart.sharedMaterial.SetPass(0);
             bodyPart.BakeMesh(mesh);
             Graphics.DrawMeshNow(mesh, bodyPart.transform.position, bodyPart.transform.rotation);
         }
 
         var billboard = player.objBillboard.transform.GetChild(0);
-        billboard.GetComponent<MeshRenderer>().material.SetPass(0);
+        billboard.GetComponent<MeshRenderer>().sharedMaterial.SetPass(0);
         Graphics.DrawMeshNow(billboard.GetComponent<MeshFilter>().sharedMesh, billboard.localToWorldMatrix);
     }
 
@@ -199,7 +195,7 @@ static class DepthOfField {
 
             var renderer = obj.Prop.mRenderers[0];
             var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
-            renderer.material.SetPass(0);
+            renderer.sharedMaterial.SetPass(0);
             Graphics.DrawMeshNow(mesh, obj.transform.localToWorldMatrix);
         }
     }
@@ -230,26 +226,6 @@ static class DepthOfField {
                           new(OpCodes.Stfld, Member.Field<AttachableProp>(ap => ap.isReqSimple)))
             .SetOpcodeAndAdvance(OpCodes.Ldc_I4_0)
             .Instructions();
-    }
-
-    private static void DrawQuad() {
-        GL.LoadOrtho();
-
-        GL.Begin(GL.QUADS);
-
-        GL.TexCoord2(0, 0);
-        GL.Vertex3(0, 0, 0);
-
-        GL.TexCoord2(1, 0);
-        GL.Vertex3(1, 0, 0);
-
-        GL.TexCoord2(1, 1);
-        GL.Vertex3(1, 1, 0);
-
-        GL.TexCoord2(0, 1);
-        GL.Vertex3(0, 1, 0);
-
-        GL.End();
     }
 }
 
