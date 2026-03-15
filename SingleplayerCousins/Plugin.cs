@@ -25,6 +25,7 @@ public sealed class Plugin : BaseUnityPlugin {
 
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(Jungle));
+        Harmony.CreateAndPatchAll(typeof(Njamo));
         Harmony.CreateAndPatchAll(typeof(PretenderPatches));
 
         SceneManager.sceneLoaded += (scene, mode) => {
