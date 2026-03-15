@@ -92,8 +92,6 @@ static class DepthOfField {
             .Instructions();
     }
 
-    private static RenderTexture? separateDepthBuffer = null;
-
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.SetTexture))]
     public static void UseSeparateDepthBuffer(SetupRenderTexture __instance, out bool __runOriginal) {
@@ -101,33 +99,20 @@ static class DepthOfField {
         var self = __instance;
         var setIndex = self.setIndex;
         self.setIndex = 0;
-        if (setIndex != self.setIndex) {
-            var tex = self.renderTexture[self.setIndex];
-            separateDepthBuffer?.Release();
-            separateDepthBuffer = new RenderTexture(tex.width, tex.height, depth: 32, RenderTextureFormat.Depth) {
-                antiAliasing = tex.antiAliasing,
-                bindTextureMS = true,
-                name = tex.name.Replace("Main", "Depth"),
-            };
-            separateDepthBuffer.Create();
+        if (setIndex == self.setIndex) return;
 
-            self.mainCamera.SetTargetBuffers(tex.colorBuffer, separateDepthBuffer.depthBuffer);
-            self.gameManager.GameRenderTexture = tex;
-            self.outputImage.texture = tex;
-        }
-    }
+        var colorTarget = self.renderTexture[self.setIndex];
+        var depthComponent = self.GetComponent<SeparateDepthTarget>() ?? self.gameObject.AddComponent<SeparateDepthTarget>();
+        var depthTarget = depthComponent.Init(colorTarget);
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.Release))]
-    public static void ReleaseSeparateDepthBuffer(SetupRenderTexture __instance) {
-        __instance.GetComponent<Camera>().targetTexture = null;
-        separateDepthBuffer?.Release();
-        separateDepthBuffer = null;
+        self.mainCamera.SetTargetBuffers(colorTarget.colorBuffer, depthTarget.depthBuffer);
+        self.gameManager.GameRenderTexture = colorTarget;
+        self.outputImage.texture = colorTarget;
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void ProvideDepth(PostProcessingBehaviour __instance, ref RenderTexture? source) {
+    public static void ProvideDepth(PostProcessingBehaviour __instance, ref RenderTexture? source, RenderTexture destination) {
         var ctx = __instance.m_Context;
 
         if (source == null) {
@@ -136,7 +121,7 @@ static class DepthOfField {
 
         if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) return;
 
-        if (separateDepthBuffer is not RenderTexture srcDepth) return;
+        if (ctx.camera.GetComponent<SeparateDepthTarget>()?.texture is not RenderTexture srcDepth) return;
         var dstDepth = (RenderTexture)Shader.GetGlobalTexture("_CameraDepthTexture");
 
         RenderTexture.active = dstDepth;
@@ -297,5 +282,32 @@ public sealed class UpdateDof : MonoBehaviour {
             focalLength = Mathf.Pow(distance, s.y) * s.z,
             focusDistance = distance,
         };
+    }
+}
+
+public sealed class SeparateDepthTarget : MonoBehaviour {
+    public RenderTexture? colorTexture = null;
+    public RenderTexture? texture = null;
+
+    public RenderTexture Init(RenderTexture tex) {
+        this.Release();
+
+        this.colorTexture = tex;
+        this.texture = new RenderTexture(tex.width, tex.height, depth: 32, RenderTextureFormat.Depth) {
+            antiAliasing = tex.antiAliasing,
+            bindTextureMS = true,
+            name = tex.name.Replace("Main", "Depth"),
+        };
+        this.texture.Create();
+        return this.texture;
+    }
+
+    public void OnDestroy() => this.Release();
+
+    public void Release() {
+        if (this.texture != null) {
+            this.texture.Release();
+            this.texture = null;
+        }
     }
 }
