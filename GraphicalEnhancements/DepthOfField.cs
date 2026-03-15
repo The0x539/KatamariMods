@@ -1,4 +1,6 @@
-﻿using HarmonyLib;
+﻿using DefineEnum;
+
+using HarmonyLib;
 
 using System;
 using System.Reflection.Emit;
@@ -17,34 +19,42 @@ static class DepthOfField {
     [HarmonyPatch(typeof(GlobalManager), nameof(GlobalManager.SetActiveStageObject))]
     public static void EnableDof() {
         var gw = GlobalWork.Instance;
-        if (gw.u8GameMode == DefineEnum.GI_GMODE.GI_GMODE_ENDING) return;
+        if (gw.u8GameMode == GI_GMODE.GI_GMODE_ENDING) return;
 
-        for (var i = 0; i <= 1; i++) {
-            var cam = gw.camGame[i];
-            if (cam == null) continue;
-
-            var ppb = cam.GetComponent<PostProcessingBehaviour>();
-            ppb.profile.depthOfField.enabled = QualitySetting.Instance.IsDOF;
-            // This should probably be a graphics option
-            ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
-
-            var vanillaSSAO = ppb.profile.ambientOcclusion.settings;
-            ppb.profile.ambientOcclusion.settings = vanillaSSAO with {
-                // This game uses a rather distant far-clip-plane value due to how the gameplay works.
-                // Doing this causes the ambient occlusion effect's first shader to experience some precision-related errors
-                // if it tries to use the low-precision depth information from the DepthNormals texture.
-                // This setting tells the SSAO effect to use the output of a dedicated depth pass instead of DepthNormals,
-                // which the vanilla game didn't have working, but my patches get into a usable state.
-                highPrecision = true,
-                intensity = vanillaSSAO.intensity * 0.65f,
-                radius = vanillaSSAO.radius * 1.1f,
-                // This should maybe be configurable ingame.
-                sampleCount = AmbientOcclusionModel.SampleCount.Low, // 6 "samples", as opposed to the default of Lowest = 3
-            };
-
-            if (cam.GetComponent<UpdateDof>() == null) {
-                cam.gameObject.AddComponent<UpdateDof>();
+        if (gw.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS) {
+            // Getting these effects (or more specifically what I've done with the depth buffer)
+            // to work properly in versus mode would be a significant chunk of extra work to figure out.
+            foreach (var vsCam in gw.camGame) {
+                var vsPpb = vsCam.GetComponent<PostProcessingBehaviour>();
+                vsPpb.profile.depthOfField.enabled = false;
+                vsPpb.profile.ambientOcclusion.enabled = false;
             }
+            return;
+        }
+
+        var cam = gw.camGame[0];
+
+        var ppb = cam.GetComponent<PostProcessingBehaviour>();
+        ppb.profile.depthOfField.enabled = QualitySetting.Instance.IsDOF;
+        // This should probably be a graphics option
+        ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
+
+        var vanillaSSAO = ppb.profile.ambientOcclusion.settings;
+        ppb.profile.ambientOcclusion.settings = vanillaSSAO with {
+            // This game uses a rather distant far-clip-plane value due to how the gameplay works.
+            // Doing this causes the ambient occlusion effect's first shader to experience some precision-related errors
+            // if it tries to use the low-precision depth information from the DepthNormals texture.
+            // This setting tells the SSAO effect to use the output of a dedicated depth pass instead of DepthNormals,
+            // which the vanilla game didn't have working, but my patches get into a usable state.
+            highPrecision = true,
+            intensity = vanillaSSAO.intensity * 0.65f,
+            radius = vanillaSSAO.radius * 1.1f,
+            // This should maybe be configurable ingame.
+            sampleCount = AmbientOcclusionModel.SampleCount.Low, // 6 "samples", as opposed to the default of Lowest = 3
+        };
+
+        if (cam.GetComponent<UpdateDof>() == null) {
+            cam.gameObject.AddComponent<UpdateDof>();
         }
     }
 
@@ -95,6 +105,11 @@ static class DepthOfField {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.SetTexture))]
     public static void UseSeparateDepthBuffer(SetupRenderTexture __instance, out bool __runOriginal) {
+        if (GlobalWork.Instance.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS) {
+            __runOriginal = true;
+            return;
+        }
+
         __runOriginal = false;
         var self = __instance;
         var setIndex = self.setIndex;
@@ -112,7 +127,7 @@ static class DepthOfField {
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
-    public static void ProvideDepth(PostProcessingBehaviour __instance, ref RenderTexture? source, RenderTexture destination) {
+    public static void ProvideDepth(PostProcessingBehaviour __instance, ref RenderTexture? source) {
         var ctx = __instance.m_Context;
 
         if (source == null) {
