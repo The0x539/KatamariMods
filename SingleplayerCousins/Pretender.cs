@@ -397,9 +397,6 @@ internal static class PretenderLoader {
 
             var uMat = UnityObject.Instantiate(body_m.material);
             if (aMat.Name == "FaceTexture") {
-                // TODO: The fact that this works tells me that I might be able to do something similar for the DoF/SSAO fixes!
-                // _ZWrite and what not.
-                // Need to reference what the standard material does; I already grabbed its code.
                 uMat.EnableKeyword("_ALPHATEST_ON");
                 uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
             }
