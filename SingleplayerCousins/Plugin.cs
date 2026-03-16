@@ -92,8 +92,6 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.Start))]
     public static void ReplaceInGameplay(Player __instance) {
-        // TODO: don't actually override versus mode?
-        // Or does this running as a prefix get overruled by that anyway?
         __instance.oujiNo = OujiId;
     }
 
