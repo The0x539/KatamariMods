@@ -104,7 +104,7 @@ static class ExtraOptions {
                     UnityObject.Destroy(existing.gameObject);
                 }
 
-                var obj = UnityObject.Instantiate(prefab, prefab.parent); // TODO: I didn't know this overload exists and should use it in more places.
+                var obj = UnityObject.Instantiate(prefab, prefab.parent);
                 obj.name = name;
                 obj.Translate(offset);
                 return obj;

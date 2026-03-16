@@ -170,13 +170,11 @@ static class IngameOptions {
         var guide = __instance.objGuidePause;
         var back = guide.transform.GetChild(0);
 
-        var settings = UnityObject.Instantiate(back);
+        var settings = UnityObject.Instantiate(back, guide.transform);
         settings.name = "Text_Settings";
 
         UnityObject.Destroy(settings.GetComponent<UITextLocalizer>());
         settings.GetComponent<Text>().text = "Settings";
-
-        settings.SetParent(guide.transform, worldPositionStays: false);
 
         var ratio = 1600f / guide.transform.parent.GetComponent<Canvas>().pixelRect.width; // This doesn't seem like the right way to manage this, but it at least works properly.
         settings.Translate(-25 * ratio, 0, 0);

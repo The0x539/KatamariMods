@@ -51,12 +51,11 @@ public static class Jungle {
     public static void Dress(GameObject ouji) {
         if (Prefabs.billboard == null || Prefabs.material == null) return;
 
-        var billboard = Object.Instantiate(Prefabs.billboard);
+        var billboard = Object.Instantiate(Prefabs.billboard, ouji.transform);
         billboard.SetActive(true);
         var material = new Material(Prefabs.material);
 
         billboard.name = "JungleBoardEnding";
-        billboard.transform.SetParent(ouji.transform, worldPositionStays: false);
         billboard.layer = ouji.layer;
         billboard.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Default");
 
