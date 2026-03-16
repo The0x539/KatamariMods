@@ -260,7 +260,14 @@ public sealed class UpdateDof : MonoBehaviour {
         // (That's my only reason for not using normal component fields for this.)
         // Camera distance from the katamari seems to be a pretty good independent variable to use here.
         // "Aperture" is set to X. "Focal length" is set to distance^Y * Z.
-        this.adjuster.localScale = new(0.25f, 0.5f, 5.6f);
+        this.adjuster.localScale = new(1f, 0.5f, 15f);
+        // Originally, I had the DoF effect configured to put the focus distance at exactly the katamari's location.
+        // This would put the katamari at the center of the focused area, and worked okay.
+        // However, from experimentation, I've gotten better results from putting the focal point further away,
+        // such that the katamari ends up at the near edge of the focused area.
+        // For whatever reason, this allows for more favorable behavior of the "focus falloff".
+        // This X component controls the ratio between camera–katamari distance and the focus distance.
+        this.adjuster.localPosition = new(1.75f, 0, 0);
     }
 
     public void Update() {
@@ -269,7 +276,7 @@ public sealed class UpdateDof : MonoBehaviour {
         this.dofModel.settings = this.dofModel.settings with {
             aperture = s.x,
             focalLength = Mathf.Pow(distance, s.y) * s.z,
-            focusDistance = distance,
+            focusDistance = distance * this.adjuster.localPosition.x,
         };
     }
 }
