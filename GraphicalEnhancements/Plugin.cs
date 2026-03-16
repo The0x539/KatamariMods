@@ -16,7 +16,7 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(Plugin));
         Harmony.CreateAndPatchAll(typeof(IngameOptions));
         Harmony.CreateAndPatchAll(typeof(ExtraOptions));
-        Harmony.CreateAndPatchAll(typeof(DepthOfField));
+        Harmony.CreateAndPatchAll(typeof(PostProcessing));
         Harmony.CreateAndPatchAll(typeof(QualityRenderTargets));
         Harmony.CreateAndPatchAll(typeof(ShadowAngle));
         Harmony.CreateAndPatchAll(typeof(SpecialDrawPatches));

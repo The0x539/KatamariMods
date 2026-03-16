@@ -12,7 +12,7 @@ using UnityEngine.Rendering;
 
 namespace GraphicalEnhancements;
 
-static class DepthOfField {
+static class PostProcessing {
     // TODO: This probably isn't the place to put the updater component on the camera.
     // I need to learn more about the "life cycles" of some of these objects and components.
     [HarmonyPostfix]
@@ -78,7 +78,6 @@ static class DepthOfField {
         }
     }
 
-    // TODO: Split the code that's not really DoF related into another guy
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnPreRender))]
     public static IL TakeControlOfSSAO(IL il) {
