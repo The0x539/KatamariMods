@@ -232,6 +232,7 @@ static class DepthOfField {
 //   - Make it easier to tweak the DoF parameters, since UnityExplorer only has sliders in its UI for transforms.
 public sealed class UpdateDof : MonoBehaviour {
     public DepthOfFieldModel dofModel = null!;
+    public Camera camera = null!;
     public Transform katamari = null!;
     public Transform adjuster = null!;
 
@@ -242,11 +243,12 @@ public sealed class UpdateDof : MonoBehaviour {
     public void ThawDistance() => this.frozenDistance = null;
 
     public void Start() {
-        var gw = GlobalWork.instance;
-        var i = Array.IndexOf(gw.camGame, this.GetComponent<Camera>());
-        this.katamari = gw.player[i].KatamariTransform;
-
+        this.camera = this.GetComponent<Camera>();
         this.dofModel = this.GetComponent<PostProcessingBehaviour>().profile.depthOfField;
+
+        var gw = GlobalWork.instance;
+        var i = Array.IndexOf(gw.camGame, this.camera);
+        this.katamari = gw.player[i].KatamariTransform;
 
         this.adjuster = new GameObject("DoF Adjust").transform;
         this.adjuster.parent = this.transform;
@@ -265,18 +267,30 @@ public sealed class UpdateDof : MonoBehaviour {
         // This would put the katamari at the center of the focused area, and worked okay.
         // However, from experimentation, I've gotten better results from putting the focal point further away,
         // such that the katamari ends up at the near edge of the focused area.
+        //
         // For whatever reason, this allows for more favorable behavior of the "focus falloff".
         // This X component controls the ratio between camera–katamari distance and the focus distance.
-        this.adjuster.localPosition = new(1.75f, 0, 0);
+        //
+        // Different screen resolutions call for different lens coefficients because Unity's DoF effect is mediocre.
+        // I chose the base settings with the game set to 1440p and quickly found another "for point" of aperture = 0.6 at 720p.
+        // At 720p, the aperture is multiplied by the Y component.
+        // At 1440p, it's multiplied by the Z component.
+        // In between the two, or beyond 1440p, the value is linearly interpolated based on those two control points.
+        this.adjuster.localPosition = new(1.75f, 0.55f, 1.0f);
     }
 
     public void Update() {
         var distance = this.frozenDistance ?? this.Distance();
         var s = this.adjuster.localScale;
+        var p = this.adjuster.localPosition;
+
+        var apertureT = (this.camera.pixelHeight - 720) / 720f;
+        var apertureFactor = Mathf.LerpUnclamped(p.y, p.z, apertureT);
+
         this.dofModel.settings = this.dofModel.settings with {
-            aperture = s.x,
+            aperture = s.x * apertureFactor,
             focalLength = Mathf.Pow(distance, s.y) * s.z,
-            focusDistance = distance * this.adjuster.localPosition.x,
+            focusDistance = distance * p.x,
         };
     }
 }
