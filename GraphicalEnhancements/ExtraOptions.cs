@@ -85,9 +85,6 @@ static class ExtraOptions {
             right = get("Button5R"),
         };
 
-        // TODO: Off/Low/Med/High DoF options
-        // TODO: Actually honor the DoF and AF settings rather than just giving them a UI
-
         var previous = prefabs.label;
         var spacing = prefabs.label.position.y - get("TextItem4").position.y;
 
