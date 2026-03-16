@@ -19,7 +19,7 @@ public struct GamepadButtonEvent {
     public CommonEvent common;
     public JoystickID which;
     public byte button;
-    public bool down; // TODO: confirm that this takes up 1 byte and not 4
+    public SDLBool down;
     private readonly byte padding1, padding2;
 
     public readonly GamepadButton Button => (GamepadButton)this.button;
