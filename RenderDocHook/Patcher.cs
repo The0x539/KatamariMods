@@ -53,7 +53,6 @@ internal struct CaptureOptions {
 }
 
 internal static class RenderDoc {
-    // TODO: Determine if we can get away with omitting the explicit writing of Cdecl
     [DllImport("renderdoc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "INTERNAL_SetCaptureOptions")]
     public static unsafe extern void SetCaptureOptions(in CaptureOptions options);
 
