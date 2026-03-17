@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 
 using HarmonyLib;
@@ -20,6 +21,7 @@ namespace GamepadSupport;
 public sealed class Plugin : BaseUnityPlugin {
     private static Plugin __instance = null!;
     public static ManualLogSource Log => __instance.Logger;
+    public static ConfigFile Cfg => __instance.Config;
 
     public void Awake() {
         __instance = this;

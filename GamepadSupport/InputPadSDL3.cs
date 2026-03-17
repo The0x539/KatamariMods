@@ -1,9 +1,13 @@
-﻿using GamepadSupport.SteamInput;
+﻿using BepInEx.Configuration;
+
+using GamepadSupport.SteamInput;
 
 using MyGame;
 using MyGame.InputStatus;
 
 using System;
+
+using UnityEngine;
 
 using SDL = GamepadSupport.SDL3;
 
@@ -20,6 +24,14 @@ public sealed class InputPadSDL3 : InputPadBase {
 
     private readonly float[] axes = new float[(int)SDL.GamepadAxis.COUNT];
     private uint buttons;
+
+    private static readonly ConfigEntry<float> vibrationStrength = Plugin.Cfg.Bind(
+        "Vibration", "Strength", 1.0f,
+        new ConfigDescription(
+            "Scaling factor for vibration motor strength",
+            new AcceptableValueRange<float>(0.0f, 1.0f)
+        )
+    );
 
     private static readonly SDL.SensorType[] motionSensors = [
         SDL.SensorType.AccelLeft, SDL.SensorType.AccelRight,
@@ -144,11 +156,30 @@ public sealed class InputPadSDL3 : InputPadBase {
         _ => IconType.PC,
     };
 
+    private static ushort ConvertMotorStrength(int input, float scale) {
+        // For some reason, motorStrengthL and motorStrengthS use the uint8 range of values.
+        // Despite the field using an int32.
+        // Despite Rewired, the only gamepad bindings actually used by the vanilla game on PC, asking for a float32 in 0..=1.
+        // Despite the vibration callback from PS2KatamariSimulation using that very same representation.
+        //
+        // Technically, since the stereo haptics patch in FramerateUncap is the "other side of this",
+        // I *could* make a change both here and there to instead use the full int32 range, or at least a larger fraction of it.
+        // However, 256 (255? does 0 really count here?) possible power levels is probably actually plenty, right?
+
+        var n = (float)input;
+        // 0xFF becomes 0xFFFF, 0x7F becomes 0x7F7F, etc.
+        // Better than my initial `<< 8` approach that resulted in the lower byte being zero, resulting in a small bias towards weaker vibration.
+        n *= 0x101;
+        n *= scale;
+        n = Mathf.Clamp(n, 0f, 65535f);
+        return (ushort)n;
+    }
+
     public override void Vibration(float time) {
         if (!this.IsVibration) return;
 
-        var low = (ushort)(this.motorStrengthL << 8);  // "L(ong)" wavelength = "low" frequency ("left" motor, practically)
-        var high = (ushort)(this.motorStrengthS << 8); // "S(hort)" wavelength = "high" frequency ("right" motor, practically)
+        var low = ConvertMotorStrength(this.motorStrengthL, vibrationStrength.Value);  // "L(ong)" wavelength = "low" frequency ("left" motor, practically)
+        var high = ConvertMotorStrength(this.motorStrengthS, vibrationStrength.Value); // "S(hort)" wavelength = "high" frequency ("right" motor, practically)
         this.inner?.Rumble(low, high, (uint)(time * 1000));
     }
 
