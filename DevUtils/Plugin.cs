@@ -5,6 +5,7 @@ using DefineEnum;
 
 using HarmonyLib;
 
+using System;
 using System.Collections;
 
 using UnityEngine;
@@ -76,6 +77,10 @@ public class Plugin : BaseUnityPlugin {
         yield return new WaitForSeconds(2);
         gw.u8SwMapChange = 1;
     }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.GetForegroundWindow))]
+    public static IntPtr RenameTheCorrectWindow(IntPtr __result) => QualitySetting.FindWindow(null, Application.productName);
 
     /*
     [HarmonyPrefix]
