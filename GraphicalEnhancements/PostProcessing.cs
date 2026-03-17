@@ -176,6 +176,32 @@ static class PostProcessing {
         GraphicsUtils.Blit(blitToDepth, 0);
     }
 
+    // Draw the underwater/obscured katamari billboard AFTER the depth of field,
+    // so that it's not blurred along with the surface it's overlaid upon.
+    // It's kinda similar to a HUD element in that way.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(PostProcessingBehaviour), nameof(PostProcessingBehaviour.OnRenderImage))]
+    public static void RedrawKatamariBillboard(PostProcessingBehaviour __instance, RenderTexture destination) {
+        if (SpecialDraw.activeBillboards.Count == 0) return;
+
+        var camera = __instance.m_Context.camera;
+        var cb = new CommandBuffer();
+        cb.SetRenderTarget(destination);
+        cb.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
+
+        foreach (var billboard in SpecialDraw.activeBillboards) {
+            var mesh = billboard.GetComponent<MeshFilter>().sharedMesh;
+            var matrix = billboard.transform.localToWorldMatrix;
+            var material = billboard.mr.sharedMaterial;
+            cb.DrawMesh(mesh, matrix, material);
+        }
+
+        var invert = GL.invertCulling;
+        GL.invertCulling = true; // I think I understand what this does, but I have no idea why I needed to do it.
+        Graphics.ExecuteCommandBuffer(cb);
+        GL.invertCulling = invert;
+    }
+
     private static void RedrawJungle() {
         var player = GlobalWork.Instance.player[0];
         if (player.oujiNo != 23 || !player.objOuji.activeInHierarchy) return;

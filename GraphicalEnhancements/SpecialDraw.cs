@@ -8,6 +8,7 @@ namespace GraphicalEnhancements;
 
 public sealed class SpecialDraw : MonoBehaviour {
     public static readonly HashSet<SpecialDraw> instances = [];
+    public static readonly List<KatamriMarkBillboard> activeBillboards = [];
 
     private AttachableProp prop = null!;
     public AttachableProp Prop => this.prop;
@@ -50,6 +51,10 @@ public sealed class SpecialDraw : MonoBehaviour {
 }
 
 public sealed class SpecialDrawActivator : MonoBehaviour {
+    public void Update() {
+        SpecialDraw.activeBillboards.Clear();
+    }
+
     public void OnPreRender() {
         foreach (var obj in SpecialDraw.instances) {
             obj.HandlePreRender();
@@ -108,6 +113,15 @@ public static class SpecialDrawPatches {
     public static void AddSpecialDrawActivator(GameManager __instance) {
         if (__instance.gameObject.GetComponent<SpecialDrawActivator>() == null) {
             __instance.gameObject.AddComponent<SpecialDrawActivator>();
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KatamriMarkBillboard), nameof(KatamriMarkBillboard.LateUpdate))]
+    public static void CatchActiveBillboards(KatamriMarkBillboard __instance) {
+        if (__instance.mr.enabled) {
+            __instance.mr.enabled = false;
+            SpecialDraw.activeBillboards.Add(__instance);
         }
     }
 }
