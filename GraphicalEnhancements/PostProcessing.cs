@@ -115,11 +115,20 @@ static class PostProcessing {
 
         var colorTarget = self.renderTexture[self.setIndex];
         var depthComponent = self.GetComponent<SeparateDepthTarget>() ?? self.gameObject.AddComponent<SeparateDepthTarget>();
+        // Not entirely sure why this seems to be necessary, when IngameOptions will have very recently done the same thing via the patch just below.
+        // Anyway, need to make sure the camera's not still referencing an existing depth buffer before we destroy it and point it at a new one.
+        __instance.mainCamera.targetTexture = null;
         var depthTarget = depthComponent.Init(colorTarget);
 
         self.mainCamera.SetTargetBuffers(colorTarget.colorBuffer, depthTarget.depthBuffer);
         self.gameManager.GameRenderTexture = colorTarget;
         self.outputImage.texture = colorTarget;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.Release))]
+    public static void AvoidDanglingTextureReference(SetupRenderTexture __instance) {
+        __instance.mainCamera.targetTexture = null;
     }
 
     [HarmonyPrefix]
@@ -130,8 +139,6 @@ static class PostProcessing {
         if (source == null) {
             source = ctx.camera.GetComponent<SetupRenderTexture>().renderTexture[0];
         }
-
-        if (!__instance.m_AmbientOcclusion.active && !__instance.m_DepthOfField.active) return;
 
         if (ctx.camera.GetComponent<SeparateDepthTarget>()?.texture is not RenderTexture srcDepth) return;
         var dstDepth = (RenderTexture)Shader.GetGlobalTexture("_CameraDepthTexture");
