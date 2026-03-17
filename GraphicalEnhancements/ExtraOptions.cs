@@ -160,31 +160,13 @@ static class ExtraOptions {
     public static void ActuallyUpdateSettings(QualitySetting __instance) {
         Application.targetFrameRate = GetTargetFPS(__instance);
 
-        if (SceneManager.GetSceneByName("GameMain").isLoaded) {
-            var ppb = Camera.main.GetComponent<PostProcessingBehaviour>();
-            if (ppb != null) {
-                ppb.profile.ambientOcclusion.enabled = __instance.IsSsao;
-                ppb.profile.depthOfField.enabled = __instance.IsDOF;
-                ppb.profile.vignette.enabled = __instance.IsVignette;
-            }
-        }
+        if (!SceneManager.GetSceneByName("GameMain").isLoaded) return;
 
-        foreach (var prop in GlobalWork.Instance.listProp ?? []) {
-            if (prop == null) continue;
-            if (prop.u16MonoNameIdx is Define.MONO_IDX_TV01_C or Define.MONO_IDX_SOCCER03_G) {
-                prop.StartCoroutine(ReinitTvScreen(prop));
-            }
-        }
-    }
-
-    // TVs freeze when you change some graphics options
-    private static System.Collections.IEnumerator ReinitTvScreen(AttachableProp prop) {
-        yield return new WaitForSecondsRealtime(1);
-        foreach (var rend in prop.mRenderers) {
-            var name = rend.gameObject.name;
-            if (name.StartsWith("TV01_C_M_a") || name.StartsWith("SOCCER0302_G_M")) {
-                rend.sharedMaterial.SetTexture("_MainTex", GlobalWork.Instance.camGame[0].targetTexture);
-            }
+        var camera = Camera.main;
+        if (camera.GetComponent<PostProcessingBehaviour>() is PostProcessingBehaviour ppb) {
+            ppb.profile.ambientOcclusion.enabled = __instance.IsSsao;
+            ppb.profile.depthOfField.enabled = __instance.IsDOF;
+            ppb.profile.vignette.enabled = __instance.IsVignette;
         }
     }
 

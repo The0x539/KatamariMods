@@ -82,6 +82,20 @@ public sealed class Plugin : BaseUnityPlugin {
     public static void AnisotropicEarthObjects(EarchObject __instance) {
         __instance.GetComponent<MeshRenderer>().sharedMaterial.mainTexture.anisoLevel = 16;
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.OnPostRender))]
+    public static void FixTVResolution(GameManager __instance) {
+        if (__instance.texCapture is not RenderTexture tv) return;
+
+        var res = QualitySetting.Instance.Resolution;
+        if (res != new Vector2(tv.width, tv.height)) {
+            tv.Release();
+            tv.width = (int)res.x;
+            tv.height = (int)res.y;
+            tv.Create();
+        }
+    }
 }
 
 public sealed class MemoryAlpha : MonoBehaviour {
