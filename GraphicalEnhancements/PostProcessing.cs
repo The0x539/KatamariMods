@@ -19,12 +19,12 @@ static class PostProcessing {
     [HarmonyPatch(typeof(GlobalManager), nameof(GlobalManager.SetActiveStageObject))]
     public static void EnableDof() {
         var gw = GlobalWork.Instance;
-        if (gw.u8GameMode == GI_GMODE.GI_GMODE_ENDING) return;
 
-        if (gw.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS) {
+        if (gw.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS || gw.u8GameMode == GI_GMODE.GI_GMODE_ENDING) {
             // Getting these effects (or more specifically what I've done with the depth buffer)
             // to work properly in versus mode would be a significant chunk of extra work to figure out.
             foreach (var vsCam in gw.camGame) {
+                if (vsCam == null) continue;
                 var vsPpb = vsCam.GetComponent<PostProcessingBehaviour>();
                 vsPpb.profile.depthOfField.enabled = false;
                 vsPpb.profile.ambientOcclusion.enabled = false;
@@ -101,7 +101,8 @@ static class PostProcessing {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(SetupRenderTexture), nameof(SetupRenderTexture.SetTexture))]
     public static void UseSeparateDepthBuffer(SetupRenderTexture __instance, out bool __runOriginal) {
-        if (GlobalWork.Instance.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS) {
+        var gw = GlobalWork.Instance;
+        if (gw.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS || gw.u8GameMode == GI_GMODE.GI_GMODE_ENDING) {
             __runOriginal = true;
             return;
         }
