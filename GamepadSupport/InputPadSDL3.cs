@@ -145,6 +145,8 @@ public sealed class InputPadSDL3 : InputPadBase {
     };
 
     public override void Vibration(float time) {
+        if (!this.IsVibration) return;
+
         var low = (ushort)(this.motorStrengthL << 8);  // "L(ong)" wavelength = "low" frequency ("left" motor, practically)
         var high = (ushort)(this.motorStrengthS << 8); // "S(hort)" wavelength = "high" frequency ("right" motor, practically)
         this.inner?.Rumble(low, high, (uint)(time * 1000));
