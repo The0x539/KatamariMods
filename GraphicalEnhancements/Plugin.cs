@@ -20,6 +20,7 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(QualityRenderTargets));
         Harmony.CreateAndPatchAll(typeof(ShadowAngle));
         Harmony.CreateAndPatchAll(typeof(SpecialDrawPatches));
+        Harmony.CreateAndPatchAll(typeof(TVFixes)); // This patch should go after PostProcessing's patch so that the TV texture blit sees all the post-processing effects
         AnisotropicGround.Init();
     }
 
@@ -81,20 +82,6 @@ public sealed class Plugin : BaseUnityPlugin {
     [HarmonyPatch(typeof(EarchObject), nameof(EarchObject.Start))]
     public static void AnisotropicEarthObjects(EarchObject __instance) {
         __instance.GetComponent<MeshRenderer>().sharedMaterial.mainTexture.anisoLevel = 16;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(GameManager), nameof(GameManager.OnPostRender))]
-    public static void FixTVResolution(GameManager __instance) {
-        if (__instance.texCapture is not RenderTexture tv) return;
-
-        var res = QualitySetting.Instance.Resolution;
-        if (res != new Vector2(tv.width, tv.height)) {
-            tv.Release();
-            tv.width = (int)res.x;
-            tv.height = (int)res.y;
-            tv.Create();
-        }
     }
 }
 
