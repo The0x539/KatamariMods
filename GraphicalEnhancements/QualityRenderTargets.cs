@@ -142,6 +142,6 @@ static class QualityRenderTargets {
         __instance._rImage_viewer.texture = rt;
     }
 
-    private static int GetWidth() => Screen.currentResolution.width;
-    private static int GetHeight() => Screen.currentResolution.height;
+    private static int GetWidth() => (int)QualitySetting.Instance.Resolution.x;
+    private static int GetHeight() => (int)QualitySetting.Instance.Resolution.y;
 }
