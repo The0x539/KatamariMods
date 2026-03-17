@@ -7,6 +7,8 @@ namespace GraphicalEnhancements;
 // Rotate the shadow that the katamari casts to follow whatever slope you're currently on.
 // Without this patch, the shadow will frequently clip into the ground, which is visibly ugly.
 static class ShadowAngle {
+    private static readonly int mask = ~LayerMask.GetMask("PlayerProp", "Ignore Raycast");
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.Update))]
     public static void UpdateShadow(Player __instance) {
@@ -19,7 +21,7 @@ static class ShadowAngle {
         var ray = new Ray(shadow.position + Vector3.up, Vector3.down);
 
         var target = Quaternion.identity;
-        if (Physics.Raycast(ray, out var hit)) {
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance: float.PositiveInfinity, layerMask: mask)) {
             target = Quaternion.FromToRotation(Vector3.up, hit.normal);
         }
 
