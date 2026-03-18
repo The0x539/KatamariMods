@@ -11,7 +11,7 @@ public static class AnisotropicGround {
     public static void Init() {
         SceneManager.activeSceneChanged += static (prev, cur) => {
             if (cur.name == "GameMain") {
-                if (prev.name is "st2" or "st3") {
+                if (prev.name is "st1" or "st2" or "st3") {
                     SharpenGrass(prev);
                 }
             }
@@ -44,12 +44,15 @@ public static class AnisotropicGround {
     }
 
     private static bool EligibleRoot(string name) {
-        if (name is "s_2_a" or "s_3_a") return true;
-        if (name == "s_2_b") return true;
-        if (name == "s_3_c") return true;
+        if (name is "s_1_a" or "s_2_a" or "s_3_a") return true;
+        if (name is "s_1_b" or "s_2_b") return true;
+        if (name is "s_1_c" or "s_3_c") return true;
         if (name == "s_3_d") return true;
-        if (name.StartsWith("s_2_e")) return true;
+        if (name is "s_1_hole_46" or "s_1_hole_83" or "s_1_hole_87" or "s_1_hole_91") return true;
+        if (name == "s_1_e") return true;
         if (name.StartsWith("s_3_e")) return true;
+        if (name.StartsWith("s_2_e")) return true;
+        if (name.StartsWith("s_1_hole_AB")) return true;
         return false;
     }
 
@@ -64,6 +67,14 @@ public static class AnisotropicGround {
         if (name.Contains("obj_grass")) return true;
         if (name.Contains("obj_asphalt")) return true;
         if (name.Contains("ztexatlas")) return true;
+        if (name.Contains("obj_kotatuCover")) return true;
+        if (name.Contains("obj_kotatu_deskTop")) return true;
+        if (name.Contains("obj_tile")) return true;
+        if (name.Contains("obj_fence")) return true;
+        if (name.Contains("obj_kichenTile")) return true;
+        if (name.Contains("obj_st1_entranceMat")) return true;
+        if (name.Contains("obj_st1_carpet")) return true;
+        if (name.Contains("obj_woodyPatern")) return true;
         return false;
     }
 
