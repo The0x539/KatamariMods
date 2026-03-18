@@ -80,15 +80,17 @@ public sealed class Plugin : BaseUnityPlugin {
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(EarchRotator), nameof(EarchRotator.Start))]
-    public static void AnisotropicEarch(EarchRotator __instance) => MakeAnisotropic(__instance._tranSphere.gameObject);
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start))]
-    public static void AnisotropicTitleEarch(Title3Manager __instance) => MakeAnisotropic(__instance._animator_earch.gameObject);
+    public static void AnisotropicEarch(EarchRotator __instance) => MakeAnisotropic(__instance._tranSphere);
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(OujiStarRotator), nameof(OujiStarRotator.Start))]
-    public static void AnisotropicOujiStar(OujiStarRotator __instance) => MakeAnisotropic(__instance._tranSphere.gameObject);
+    public static void AnisotropicOujiStar(OujiStarRotator __instance) => MakeAnisotropic(__instance._tranSphere);
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(KinokoRotator), nameof(KinokoRotator.Start))]
+    public static void AnisotropicKinoko(KinokoRotator __instance) => MakeAnisotropic(__instance._pre_kinoko.transform.Find("pre_kinoko"));
+
+    private static void MakeAnisotropic(Component t) => MakeAnisotropic(t.gameObject);
 
     private static void MakeAnisotropic(GameObject obj) {
         foreach (var renderer in obj.GetComponentsInChildren<MeshRenderer>(includeInactive: true)) {
