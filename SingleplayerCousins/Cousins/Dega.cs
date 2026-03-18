@@ -47,8 +47,21 @@ public sealed class Dega : MonoBehaviour {
             var hover_dy = 0.1f * Mathf.Sin(6.13f * this.theta) * dt;
             this.root.localPosition += new Vector3(0, hover_dy, 0);
         } else {
-            var baseTwist = 23.21f * Mathf.Sin(this.theta * 1.56f) - 22.3f;
-            this.tail[0].localRotation = this.tailRestPose[0] * Quaternion.Euler(20f, 20f, baseTwist);
+            float tailBiasXY, tailBiasZ, tailAmplitude;
+            // Ugh, the axes are so messed up. This is kind of my own fault, but still. Whatever, this works well enough.
+            // No idea why the HUD needs a different bias in the first place. Especially in multiplayer, when the portrait is facing the camera almost dead on.
+            if (this.gameObject.scene.name is "UI_HUD" or "UI_HUD_vs") {
+                tailBiasXY = 0;
+                tailBiasZ = 21.7f;
+                tailAmplitude = 56.7f;
+            } else {
+                tailBiasXY = 20f;
+                tailBiasZ = -22.3f;
+                tailAmplitude = 23.21f;
+            }
+
+            var baseTwist = tailAmplitude * Mathf.Sin(this.theta * 1.56f) + tailBiasZ;
+            this.tail[0].localRotation = this.tailRestPose[0] * Quaternion.Euler(tailBiasXY, tailBiasXY, baseTwist);
 
             for (var i = 1; i < this.tail.Length; i++) {
                 var twist = Mathf.Sin(this.theta * 1.27f - (i * 0.87f)) * 19f * Mathf.Sqrt(i);
