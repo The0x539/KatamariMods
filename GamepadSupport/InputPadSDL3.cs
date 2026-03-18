@@ -56,10 +56,12 @@ public sealed class InputPadSDL3 : InputPadBase {
         this.inner = sdl;
         this.inner.PlayerIndex = this.ID;
 
+        /*
         if (this.inner.GamepadType == SDL.GamepadType.SwitchJoyConPair && this.HasAllMotionSensors()) {
             // TODO: Only enable when motion controls are chosen, to save bandwidth and battery
             this.SetMotionSensorsEnabled(true);
         }
+        */
 
         Plugin.Log.LogInfo($"Connected joystick {id} for player {this.ID}: {this.Inner.Name}");
         ISteamInput.Instance.RunFrame();
@@ -259,9 +261,11 @@ public sealed class InputPadSDL3 : InputPadBase {
         var cancel = (this.buttons & 0b10) != 0;
         this.PushSelectCancel(select, cancel);
 
+        /*
         if (this.PadMode == PadMode.Dual) {
             this.TickMotion();
         }
+        */
     }
 
     private void TickMotion() {

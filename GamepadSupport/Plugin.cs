@@ -233,8 +233,8 @@ public sealed class Plugin : BaseUnityPlugin {
         }
     }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
+    //[HarmonyPostfix]
+    //[HarmonyPatch(typeof(KatamariPauseController), nameof(KatamariPauseController.Start))]
     public static void ExposeMotionControls(KatamariPauseController __instance) {
         var joyA = __instance.gWork.localKingText.GetLocaliseText("UI_PRN_025", (int)__instance.gWork.language);
         var joyB = __instance.gWork.localKingText.GetLocaliseText("UI_PRN_026", (int)__instance.gWork.language);
