@@ -39,7 +39,7 @@ public static class DebugMenu {
 
     private static bool menuOpen = false;
 
-    private static KonamiCode konamiCode = new();
+    public static KonamiCode konamiCode = new();
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.Start))]

@@ -20,10 +20,17 @@ public static class EarlyOptions {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.sSetVibration))]
     public static void ReplaceVibrationWithFullMenu(Player __instance, out bool __runOriginal) {
-        __runOriginal = true;
-        var p = __instance;
-        if (p.gWork.u8GameMode != GI_GMODE.GI_GMODE_TUTORIAL) return;
         __runOriginal = false;
+
+        // Ignore presses that are part of the konami code entry.
+        // KonamiCode's update happens during LateUpdate, which ends up meaning it's actually *ahead* of this update.
+        if (DebugMenu.konamiCode.IsPrimed) return;
+
+        var p = __instance;
+        if (p.gWork.u8GameMode != GI_GMODE.GI_GMODE_TUTORIAL) {
+            __runOriginal = true;
+            return;
+        }
 
         // Perform most of the same early-bail checks that the original method does
         if (p.gWork.u8State != GAMEINFO_STATE.GAMEINFO_STATE_PLAY) return;
