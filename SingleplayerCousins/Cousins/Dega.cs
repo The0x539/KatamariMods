@@ -19,9 +19,6 @@ public sealed class Dega : MonoBehaviour {
     public void Awake() {
         this.root = this.transform.Find("JNT_root");
         this.animator = this.GetComponent<Animator>();
-        if (this.gameObject.GetComponent<PreventArmatureExplosion>() == null) {
-            this.gameObject.AddComponent<PreventArmatureExplosion>();
-        }
 
         var tail = new List<Transform>();
         var joint = this.root.Find("JNT_waist/JNT_tail");

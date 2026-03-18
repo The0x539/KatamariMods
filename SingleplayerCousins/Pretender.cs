@@ -57,6 +57,8 @@ public sealed class Pretender {
 
         var p = new Pretender { Id = id, Name = name, FilePath = path, BallFilePath = ballPath };
         pretenders.Add(id, p);
+
+        Plugin.logger.LogInfo($"Registered pretender: {name} (ID: {id})");
     }
 
     public int Id { get; init; } = 0;
@@ -67,7 +69,7 @@ public sealed class Pretender {
     public bool HasBall => this.BallFilePath != null || this.Id == (int)PretenderId.Vanta;
 
     public GameObject Reify() {
-        var name = "OUJI16"; // June is a pretty Prince-shaped character who's also unlocked from the start, so a good candidate
+        var name = "OUJI16"; // June is a Prince-shaped character who's also unlocked from the start, so a good candidate
         var ouji = AssetBundleSimulator.Instance.LoadAsset<GameObject>(name, name);
         ouji.name = $"OUJI{this.Id:00}-{this.Name}";
 
@@ -79,11 +81,9 @@ public sealed class Pretender {
             case (int)PretenderId.Dega:
                 ouji.AddComponent<Dega>();
                 break;
-            case (int)PretenderId.Soyo:
-                ouji.AddComponent<PreventArmatureExplosion>();
-                break;
         }
 
+        Plugin.logger.LogInfo($"Successfully loaded pretender: {ouji.name}");
         return ouji;
     }
 
@@ -372,6 +372,12 @@ internal static class PretenderLoader {
     public static void ApplyModel(GameObject ouji, string path) => ApplyModel(ouji, LoadFile(path));
     public static void ApplyBallModel(GameObject ball, string path) => ApplyBallModel(ball, LoadFile(path));
 
+    private sealed class ImportMetadata {
+        public bool preventArmatureExplosion = false;
+        public Vector3 scale = Vector3.one;
+        public Vector3 position = Vector3.zero;
+    }
+
     public static void ApplyModel(GameObject ouji, Assimp.Scene scene) {
         var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
             .ToDictionary(x => x.gameObject.name);
@@ -406,6 +412,8 @@ internal static class PretenderLoader {
             uMaterials.Add(uMat);
         }
 
+        var metadata = new ImportMetadata();
+
         var nodes = new Stack<Assimp.Node>();
         var newBones = new List<Assimp.Node>();
         nodes.Push(scene.RootNode);
@@ -418,6 +426,25 @@ internal static class PretenderLoader {
                 bone.transform.localScale = scale.ToUnity();
             } else if (node.Name.StartsWith("JNT_")) {
                 newBones.Add(node);
+            }
+
+            if (node.Parent?.Name == "METADATA") {
+                switch (node.Name.ToLower()) {
+                    case "prevent armature explosion":
+                        metadata.preventArmatureExplosion = true;
+                        break;
+                    case "adjustment":
+                        node.Transform.Decompose(out var scale, out _, out var position);
+                        metadata.position = position.ToUnity() / 100;
+                        metadata.scale = scale.ToUnity();
+                        if (scale.X != scale.Y || scale.Y != scale.Z) {
+                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-uniform scale adjustment. Import results may be dubious.");
+                        }
+                        if (scale.X <= 0 || scale.Y <= 0 || scale.Z <= 0) {
+                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-positive scale adjustment. Import results may be dubious.");
+                        }
+                        break;
+                }
             }
 
             foreach (var child in node.Children) {
@@ -510,6 +537,16 @@ internal static class PretenderLoader {
             part.enabled = false;
         }
         bones["JNT_antenna"].GetChild(0).gameObject.SetActive(false);
+
+        if (metadata.position != Vector3.zero || metadata.scale != Vector3.one) {
+            var root = bones["JNT_root"];
+            root.transform.localPosition = Vector3.Scale(metadata.position, metadata.scale);
+            root.transform.localScale = metadata.scale;
+        }
+
+        if (metadata.preventArmatureExplosion) {
+            ouji.AddComponent<PreventArmatureExplosion>();
+        }
     }
 
     public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {

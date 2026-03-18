@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using BepInEx.Logging;
 
 using HarmonyLib;
 
@@ -18,9 +19,11 @@ namespace SingleplayerCousins;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public sealed class Plugin : BaseUnityPlugin {
     public static ConfigFile configFile = null!;
+    public static ManualLogSource logger = null!;
 
     public void Awake() {
         configFile = this.Config;
+        logger = this.Logger;
         this.StartCoroutine(Jungle.LoadPrefabs());
 
         Harmony.CreateAndPatchAll(this.GetType());
