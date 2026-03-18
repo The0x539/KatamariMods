@@ -79,9 +79,21 @@ public sealed class Plugin : BaseUnityPlugin {
     }
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(EarchObject), nameof(EarchObject.Start))]
-    public static void AnisotropicEarthObjects(EarchObject __instance) {
-        __instance.GetComponent<MeshRenderer>().sharedMaterial.mainTexture.anisoLevel = 16;
+    [HarmonyPatch(typeof(EarchRotator), nameof(EarchRotator.Start))]
+    public static void AnisotropicEarch(EarchRotator __instance) => MakeAnisotropic(__instance._tranSphere.gameObject);
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Title3Manager), nameof(Title3Manager.Start))]
+    public static void AnisotropicTitleEarch(Title3Manager __instance) => MakeAnisotropic(__instance._animator_earch.gameObject);
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(OujiStarRotator), nameof(OujiStarRotator.Start))]
+    public static void AnisotropicOujiStar(OujiStarRotator __instance) => MakeAnisotropic(__instance._tranSphere.gameObject);
+
+    private static void MakeAnisotropic(GameObject obj) {
+        foreach (var renderer in obj.GetComponentsInChildren<MeshRenderer>(includeInactive: true)) {
+            renderer.sharedMaterial?.mainTexture?.anisoLevel = 16;
+        }
     }
 }
 
