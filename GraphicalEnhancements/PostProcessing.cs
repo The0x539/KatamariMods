@@ -36,7 +36,6 @@ static class PostProcessing {
 
         var ppb = cam.GetComponent<PostProcessingBehaviour>();
         ppb.profile.depthOfField.enabled = QualitySetting.Instance.IsDOF;
-        // This should probably be a graphics option
         ppb.profile.depthOfField.settings = ppb.profile.depthOfField.settings with { kernelSize = DepthOfFieldModel.KernelSize.VeryLarge };
 
         var vanillaSSAO = ppb.profile.ambientOcclusion.settings;
