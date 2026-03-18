@@ -47,7 +47,7 @@ public static class AnisotropicGround {
         if (name is "s_1_a" or "s_2_a" or "s_3_a") return true;
         if (name is "s_1_b" or "s_2_b") return true;
         if (name is "s_1_c" or "s_3_c") return true;
-        if (name == "s_3_d") return true;
+        if (name is "s_2_d" or "s_3_d") return true;
         if (name is "s_1_hole_46" or "s_1_hole_83" or "s_1_hole_87" or "s_1_hole_91") return true;
         if (name == "s_1_e") return true;
         if (name.StartsWith("s_3_e")) return true;
@@ -66,6 +66,7 @@ public static class AnisotropicGround {
         if (name.Contains("obj_gravel")) return true;
         if (name.Contains("obj_grass")) return true;
         if (name.Contains("obj_asphalt")) return true;
+        if (name.Contains("st2_texatlas")) return true;
         if (name.Contains("ztexatlas")) return true;
         if (name.Contains("obj_kotatuCover")) return true;
         if (name.Contains("obj_kotatu_deskTop")) return true;
@@ -103,7 +104,12 @@ public static class AnisotropicGround {
         var pixels = request.GetData<Color32>();
         blitTex.Release();
 
-        var newTex = new Texture2D(w, h, TextureFormat.RGB24, mipmap: true) {
+        var format = TextureFormat.RGB24;
+        if (srcTex.name == "st2_texatlas_01") {
+            format = TextureFormat.ARGB32;
+        }
+
+        var newTex = new Texture2D(w, h, format, mipmap: true) {
             filterMode = FilterMode.Trilinear,
             anisoLevel = 16,
             name = srcTex.name + " (Anisotropic)",
