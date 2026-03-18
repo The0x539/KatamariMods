@@ -157,7 +157,7 @@ public static class Glyphs {
     private static System.Collections.IEnumerator QueueForRecheck(KeyImageCheck key) {
         // For some reason, the Steam Input stuff isn't immediately ready upon the controller showing up as an SDL device.
         // This fix is kinda sketchy, but seems to get the job done.
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSecondsRealtime(0.5f);
         key.Set();
     }
 
