@@ -385,6 +385,11 @@ internal static class PretenderLoader {
         public bool preventArmatureExplosion = false;
         public Vector3 scale = Vector3.one;
         public Vector3 position = Vector3.zero;
+        // Off by default because Soyo and Dega, the first two characters I was serious about adding,
+        // both use pixel art textures, which Unity's lack of anisotropic point filtering.
+        // As demonstrated with my work on terrain textures, this produces awful results,
+        // so it's preferable to just disable mipmaps altogether for pixel art character textures.
+        public bool mipmap = false;
     }
 
     public static void ApplyModel(GameObject ouji, Assimp.Scene scene) {
@@ -398,28 +403,6 @@ internal static class PretenderLoader {
 
         var body_m = bodyParts["body_m"];
         var body_root = body_m.transform.parent;
-
-        var uMaterials = new List<Material?>();
-        foreach (var aMat in scene.Materials) {
-            Texture2D uTex;
-            try {
-                uTex = LoadTexture(scene, aMat);
-            } catch (Exception ex) {
-                Console.WriteLine($"Texture {aMat.Name} has no filepath: {ex}");
-                uMaterials.Add(null);
-                continue;
-            }
-
-            var uMat = UnityObject.Instantiate(body_m.material);
-            if (aMat.Name == "FaceTexture") {
-                uMat.EnableKeyword("_ALPHATEST_ON");
-                uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
-            }
-
-            uMat.name = uTex.name = aMat.Name; // TODO: This name is absolutely not guaranteed to be unique across different characters.
-            uMat.mainTexture = uTex;
-            uMaterials.Add(uMat);
-        }
 
         var metadata = new ImportMetadata();
 
@@ -453,6 +436,9 @@ internal static class PretenderLoader {
                             Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-positive scale adjustment. Import results may be dubious.");
                         }
                         break;
+                    case "mipmap":
+                        metadata.mipmap = true;
+                        break;
                 }
             }
 
@@ -474,6 +460,28 @@ internal static class PretenderLoader {
             bone.transform.localPosition = position.ToUnity();
             bone.transform.localRotation = rotation.ToUnity();
             bone.transform.localScale = scale.ToUnity();
+        }
+
+        var uMaterials = new List<Material?>();
+        foreach (var aMat in scene.Materials) {
+            Texture2D uTex;
+            try {
+                uTex = LoadTexture(scene, aMat, metadata.mipmap);
+            } catch (Exception ex) {
+                Console.WriteLine($"Texture {aMat.Name} has no filepath: {ex}");
+                uMaterials.Add(null);
+                continue;
+            }
+
+            var uMat = UnityObject.Instantiate(body_m.material);
+            if (aMat.Name == "FaceTexture") {
+                uMat.EnableKeyword("_ALPHATEST_ON");
+                uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            }
+
+            uMat.name = uTex.name = aMat.Name; // TODO: This name is absolutely not guaranteed to be unique across different characters.
+            uMat.mainTexture = uTex;
+            uMaterials.Add(uMat);
         }
 
         foreach (var aMesh in scene.Meshes) {
@@ -563,7 +571,7 @@ internal static class PretenderLoader {
         var renderer = ball.GetComponent<MeshRenderer>();
 
         var aMat = scene.Materials[0];
-        var uTex = LoadTexture(scene, aMat);
+        var uTex = LoadTexture(scene, aMat, mipmap: true);
         var uMaterial = UnityObject.Instantiate(renderer.material);
         uMaterial.name = uTex.name = aMat.Name;
         uMaterial.mainTexture = uTex;
@@ -580,10 +588,10 @@ internal static class PretenderLoader {
         renderer.material = uMaterial;
     }
 
-    private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat) {
+    private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat, bool mipmap) {
         var path = aMat.TextureDiffuse.FilePath;
 
-        var uTex = new Texture2D(0, 0);
+        var uTex = new Texture2D(0, 0, TextureFormat.ARGB32, mipmap);
 
         if (path.StartsWith("*")) {
             var i = int.Parse(path.Substring(1));
@@ -596,7 +604,12 @@ internal static class PretenderLoader {
             ImageConversion.LoadImage(uTex, data);
         }
 
-        uTex.filterMode = FilterMode.Point;
+        if (mipmap) {
+            uTex.anisoLevel = 16;
+            uTex.filterMode = FilterMode.Trilinear;
+        } else {
+            uTex.filterMode = FilterMode.Point;
+        }
         return uTex;
     }
 
