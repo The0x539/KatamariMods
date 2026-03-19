@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 
@@ -14,6 +15,7 @@ public sealed class PreventArmatureExplosion : MonoBehaviour {
 
     public void Awake() {
         this.bones = this.transform.Find("JNT_root/JNT_waist").GetComponentsInChildren<Transform>();
+        this.bones = [.. this.bones.Skip(1)]; // Omit the waist
         this.boneOrigins = this.bones.Select(b => b.localPosition).ToArray();
         this.animator = this.GetComponent<Animator>();
     }
@@ -27,13 +29,15 @@ public sealed class PreventArmatureExplosion : MonoBehaviour {
     }
 
     // Names of ingame simulation-controlled animations found in CharacterAnimationController.SetClone
-    private static readonly int
-        peterPanHash = Animator.StringToHash("peter_pan"),
-        shockHash = Animator.StringToHash("shock"),
-        shockStayHash = Animator.StringToHash("shock_stay");
+    private static readonly HashSet<int> problematicAnimations = [.. new[] {
+        "peter_pan",
+        "shock",
+        "shock_stay",
+        "landing",
+    }.Select(Animator.StringToHash)];
 
     private bool RestrictStretching() {
         var currentAnim = this.animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
-        return currentAnim == peterPanHash || currentAnim == shockHash || currentAnim == shockStayHash;
+        return problematicAnimations.Contains(currentAnim);
     }
 }
