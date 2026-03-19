@@ -39,7 +39,7 @@ public sealed class Dega : MonoBehaviour {
         this.theta += dt;
 
         if (this.animator.GetCurrentAnimatorStateInfo(0).shortNameHash == peterPanHash) {
-            this.tail[0].localRotation = this.tailRestPose[0] * Quaternion.Euler(0, -20, 0) * Quaternion.Euler(0, this.theta * 1200f, 0);
+            this.tail[0].localRotation = this.tailRestPose[0] * Quaternion.Euler(10, 0, -18) * Quaternion.Euler(0, this.theta * 1200, 0);
 
             var hover_dy = 0.1f * Mathf.Sin(6.13f * this.theta) * dt;
             this.root.localPosition += new Vector3(0, hover_dy, 0);
