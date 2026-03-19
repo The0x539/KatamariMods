@@ -360,7 +360,7 @@ static class PresentAdjustments {
                 Rotate(z: -15),
                 Scale(0.5, 0.5, 0.5),
             ],
-            [Present.Camera, Present.HeldCamera] = Scale(0.5, 0.5, 0.5),
+            [Present.Camera] = Scale(0.5, 0.5, 0.5),
             [Present.Ducky] = Scale(0.5, 0.5, 0.5),
             [Present.Snorkel] = [
                 Translate(y: 0.04, z: -0.01),
