@@ -329,7 +329,7 @@ static class PresentAdjustments {
                 Rotate(x: 35),
             ],
         },
-        [(Cousin)PretenderId.Dega] = {
+        [PretenderId.Dega] = {
             [Present.Apron] = [
                 Translate(y: -0.2),
                 Scale(x: 0.45, z: 0.6),
@@ -371,6 +371,53 @@ static class PresentAdjustments {
                 Scale(0.5, 0.5, 0.5),
             ],
         },
+        [PretenderId.Soyo] = {
+            //[Present.Apron] = [],
+            //[Present.RunningTop] = [],
+            //[Present.Mawashi] = [],
+            [Present.CoolMask] = [
+                Translate(z: 0.035),
+                Rotate(x: 20),
+                Scale(0.5, 0.5, 0.5),
+            ],
+            [Present.ChefHat] = Translate(y: -0.04),
+            [Present.Headphones] = [
+                Translate(y: 0.04),
+                Rotate(x: 15),
+                Scale(0.41, 0.4, 0.4),
+            ],
+            [Present.ChampBelt] = [
+                Translate(y: 0.32, z: 0.02),
+                Scale(0.65, 0.65, 0.65),
+            ],
+            [Present.WhiteGuitar] = [
+            ],
+            [Present.AlohaSet] = [
+                Translate(y: 0.32).On(WAIST),
+                Scale(x: 0.8).On(WAIST),
+            ],
+            [Present.SuperheroScarf, Present.WinterScarf] = [
+                Translate(y: 0.01),
+                Scale(0.5, 0.5, 0.5),
+            ],
+            [Present.Crown] = [
+                Translate(y: 0.04),
+                Scale(0.5, 0.5, 0.5),
+            ],
+            [Present.Camera] = [
+                Translate(y: -0.05, z: 0.04),
+                Scale(0.7, 0.7, 0.5),
+            ],
+            [Present.Ducky] = [
+                Translate(y: 0.32, z: 0.02),
+                Scale(0.7, 0.7, 0.7),
+            ],
+            [Present.Snorkel] = [
+                Translate(y: -0.02, z: 0.032),
+                Rotate(x: 30),
+                Scale(0.6, 0.6, 0.6),
+            ],
+        },
     };
 
     private sealed class OuterDict : Dictionary<Cousin, InnerDict> {
@@ -385,6 +432,8 @@ static class PresentAdjustments {
                 }
             }
         }
+
+        public InnerDict this[PretenderId key] => this[(Cousin)key];
     }
 
     private sealed class InnerDict : Dictionary<Present, Adjustment> {
