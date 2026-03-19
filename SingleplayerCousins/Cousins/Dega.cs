@@ -14,7 +14,9 @@ public sealed class Dega : MonoBehaviour {
 
     private Animator animator = new();
 
-    private static readonly int peterPanHash = Animator.StringToHash("peter_pan");
+    private static readonly int
+        peterPanHash = Animator.StringToHash("peter_pan"),
+        stairsHash = Animator.StringToHash("stairs");
 
     public void Awake() {
         this.root = this.transform.Find("JNT_root");
@@ -38,11 +40,17 @@ public sealed class Dega : MonoBehaviour {
         var dt = Time.timeScale > 0 ? Time.deltaTime : Time.unscaledDeltaTime;
         this.theta += dt;
 
-        if (this.animator.GetCurrentAnimatorStateInfo(0).shortNameHash == peterPanHash) {
+        var anim = this.animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+        if (anim == peterPanHash) {
             this.tail[0].localRotation = this.tailRestPose[0] * Quaternion.Euler(10, 0, -18) * Quaternion.Euler(0, this.theta * 1200, 0);
 
             var hover_dy = 0.1f * Mathf.Sin(6.13f * this.theta) * dt;
             this.root.localPosition += new Vector3(0, hover_dy, 0);
+        } else if (anim == stairsHash) {
+            this.tail[0].localRotation = Quaternion.Euler(-135, 0, 5 * Mathf.Sin(this.theta * 69));
+            for (var i = 1; i < this.tail.Length; i++) {
+                this.tail[i].localRotation = Quaternion.identity;
+            }
         } else {
             float tailBiasXY, tailBiasZ, tailAmplitude;
             // Ugh, the axes are so messed up. This is kind of my own fault, but still. Whatever, this works well enough.
