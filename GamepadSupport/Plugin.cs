@@ -2,6 +2,8 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 
+using DefineEnum;
+
 using HarmonyLib;
 
 using MyGame;
@@ -72,8 +74,11 @@ public sealed class Plugin : BaseUnityPlugin {
         Log.LogWarning($"Joystick {id} disconnected");
 
         if (GetPauseMenu() is not PauseMenu menu) return;
-        if (menu.sCheckPause() != Define.TRUE) return;
-        if (menu.gWork.u8Pause != Define.OFF) return;
+        if (menu.sCheckPause() != 1) return;
+        if (menu.gWork.u8Pause != 0) return;
+        if (menu.gWork.u8SwMapChange != 0) return;
+        if (menu.gWork.u8State != GAMEINFO_STATE.GAMEINFO_STATE_PLAY) return;
+        if (menu.gWork.manGame.sScrBlurSw != 0) return;
 
         menu.Pause();
         menu.gWork.u8Pause = Define.ON;
