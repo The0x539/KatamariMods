@@ -344,10 +344,15 @@ public sealed class Plugin : BaseUnityPlugin {
             }
             renderer.bones = newBones;
 
-            if (renderer.gameObject.GetComponent<PresentAdjuster>() is PresentAdjuster existing) {
-                existing.Setup();
-            } else {
-                renderer.gameObject.AddComponent<PresentAdjuster>().Setup();
+            var adjuster = renderer.GetComponent<PresentAdjuster>() ?? renderer.gameObject.AddComponent<PresentAdjuster>();
+            adjuster.Setup();
+        }
+
+        var cousin = PresentAdjuster.DetermineCousin(ouji.transform);
+        if (PresentAdjustments.Get(cousin, Present.HeldCamera) is Adjustment adj) {
+            if (GlobalWork.Instance.manGame?.prefabOujiCamera is GameObject cameraPrefab) {
+                // The object hierarchy setup here is hilariously awful.
+                adj.ApplyTo(cameraPrefab.transform.Find($"pre_root/pre_{(int)Present.HeldCamera}"));
             }
         }
     }

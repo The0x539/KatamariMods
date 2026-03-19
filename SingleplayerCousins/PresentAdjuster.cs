@@ -62,8 +62,10 @@ public sealed class PresentAdjuster : MonoBehaviour {
         this.smr.bones = bones;
     }
 
-    private Cousin DetermineCousin() {
-        for (var t = this.transform; t != null; t = t.parent) {
+    private Cousin DetermineCousin() => DetermineCousin(this.transform);
+
+    public static Cousin DetermineCousin(Transform transform) {
+        for (var t = transform; t != null; t = t.parent) {
             if (t.name.StartsWith("OUJI")) {
                 var num = int.Parse(t.name.Substring(4, length: 2));
                 return (Cousin)num;
