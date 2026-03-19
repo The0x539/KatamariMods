@@ -330,7 +330,10 @@ static class PresentAdjustments {
             ],
         },
         [(Cousin)PretenderId.Dega] = {
-            //[Present.Apron] = [],
+            [Present.Apron] = [
+                Translate(y: -0.2),
+                Scale(x: 0.45, z: 0.6),
+            ],
             //[Present.RunningTop] = [],
             [Present.Mawashi] = [
                 Translate(y: -0.05),
@@ -367,7 +370,6 @@ static class PresentAdjustments {
                 Rotate(x: 40),
                 Scale(0.5, 0.5, 0.5),
             ],
-
         },
     };
 
