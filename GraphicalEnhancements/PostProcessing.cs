@@ -70,7 +70,7 @@ static class PostProcessing {
         //
         // When that happens, just use the distance from the moment the player entered first-person mode,
         // since that should work pretty well for the current first-person "session".
-        if (gWork.oujiFaceMode[player] == 2) {
+        if (gWork.oujiViewMode[player] == 2) {
             dof.FreezeDistance();
         } else {
             dof.ThawDistance();
@@ -271,7 +271,7 @@ public sealed class UpdateDof : MonoBehaviour {
     private float Distance() => Vector3.Distance(this.transform.position, this.katamari.position);
 
     private float? frozenDistance = null;
-    public void FreezeDistance() => this.frozenDistance = this.Distance();
+    public void FreezeDistance() => this.frozenDistance ??= this.Distance();
     public void ThawDistance() => this.frozenDistance = null;
 
     public void Start() {
