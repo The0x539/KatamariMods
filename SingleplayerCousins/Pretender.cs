@@ -523,10 +523,12 @@ internal static class PretenderLoader {
 
             LoadNormals(aMesh, uMesh);
 
+            uMesh.UploadMeshData(markNoLongerReadable: true);
+
             renderer.rootBone = bones["JNT_root"];
             renderer.sharedMesh = uMesh;
             if (uMaterials[aMesh.MaterialIndex] is Material mat) {
-                renderer.material = mat;
+                renderer.sharedMaterial = mat;
             }
 
             foreach (var groupName in new[] { "eye", "face", "mouth", "parts" }) {
@@ -584,25 +586,28 @@ internal static class PretenderLoader {
         LoadUVs(aMesh, uMesh);
         LoadNormals(aMesh, uMesh);
 
-        filter.mesh = uMesh;
-        renderer.material = uMaterial;
+        uMesh.UploadMeshData(markNoLongerReadable: true);
+
+        filter.sharedMesh = uMesh;
+        renderer.sharedMaterial = uMaterial;
     }
 
     private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat, bool mipmap) {
         var path = aMat.TextureDiffuse.FilePath;
 
-        var uTex = new Texture2D(0, 0, TextureFormat.ARGB32, mipmap);
+        byte[] data;
 
         if (path.StartsWith("*")) {
             var i = int.Parse(path.Substring(1));
-            var aTex = scene.Textures[i];
-            ImageConversion.LoadImage(uTex, aTex.CompressedData);
+            data = scene.Textures[i].CompressedData;
         } else if (path == null) {
             throw new Exception($"FBX material {aMat.Name} has no texture");
         } else {
-            var data = File.ReadAllBytes(path);
-            ImageConversion.LoadImage(uTex, data);
+            data = File.ReadAllBytes(path);
         }
+
+        var uTex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap);
+        ImageConversion.LoadImage(uTex, data, markNonReadable: true);
 
         if (mipmap) {
             uTex.anisoLevel = 16;
