@@ -33,6 +33,7 @@ public sealed class Plugin : BaseUnityPlugin {
 
         Harmony.CreateAndPatchAll(this.GetType());
         Harmony.CreateAndPatchAll(typeof(Glyphs));
+        Harmony.CreateAndPatchAll(typeof(VibrationStrengthOption));
     }
 
     public void Update() {

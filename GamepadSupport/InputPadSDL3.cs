@@ -25,14 +25,6 @@ public sealed class InputPadSDL3 : InputPadBase {
     private readonly float[] axes = new float[(int)SDL.GamepadAxis.COUNT];
     private uint buttons;
 
-    private static readonly ConfigEntry<float> vibrationStrength = Plugin.Cfg.Bind(
-        "Vibration", "Strength", 1.0f,
-        new ConfigDescription(
-            "Scaling factor for vibration motor strength",
-            new AcceptableValueRange<float>(0.0f, 1.0f)
-        )
-    );
-
     private static readonly SDL.SensorType[] motionSensors = [
         SDL.SensorType.AccelLeft, SDL.SensorType.AccelRight,
         SDL.SensorType.GyroLeft, SDL.SensorType.GyroRight,
@@ -180,8 +172,9 @@ public sealed class InputPadSDL3 : InputPadBase {
     public override void Vibration(float time) {
         if (!this.IsVibration) return;
 
-        var low = ConvertMotorStrength(this.motorStrengthL, vibrationStrength.Value);  // "L(ong)" wavelength = "low" frequency ("left" motor, practically)
-        var high = ConvertMotorStrength(this.motorStrengthS, vibrationStrength.Value); // "S(hort)" wavelength = "high" frequency ("right" motor, practically)
+        var strength = VibrationStrengthOption.Value;
+        var low = ConvertMotorStrength(this.motorStrengthL, strength);  // "L(ong)" wavelength = "low" frequency ("left" motor, practically)
+        var high = ConvertMotorStrength(this.motorStrengthS, strength); // "S(hort)" wavelength = "high" frequency ("right" motor, practically)
         this.inner?.Rumble(low, high, (uint)(time * 1000));
     }
 
