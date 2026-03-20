@@ -13,8 +13,17 @@ using UnityEngine.Rendering;
 namespace GraphicalEnhancements;
 
 static class PostProcessing {
-    // TODO: This probably isn't the place to put the updater component on the camera.
-    // I need to learn more about the "life cycles" of some of these objects and components.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Start))]
+    public static void AttachDofUpdater(GameManager __instance) {
+        var gw = GlobalWork.Instance;
+        if (gw.u8GameInfoMode == GAMEINFO_MODE.GAMEINFO_MODE_VS || gw.u8GameMode == GI_GMODE.GI_GMODE_ENDING) {
+            return;
+        }
+
+        __instance.gameObject.AddComponent<UpdateDof>();
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GlobalManager), nameof(GlobalManager.SetActiveStageObject))]
     public static void EnableDof() {
@@ -51,10 +60,6 @@ static class PostProcessing {
             // This should maybe be configurable ingame.
             sampleCount = AmbientOcclusionModel.SampleCount.Low, // 6 "samples", as opposed to the default of Lowest = 3
         };
-
-        if (cam.GetComponent<UpdateDof>() == null) {
-            cam.gameObject.AddComponent<UpdateDof>();
-        }
     }
 
     [HarmonyPrefix]
