@@ -26,8 +26,11 @@ public sealed class Pretender {
     static Pretender() {
         pretenders = [];
 
-        var items = Directory.GetFiles("./Pretenders/");
+        const string dirPath = "./Pretenders/";
+        if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
+        var items = Directory.GetFiles(dirPath);
         Array.Sort(items);
+
         var dynamicId = (int)PretenderId.DYNAMIC;
         foreach (var path in items) {
             if (Path.GetExtension(path) != ".fbx") continue;
