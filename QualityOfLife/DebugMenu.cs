@@ -6,7 +6,7 @@ using System.Collections;
 
 using UnityEngine;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 public static class DebugMenu {
     private static void FixMenu(GameDebug menu) {

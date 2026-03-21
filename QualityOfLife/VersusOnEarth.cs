@@ -2,7 +2,7 @@
 
 using HarmonyLib;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 public static class VersusOnEarth {
     [HarmonyPostfix]

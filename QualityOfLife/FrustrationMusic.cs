@@ -4,7 +4,7 @@ using HarmonyLib;
 
 using System.Collections.Generic;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 public static class FrustrationMusic {
     private static readonly Dictionary<int, bool> playedThisSession = new() {

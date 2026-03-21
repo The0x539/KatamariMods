@@ -10,7 +10,7 @@ using System.Collections;
 
 using UnityEngine;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Plugin : BaseUnityPlugin {

@@ -13,7 +13,7 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 // Make it possible to access the options menu during a level.
 

@@ -8,7 +8,7 @@ using MyGame.InputStatus;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 public static class EarlyOptions {
     // Normally, the SELECT ("Back") button toggles vibration mid-level.

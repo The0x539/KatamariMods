@@ -4,7 +4,7 @@ using MyGame;
 
 using UnityEngine;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 public static class HideCursor {
     private static Vector3 prevMousePosition;

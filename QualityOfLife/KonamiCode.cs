@@ -3,7 +3,7 @@ using MyGame.InputStatus;
 
 using UnityEngine;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 public class KonamiCode : MonoBehaviour {
     public static readonly KeyMap[] sequence = [

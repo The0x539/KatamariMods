@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
-		<ProjectReference Include="..\DevUtils\DevUtils.csproj" />
+		<ProjectReference Include="..\QualityOfLife\QualityOfLife.csproj" />
 		<ProjectReference Include="..\FramerateUncap\FramerateUncap.csproj" />
 		<ProjectReference Include="..\GamepadSupport\GamepadSupport.csproj" />
 		<ProjectReference Include="..\RenderDocHook\RenderDocHook.csproj" />

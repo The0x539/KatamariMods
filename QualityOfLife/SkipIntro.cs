@@ -11,7 +11,7 @@ using System.Reflection.Emit;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace DevUtils;
+namespace QualityOfLife;
 
 public static class SkipIntro {
     private static readonly Dictionary<string, int> missionNames = new() {
