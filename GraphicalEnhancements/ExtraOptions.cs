@@ -173,4 +173,16 @@ static class ExtraOptions {
             ppb.profile.depthOfField.enabled = __instance.IsDOF;
         }
     }
+
+    // If VSync is enabled, then Unity disregards the setting that this menu item controls.
+    // https://docs.unity3d.com/2018.1/Documentation/ScriptReference/Application-targetFrameRate.html
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.GetItemName))]
+    public static string RespondToVsync(string result, int line) {
+        if (line == 8 && QualitySettings.vSyncCount != 0) {
+            return "VSync";
+        } else {
+            return result;
+        }
+    }
 }
