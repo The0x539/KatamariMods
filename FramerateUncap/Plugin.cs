@@ -406,10 +406,8 @@ public sealed class Plugin : BaseUnityPlugin {
             self.objWhirlpoolObject.SetActive(true);
         }
 
-        // The original code divides by 4 for the angle change.
-        // To compensate for the mistake described below, multiply that by a bit.
         var dt = Time.deltaTime * 1000f;
-        self.whirlAngle += self.whirlAngleDelta * dt * 2f;
+        self.whirlAngle += self.whirlAngleDelta * dt;
         self.whirlScale += self.whirlScaleDelta * dt;
         if (self.whirlScale < 0) self.whirlScale = 0;
 
@@ -421,7 +419,11 @@ public sealed class Plugin : BaseUnityPlugin {
         // - the values for angleE passed to Game2dRequestWhirlpool are 180 and 540
         // - the equivalent to this code multiplies by 180/pi, which is nonsensical if starting from degrees.
         // - Quaternion.Euler takes degrees anyway
-        t.rotation = Quaternion.Euler(0, 0, self.whirlAngle);
+        // The angle is negated because a positive value means counterclockwise rotation,
+        // while the PS2 game clearly has it rotate clockwise.
+        // As a result of the math mishap described above, the vanilla game achieves the illusion of slow clockwise rotation
+        // by rotating slightly less than ⅛ turn every update and leveraging the rotational symmetry of the sprite.
+        t.rotation = Quaternion.Euler(0, 0, -self.whirlAngle);
     }
 }
 
