@@ -482,7 +482,9 @@ internal static class PretenderLoader {
                 uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
             }
 
-            uMat.name = uTex.name = aMat.Name; // TODO: This name is absolutely not guaranteed to be unique across different characters.
+            // This name is absolutely not guaranteed to be unique across different characters.
+            // Not sure how much of an issue that's going to be.
+            uMat.name = uTex.name = aMat.Name;
             uMat.mainTexture = uTex;
             uMaterials.Add(uMat);
         }

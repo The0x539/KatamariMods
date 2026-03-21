@@ -10,7 +10,6 @@
 	</ItemGroup>
 	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="Exists($(GameDir))">
-		<!-- TODO: Copy AssimpNet DLLs to game folder -->
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins" />
 	</Target>
 </Project>

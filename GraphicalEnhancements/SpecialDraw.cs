@@ -78,7 +78,7 @@ public static class SpecialDrawPatches {
             var matches = prop.u16MonoNameIdx
                 is Define.MONO_IDX_CLOUD01_G
                 or Define.MONO_IDX_CLOUD02_G
-                // or Define.MONO_IDX_CLOUD03_G // TODO: What is this cloud? Must find ingame
+                or Define.MONO_IDX_CLOUD03_G // This appears to be an unused cloud.
                 or Define.MONO_IDX_CLOUD04_G
                 or Define.MONO_IDX_RAINBOW_G;
 

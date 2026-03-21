@@ -50,7 +50,6 @@ public sealed class InputPadSDL3 : InputPadBase {
 
         /*
         if (this.inner.GamepadType == SDL.GamepadType.SwitchJoyConPair && this.HasAllMotionSensors()) {
-            // TODO: Only enable when motion controls are chosen, to save bandwidth and battery
             this.SetMotionSensorsEnabled(true);
         }
         */
@@ -109,7 +108,7 @@ public sealed class InputPadSDL3 : InputPadBase {
         // Things past this point don't seem to be necessary.
     ];
 
-    // TODO: properly bring back keyboard input?
+    // No keyboard support currently implemented, but... keyboard controls are kind of a joke.
     public override bool IsKeybord => this.inner == null;
     public override bool IsConnectPad => this.inner != null;
     public override int ConnectCount => this.IsConnectPad ? 1 : 0;
