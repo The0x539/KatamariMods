@@ -130,11 +130,25 @@ static class IngameOptions {
         }
     }
 
+    private static bool optionsMenuOpen = false;
+
+    // For some reason, doing this by disabling the pause menu's game object
+    // was breaking the ability to exit first-person view with the L button.
+    // Not sure why. Whatever. The point of disabling the object was so that B didn't exit the menu all at once.
+    // This gets the job done just as well.
+    // Patching Update instead of PauseProc because there are too many other patches already extracting PauseProc functionality,
+    // hence this patch method's name.
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(PauseMenu), nameof(PauseMenu.Update))]
+    public static bool TooManyCooks() => !optionsMenuOpen;
+
     private static System.Collections.IEnumerator ShowOptionsMenu(PauseMenu pauseMenu) {
         var optionsScene = SceneManager.GetSceneByName("Option");
         if (optionsScene.isLoaded) yield break;
         yield return SceneManager.LoadSceneAsync("Option", LoadSceneMode.Additive);
         if (!optionsScene.IsValid()) optionsScene = SceneManager.GetSceneByName("Option"); // ???
+
+        optionsMenuOpen = true;
 
         foreach (var obj in optionsScene.GetRootGameObjects()) {
             if (obj.GetComponent<KatamariPauseController>() is not KatamariPauseController kpc) continue;
@@ -144,7 +158,6 @@ static class IngameOptions {
         }
 
         var layer = new GameObject[] {
-            pauseMenu.gameObject,
             pauseMenu.objKatamariCamera,
             pauseMenu.objGameCamera,
             pauseMenu.canvas.GetChild(0).gameObject,
@@ -156,6 +169,7 @@ static class IngameOptions {
 
         void onUnload(Scene scene) {
             if (scene == optionsScene) {
+                optionsMenuOpen = false;
                 foreach (var obj in layer) {
                     obj.SetActive(true);
                 }
