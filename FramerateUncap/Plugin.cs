@@ -425,6 +425,12 @@ public sealed class Plugin : BaseUnityPlugin {
         // by rotating slightly less than ⅛ turn every update and leveraging the rotational symmetry of the sprite.
         t.rotation = Quaternion.Euler(0, 0, -self.whirlAngle);
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(PS2KatamariSimulation), nameof(PS2KatamariSimulation.DoTick))]
+    public static void UpperBound(ref float delta) {
+        delta = Mathf.Min(delta, 0.1f);
+    }
 }
 
 internal static partial class KatamariFfi {

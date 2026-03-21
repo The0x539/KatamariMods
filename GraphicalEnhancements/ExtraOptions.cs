@@ -17,7 +17,7 @@ namespace GraphicalEnhancements;
 static class ExtraOptions {
     private static readonly string QualitySettingsPath = Path.Combine(FileManager.SaveTemporaryPath, "Setting/quality.ex.setting");
 
-    private static readonly int[] fpsValues = [360, 240, 180, 165, 144, 120, 90, 60, 30, 24, 15, 10, 5];
+    private static readonly int[] fpsValues = [360, 240, 180, 165, 144, 120, 90, 60, 30, 24, 15, 10];
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Load))]
