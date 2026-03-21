@@ -22,6 +22,10 @@ public class Plugin : BaseUnityPlugin {
         Application.runInBackground = true;
 
         Harmony.CreateAndPatchAll(this.GetType());
+
+        IngameOptions.AddListener();
+        Harmony.CreateAndPatchAll(typeof(IngameOptions));
+
         Harmony.CreateAndPatchAll(typeof(FrustrationMusic));
         Harmony.CreateAndPatchAll(typeof(DebugMenu));
         Harmony.CreateAndPatchAll(typeof(HideCursor));

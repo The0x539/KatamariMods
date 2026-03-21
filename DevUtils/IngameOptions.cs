@@ -9,10 +9,11 @@ using System.Linq;
 using System.Reflection.Emit;
 
 using UnityEngine;
+using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace GraphicalEnhancements;
+namespace DevUtils;
 
 // Make it possible to access the options menu during a level.
 
@@ -282,6 +283,21 @@ static class IngameOptions {
         if (!SceneManager.GetSceneByName("GameMain").isLoaded) return;
 
         GetPauseBackdrop().SetActive(true);
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
+    public static void ActuallyUpdateSettings(QualitySetting __instance) {
+        if (!SceneManager.GetSceneByName("GameMain").isLoaded) return;
+
+        var camera = Camera.main;
+        if (camera.GetComponent<PostProcessingBehaviour>() is PostProcessingBehaviour ppb) {
+            ppb.profile.ambientOcclusion.enabled = __instance.IsSsao;
+            ppb.profile.vignette.enabled = __instance.IsVignette;
+            // This one should only be set if the graphics mod is installed.
+            // The easiest way to implement that is to just... do this one in that mod instead.
+            //ppb.profile.depthOfField.enabled = __instance.IsDOF;
+        }
     }
 
     /*

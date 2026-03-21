@@ -156,23 +156,20 @@ static class ExtraOptions {
     }
 
     [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))] // GameManager sets targetFrameRate to 60 with VSync on and -1 with it off.
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
-    public static void ActuallyUpdateSettings(QualitySetting __instance) {
-        Application.targetFrameRate = GetTargetFPS(__instance);
+    public static void SetMaxFps() {
+        Application.targetFrameRate = GetTargetFPS(QualitySetting.Instance);
+    }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
+    public static void SetDof(QualitySetting __instance) {
         if (!SceneManager.GetSceneByName("GameMain").isLoaded) return;
 
         var camera = Camera.main;
         if (camera.GetComponent<PostProcessingBehaviour>() is PostProcessingBehaviour ppb) {
-            ppb.profile.ambientOcclusion.enabled = __instance.IsSsao;
             ppb.profile.depthOfField.enabled = __instance.IsDOF;
-            ppb.profile.vignette.enabled = __instance.IsVignette;
         }
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))] // GameManager sets targetFrameRate to 60 with VSync on and -1 with it off.
-    public static void SetMaxFps() {
-        Application.targetFrameRate = GetTargetFPS(QualitySetting.Instance);
     }
 }
