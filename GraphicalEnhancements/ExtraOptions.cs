@@ -156,11 +156,12 @@ static class ExtraOptions {
     }
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))] // GameManager sets targetFrameRate to 60 with VSync on and -1 with it off.
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
-    public static void SetMaxFps() {
-        Application.targetFrameRate = GetTargetFPS(QualitySetting.Instance);
-    }
+    public static void SetMaxFps(QualitySetting __instance) => Application.targetFrameRate = GetTargetFPS(__instance);
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))] // GameManager sets targetFrameRate to 60 with VSync on and -1 with it off.
+    public static void SetMaxFps() => SetMaxFps(QualitySetting.Instance);
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Set))]
