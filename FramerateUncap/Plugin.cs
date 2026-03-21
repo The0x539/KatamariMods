@@ -431,6 +431,18 @@ public sealed class Plugin : BaseUnityPlugin {
     public static void UpperBound(ref float delta) {
         delta = Mathf.Min(delta, 0.1f);
     }
+
+    // If GraphicalEnhancements is installed, its FPS cap will override this.
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Awake))]
+    public static IL No60Cap(IL il) {
+        return new CodeMatcher(il)
+            .MatchForward(false,
+                          new(OpCodes.Ldc_I4_S, (sbyte)60),
+                          new(OpCodes.Call, Member.Setter(() => Application.targetFrameRate)))
+            .SetOperandAndAdvance((sbyte)-1)
+            .Instructions();
+    }
 }
 
 internal static partial class KatamariFfi {
