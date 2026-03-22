@@ -15,10 +15,17 @@ jobs:
         with:
           dotnet-version: 10.0.x
           architecture: x64
-      
+
+      - uses: ilammy/setup-nasm@v1
+
+      - run: rustup override set nightly
+
       - uses: actions/checkout@v6
 
       - run: dotnet publish -c Release
+
+      - name: Build Rust component
+        run: cargo build --release --no-default-features --manifest-path ./native-patches/Cargo.toml
 
       - name: Assemble final directory structure
         run: |
@@ -37,8 +44,11 @@ jobs:
           }
 
           cp ./out/runtimes/win-x64/native/assimp.dll ./artifact/katamari_Data/Plugins/runtimes/win-x64/native/
+
+          cp ./native-patches/target/release/katamari_ffi.dll ./artifact/katamari_Data/Plugins/
+          
           # TODO: SDL3.dll
-          # TODO: Make git submodules for the two Rust crates and include them in this
+          # TODO: The other Rust DLL
 
       - uses: actions/upload-artifact@v6
         with:

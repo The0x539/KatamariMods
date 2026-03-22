@@ -1,0 +1,3 @@
+[submodule "native-patches"]
+	path = native-patches
+	url = git@github.com:the0x539/katamari-fps-patch
