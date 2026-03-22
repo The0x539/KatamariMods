@@ -48,6 +48,7 @@ public static class EarlyOptions {
         var optionsScene = SceneManager.GetSceneByName("Option");
         if (optionsScene.isLoaded) yield break;
         yield return SceneManager.LoadSceneAsync("Option", LoadSceneMode.Additive);
+        optionsScene = SceneManager.GetSceneByName("Option");
 
         var tutorialUI = p.gWork.manGame.hudController.GetComponent<Canvas>();
 
