@@ -226,8 +226,11 @@ public static class Glyphs {
             KeyMap.StickRightUp => XboxOrigin.RightStickNorth,
             KeyMap.StickRightDown => XboxOrigin.RightStickSouth,
 
-            // TODO: Learn more about why these are separate.
-            // Likely to do with US/Japan button switching.
+            // These probably have something to do with Japanese vs. Western face buttons,
+            // but I don't know how to properly test for that scenario,
+            // plus the actual gameplay doesn't really use face buttons.
+            // If someone actually has an issue with this, I can figure out how to fix it.
+            // For most users, though, this should be fine.
             KeyMap.Enter => XboxOrigin.A,
             KeyMap.Cancel => XboxOrigin.B,
 
@@ -282,7 +285,7 @@ public static class Glyphs {
             KeyMap.StickRightUp => ActionOrigin.RightStickNorth,
             KeyMap.StickRightDown => ActionOrigin.RightStickSouth,
 
-            // TODO: See above.
+            // See above.
             KeyMap.Enter => ActionOrigin.A,
             KeyMap.Cancel => ActionOrigin.B,
 
