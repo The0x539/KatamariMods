@@ -29,6 +29,9 @@ jobs:
       - name: Build Rust component
         run: cargo build --release --no-default-features --manifest-path ./native-patches/Cargo.toml
 
+      - name: Build CSteamworks replacement
+        run: cargo build --release --no-default-features --manifest-path ./steamworks-wrapper/Cargo.toml
+
       - name: Assemble final directory structure
         run: |
           mkdir -p ./artifact/BepInEx/plugins
@@ -48,9 +51,9 @@ jobs:
           cp ./out/runtimes/win-x64/native/assimp.dll ./artifact/katamari_Data/Plugins/runtimes/win-x64/native/
 
           cp ./native-patches/target/release/katamari_ffi.dll ./artifact/katamari_Data/Plugins/
-          
+          cp ./steamworks-wrapper/target/release/CSteamworks.dll ./artifact/katamari_Data/Plugins/
           # TODO: SDL3.dll
-          # TODO: The other Rust DLL
+          # TODO: New steam_api64.dll
 
       - uses: actions/upload-artifact@v6
         with:
