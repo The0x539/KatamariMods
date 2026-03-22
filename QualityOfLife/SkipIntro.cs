@@ -100,7 +100,9 @@ public static class SkipIntro {
         while (!SceneManager.GetSceneByName("GameMain").isLoaded) {
             yield return new WaitForEndOfFrame();
         }
-        yield return new WaitForSecondsRealtime(0.1f);
+        while (SceneManager.GetActiveScene().name != "GameMain") {
+            yield return new WaitForEndOfFrame();
+        }
         // If this scene is left around, the underwater ball indicator doesn't show up.
         yield return SceneManager.UnloadSceneAsync("GameStart");
     }
