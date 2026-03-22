@@ -4,6 +4,7 @@ using MyGame;
 
 using System.IO;
 using System.Linq;
+using System.Text;
 
 using UnityEngine;
 using UnityEngine.PostProcessing;
@@ -57,9 +58,9 @@ static class ExtraOptions {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(QualitySetting), nameof(QualitySetting.Save))]
     public static bool SaveExtraSettings(QualitySetting __instance) {
-        var path = Path.Combine(FileManager.SaveTemporaryPath, "Setting/quality.ex.setting");
+        const string exFilename = "Setting/quality.ex.setting";
         var text = __instance.statusNo.Join(n => n.ToString(), ",");
-        File.WriteAllText(path, text);
+        FileManager.Instance.Write(FileManager.SaveTemporaryPath, exFilename, Encoding.UTF8.GetBytes(text));
         return false;
     }
 
