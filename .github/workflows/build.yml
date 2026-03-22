@@ -20,15 +20,17 @@ jobs:
 
       - run: dotnet publish -c Release
 
+      - name: Assemble final directory structure
+        run: |
+          mkdir -p artifact/BepInEx/plugins
+          mkdir -p artifact/katamari_Data/Plugins/runtimes/win-x64/native
+          cp out/publish/{FramerateUncap,GamepadSupport,GraphicalEnhancements,QualityOfLife,SingleplayerCousins}.dll artifact/BepInEx/plugins
+          cp out/publish/AssimpNet.dll artifact/BepInEx/plugins
+          cp out/runtimes/win-x64/native/assimp.dll artifact/katamari_Data/Plugins/runtimes/win-x64/native
+          # TODO: SDL3.dll
+          # TODO: Make git submodules for the two Rust crates and include them in this
+
       - uses: actions/upload-artifact@v6
         with:
           name: release
-          path: |
-            out/publish/FramerateUncap.dll
-            out/publish/GamepadSupport.dll
-            out/publish/GraphicalEnhancements.dll
-            out/publish/QualityOfLife.dll
-            out/publish/SingleplayerCousins.dll
-
-            out/publish/AssimpNet.dll
-            out/runtimes/win-x64/native/assimp.dll
+          path: ./artifact/
