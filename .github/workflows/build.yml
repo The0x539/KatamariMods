@@ -22,11 +22,21 @@ jobs:
 
       - name: Assemble final directory structure
         run: |
-          mkdir -p artifact/BepInEx/plugins
-          mkdir -p artifact/katamari_Data/Plugins/runtimes/win-x64/native
-          cp out/publish/{FramerateUncap,GamepadSupport,GraphicalEnhancements,QualityOfLife,SingleplayerCousins}.dll artifact/BepInEx/plugins
-          cp out/publish/AssimpNet.dll artifact/BepInEx/plugins
-          cp out/runtimes/win-x64/native/assimp.dll artifact/katamari_Data/Plugins/runtimes/win-x64/native
+          mkdir -p ./artifact/BepInEx/plugins
+          mkdir -p ./artifact/katamari_Data/Plugins/runtimes/win-x64/native
+
+          $managed = "FramerateUncap",
+                     "GamepadSupport",
+                     "GraphicalEnhancements",
+                     "QualityOfLife",
+                     "SingleplayerCousins",
+                     "AssimpNet"
+
+          foreach ($assembly in $managed) {
+            cp ./out/publish/$assembly.dll ./artifact/BepInEx/plugins/
+          }
+
+          cp ./out/runtimes/win-x64/native/assimp.dll ./artifact/katamari_Data/Plugins/runtimes/win-x64/native/
           # TODO: SDL3.dll
           # TODO: Make git submodules for the two Rust crates and include them in this
 
