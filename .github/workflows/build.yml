@@ -18,12 +18,17 @@ jobs:
       
       - uses: actions/checkout@v6
 
-      - run: dotnet build -c Release
+      - run: dotnet publish -c Release
 
       - uses: actions/upload-artifact@v6
         with:
           name: release
           path: |
-            out/*.dll
-            !out/StartupDummy.dll
-            !out/RenderDocHook.dll
+            out/publish/FramerateUncap.dll
+            out/publish/GamepadSupport.dll
+            out/publish/GraphicalEnhancements.dll
+            out/publish/QualityOfLife.dll
+            out/publish/SingleplayerCousins.dll
+
+            out/publish/AssimpNet.dll
+            out/runtimes/win-x64/native/assimp.dll
