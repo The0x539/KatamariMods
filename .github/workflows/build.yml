@@ -21,6 +21,8 @@ jobs:
       - run: rustup override set nightly
 
       - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
 
       - run: dotnet publish -c Release
 
