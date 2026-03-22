@@ -301,6 +301,11 @@ public static class PretenderPatches {
             .Advance(start + 1)
             .RemoveInstructionsInRange(start + 1, end)
             .InsertAndAdvance([new(OpCodes.Call, Member.Method((Player p) => ChooseCoreImpl(p)))])
+            .MatchForward(false,
+                          new(OpCodes.Callvirt, Member.Getter<Renderer>(r => r.sharedMaterial)),
+                          new(OpCodes.Callvirt, Member.Setter<Renderer>(r => r.sharedMaterial)))
+            .SetOperandAndAdvance(Member.Getter<Renderer>(r => r.sharedMaterials))
+            .SetOperandAndAdvance(Member.Setter<Renderer>(r => r.sharedMaterials))
             .Instructions();
     }
 
@@ -574,6 +579,11 @@ internal static class PretenderLoader {
     }
 
     public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
+        if (scene.MeshCount > 1) {
+            ApplyMultiBallModel(ball, scene);
+            return;
+        }
+
         var filter = ball.GetComponent<MeshFilter>();
         var renderer = ball.GetComponent<MeshRenderer>();
 
@@ -595,6 +605,58 @@ internal static class PretenderLoader {
 
         filter.sharedMesh = uMesh;
         renderer.sharedMaterial = uMaterial;
+    }
+
+    private static void ApplyMultiBallModel(GameObject ball, Assimp.Scene scene) {
+        var filter = ball.GetComponent<MeshFilter>();
+        var renderer = ball.GetComponent<MeshRenderer>();
+
+        var allMaterials = new List<Material>();
+        foreach (var aMat in scene.Materials) {
+            var uTex = LoadTexture(scene, aMat, mipmap: true);
+            var uMaterial = UnityObject.Instantiate(renderer.material);
+            uMaterial.name = uTex.name = aMat.Name;
+            uMaterial.mainTexture = uTex;
+            allMaterials.Add(uMaterial);
+        }
+
+        var vertices = new List<Vector3>();
+        var indices = new List<int[]>();
+        var topologies = new List<MeshTopology>();
+        var uvs = new List<Vector2>();
+        var normals = new List<Vector3>();
+        var materials = new List<Material>();
+
+        foreach (var aMesh in scene.Meshes) {
+            vertices.AddRange(aMesh.Vertices.Select(v => v.ToUnity()));
+            indices.Add(aMesh.Faces.SelectMany(f => f.Indices).Select(i => i).ToArray());
+            uvs.AddRange(aMesh.TextureCoordinateChannels[0].Select(v => v.ToUnityVec2()));
+            normals.AddRange(aMesh.Normals.Select(v => v.ToUnity()));
+            materials.Add(allMaterials[aMesh.MaterialIndex]);
+
+            topologies.Add(aMesh.Faces[0].IndexCount switch {
+                3 => MeshTopology.Triangles,
+                4 => MeshTopology.Quads,
+                _ => throw new InvalidOperationException(),
+            });
+        }
+
+        var uMesh = new Mesh() { name = scene.Meshes[0].Name, subMeshCount = indices.Count };
+        uMesh.SetVertices(vertices);
+
+        var baseVertex = 0;
+        for (var i = 0; i < indices.Count; i++) {
+            uMesh.SetIndices(indices[i], topologies[i], submesh: i, calculateBounds: true, baseVertex);
+            baseVertex += scene.Meshes[i].VertexCount;
+        }
+
+        uMesh.SetUVs(0, uvs);
+        uMesh.SetNormals(normals);
+
+        uMesh.UploadMeshData(markNoLongerReadable: true);
+
+        filter.sharedMesh = uMesh;
+        renderer.sharedMaterials = materials.ToArray();
     }
 
     private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat, bool mipmap) {
