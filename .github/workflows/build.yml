@@ -50,10 +50,12 @@ jobs:
 
           cp ./out/runtimes/win-x64/native/assimp.dll ./artifact/katamari_Data/Plugins/runtimes/win-x64/native/
 
-          cp ./native-patches/target/release/katamari_ffi.dll ./artifact/katamari_Data/Plugins/
-          cp ./steamworks-wrapper/target/release/CSteamworks.dll ./artifact/katamari_Data/Plugins/
-          # TODO: SDL3.dll
-          # TODO: New steam_api64.dll
+          $unmanaged = "./native-patches/target/release/katamari_ffi.dll",
+                       "./steamworks-wrapper/target/release/CSteamworks.dll",
+                       "./thirdparty/SDL3.dll",
+                       "./thirdparty/steam_api64.dll"
+
+          cp $unmanaged ./artifact/katamari_Data/Plugins/
 
       - uses: actions/upload-artifact@v6
         with:
