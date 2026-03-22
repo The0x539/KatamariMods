@@ -32,11 +32,17 @@ public sealed class Plugin : BaseUnityPlugin {
         Harmony.CreateAndPatchAll(typeof(PretenderPatches));
 
         SceneManager.sceneLoaded += (scene, mode) => {
-            if (scene.name is "Result2" or "UI_Moon") {
+            if (scene.name is "Result2") {
+                ReplaceOuji(GameObject.Find("OUJI01"), OujiId, o => {
+                    foreach (var obj in scene.GetRootGameObjects()) {
+                        if (obj.GetComponent<ResultController>() is ResultController rc) {
+                            rc._animator_ouji = o.animator;
+                            break;
+                        }
+                    }
+                });
+            } else if (scene.name == "UI_Moon") {
                 ReplaceOuji(GameObject.Find("OUJI01"), OujiId, o => { });
-            }
-
-            if (scene.name == "UI_Moon") {
                 var cam = FindObjectOfType<UIMonoCamera>();
                 ScaleCamera(cam);
                 if ((Cousin)OujiId is Cousin.Odeko or Cousin.Fujio) {
