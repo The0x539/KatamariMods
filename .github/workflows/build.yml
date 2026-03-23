@@ -57,6 +57,9 @@ jobs:
 
           cp $unmanaged ./artifact/katamari_Data/Plugins/
 
+          cp ./LICENSE.md ./artifact/
+          cp -r ./licenses/ ./artifact/
+
       - uses: actions/upload-artifact@v6
         with:
           name: release
