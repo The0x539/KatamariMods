@@ -38,4 +38,15 @@ public static class LocalizationTweaks {
             __result = text;
         }
     }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Entity_king_text), nameof(Entity_king_text.GetGroupTextIDs))]
+    public static void OverrideGroupLocalization(List<Entity_king_text.CommonContent> __result, GlobalWork gWork) {
+        if (gWork.language != LANGUAGE.ENGLISH) return;
+        foreach (var item in __result) {
+            if (replacements.TryGetValue(item.textID, out var replacement)) {
+                item.content = replacement;
+            }
+        }
+    }
 }
