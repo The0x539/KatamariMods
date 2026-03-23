@@ -117,7 +117,17 @@ public static class PretenderPatches {
     private static readonly MethodInfo loadGameObject = Member.Method<AssetBundleSimulator>(s => s.LoadAsset<GameObject>("", ""));
     private static readonly MethodInfo assetBundleSimulatorInstance = Member.Getter(() => AssetBundleSimulator.Instance);
 
-    private static readonly ConfigEntry<string> entryPretenderKatamariLevels = Plugin.configFile.Bind("Pretenders", "Levels to use custom katamari in", "2, Moon");
+    private static readonly ConfigEntry<string> entryPretenderKatamariLevels = Plugin.configFile.Bind(
+        "Pretenders",
+        "PretenderKatamariLevels",
+        "2, Moon",
+        new ConfigDescription(
+            "Levels to use custom katamari skins in. Possible values (comma-separated): \n" +
+             "1, 2, 3, 4, 5, 6, 7, 8, 9, Moon, " +
+             "Cancer, Cygnus, Corona Borealis, Pisces, Virgo, Gemini, " +
+             "Ursa Major, Taurus, Polaris"
+        )
+    );
 
     private static HashSet<GAMEINFO_MIS> ParsePklConfig(string pklConfig) {
         var ret = new HashSet<GAMEINFO_MIS>();
