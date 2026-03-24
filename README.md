@@ -12,11 +12,30 @@ This mod fixes several issues with the game's graphics and restores the Depth of
 
 Features:
   - Add optional Depth of Field post processing. The PS2 game's version of this effect was more simplistic than Unity's implementation, but I've tried to get pretty close to "visual parity".
+    - In action:
+    
+      <img height="500" alt="image" src="https://github.com/user-attachments/assets/edcf8930-a54f-48d8-a1f9-2c679b3ef735" />
+
+    - On the PS2:
+
+      <img width="597" height="448" alt="Katamari Damacy_SLUS-21008_20260324150624" src="https://github.com/user-attachments/assets/a2adc9b7-7e3c-44b4-b187-0a3d9820e758" />
   - Fix weird artifacts in the ambient occlusion effect, caused by banding in Unity's low-precision depth prepass.
+    - Before/after (Looks significantly worse in motion):
+
+      <img height="300" alt="image" src="https://github.com/user-attachments/assets/e2d08a93-3c18-4005-b7a8-20f0a8d5b06b" />
+      <img height="300" alt="image" src="https://github.com/user-attachments/assets/97a118e6-9bc4-4d76-aad6-d6365c410e07" />
   - Apply anisotropic filtering to some of the game's textures where the effect (or its absence) is most visible.
     - It's applied *selectively* because Unity refuses to actually perform anisotropic filtering unless you also opt in to bi-/tri-linear texture sampling, which ruins all the pixel art textures for the game world. The best way I've found to counteract this is to nearest-neighbor-upscale the texture so that the bilinear blur isn't noticeable. This is a stupid waste of VRAM and doing it indiscriminately for *all* textures seems like a bad idea.
+    - Before/after (Open at 100% zoom. Looks worse in motion.):
+
+      <img height="300" alt="image" src="https://github.com/user-attachments/assets/901c7cc5-b928-4a89-aa1f-0d87acd9253e" />
+      <img height="300" alt="image" src="https://github.com/user-attachments/assets/2daa3425-9490-4f1a-aebf-0cabfad7c30a" />
   - Rotate the shadow cast by the katamari to match the slope of the ground beneath it, so that it clips into the ground less often.
     - Hilariously, the PS2 game actually wins here: its shadow is a decal that conforms to the ground's contours, while I'm stuck just rotating a flat circle.
+    - Before/after:
+      
+      <img height="200" alt="image" src="https://github.com/user-attachments/assets/9974bbcf-d74c-405e-875d-9b137fcfc8dc" />
+      <img height="200" alt="image" src="https://github.com/user-attachments/assets/cda635b3-c245-4998-8363-e27d0838e440" />
   - Use higher-resolution + antialiased intermediate textures for many places where the HUD/menu shows a 3D object on a 2D canvas.
   - Add entries to the options menu to toggle depth-of-field and set the maximum framerate (if VSync is disabled).
 
