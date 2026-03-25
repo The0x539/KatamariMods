@@ -144,4 +144,12 @@ static class QualityRenderTargets {
 
     private static int GetWidth() => (int)QualitySetting.Instance.Resolution.x;
     private static int GetHeight() => (int)QualitySetting.Instance.Resolution.y;
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
+    public static void FixKatamariFlash(GameManager __instance) {
+        if (__instance.isCaptureWait == 1) {
+            __instance.gWork.camGame[0].cullingMask = 0;
+        }
+    }
 }
