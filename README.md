@@ -88,17 +88,17 @@ Out of the box, the mod will add my OC, **Vanta**, to the Space Mushroom. Vanta 
 **NOTE:** Normally, the cousin-associated katamari skin is only used in Versus Mode and Eternal Mode.
 For singleplayer missions, the game instead uses the skin associated *with that level*.
 This mod overrides that behavior, only for *Make A Star 2* and *Make the Moon* by default.
-If you want to **use your custom character's katamari skin in all levels**, edit `BepInEx/config/SingleplayerCousins.cfg`. (You can do this while the game is running.)
+If you want to <ins>use your custom character's katamari skin in all levels</ins>, edit `BepInEx/config/SingleplayerCousins.cfg`. (You can do this while the game is running.)
 
 # Installation
-1. Download [BepInEx **5**](https://github.com/BepInEx/BepInEx/releases). (As of March 2026, pre-release builds of BIE **6** __will not work__.)
+1. Download [BepInEx **5**](https://github.com/BepInEx/BepInEx/releases). (As of March 2026, pre-release builds of BIE **6** <ins>will not work</ins>.)
 2. Install BepInEx normally. (i.e., extract the ZIP into the game's install folder)
-  a. *(Proton/Wine only)* Configure the game to load the mod loader. You may be able to find other ways to do this online, but my preferred way is specifying `WINEDLLOVERRIDES="winhttp=n,b" %command%` in Steam's "launch options" for the game.
-  b. *(Optional)* Before installing any actual mods, confirm that the mod loader is working by launching the game and checking for a new `config/` folder inside `BepInEx/`.
+   1. *(Proton/Wine only)* Configure the game to load the mod loader. You may be able to find other ways to do this online, but my preferred way is specifying `WINEDLLOVERRIDES="winhttp=n,b" %command%` in Steam's "launch options" for the game.
+   2. *(Optional)* Before installing any actual mods, confirm that the mod loader is working by launching the game and checking for a new `config/` folder inside `BepInEx/`.
 3. Download the latest [release](https://github.com/The0x539/KatamariMods/releases) of my mods.
 4. Extract the ZIP into the game's install folder, same as with BepInEx.
-  a. You will be prompted to overwrite `CSteamworks.dll` and `steam_api64.dll`. Replacing these files is necessary for the `GamepadSupport` mod.
-  b. This installs *all* the mods. If (for some reason) you want to install only some of them, don't extract the corresponding mod, and you don't have to extract its dependencies either:
-    i. `GamepadSupport` depends on `SDL3.dll`, `CSteamworks.dll`, and `steam_api64.dll`.
-    ii. `SingleplayerCousins` depends on `AssimpNet.dll` and `assimp.dll`.
-    iii. `FramerateUncap` depends on `katamari_ffi.dll`.
+   1. You will be prompted to overwrite `CSteamworks.dll` and `steam_api64.dll`. Replacing these files is necessary for the `GamepadSupport` mod.
+   2. This installs *all* the mods. If (for some reason) you want to install only some of them, don't extract the corresponding mod, and you don't have to extract its dependencies either:
+      1. `GamepadSupport` depends on `SDL3.dll`, `CSteamworks.dll`, and `steam_api64.dll`.
+      2. `SingleplayerCousins` depends on `AssimpNet.dll` and `assimp.dll`.
+      3. `FramerateUncap` depends on `katamari_ffi.dll`.
