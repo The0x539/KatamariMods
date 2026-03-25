@@ -109,6 +109,11 @@ static class IngameOptions {
             return false;
 
         var pad = self.input.Pad(self.gWork.player[pIdx].controllerNo);
+
+        // Give opening the options menu priority over unpausing.
+        if (pad.IsPush(KeyMap.X))
+            return false;
+
         if (pad.IsDown(KeyMap.Start))
             return true;
 
