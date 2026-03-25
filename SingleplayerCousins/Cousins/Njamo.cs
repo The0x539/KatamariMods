@@ -29,10 +29,17 @@ public static class Njamo {
     }
 
     [HarmonyPostfix]
+    [HarmonyPatch(typeof(EndingController), nameof(EndingController.Start))]
+    public static void DressInCredits(EndingController __instance) {
+        Dress(__instance._tran_itokoParent.Find("OUJI19").gameObject);
+    }
+
+    [HarmonyPostfix]
     [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.Start))]
     public static void SpawnLight(HUDManager __instance) {
         var gw = GlobalWork.Instance;
         if (gw.u8GameInfoMode != GAMEINFO_MODE.GAMEINFO_MODE_1P) return;
+        if (gw.u8GameMode == GI_GMODE.GI_GMODE_ENDING) return;
         if (gw.player[0].oujiNo != (int)Cousin.Njamo) return;
 
         var lightObj = new GameObject("Directional Light (Njamo)");
@@ -47,8 +54,13 @@ public static class Njamo {
     }
 
     public static void Dress(GameObject ouji) {
-        var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>()
-            .Where(smr => smr.sharedMaterial.name.StartsWith("OUJI19_body"))
+        Renderer[] bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>();
+        if (bodyParts.Length == 0) {
+            bodyParts = ouji.GetComponentsInChildren<MeshRenderer>();
+        }
+
+        bodyParts = bodyParts
+            .Where(rend => rend.sharedMaterial.name.StartsWith("OUJI19_body"))
             .ToArray();
 
         var mat = bodyParts[0].sharedMaterial;
@@ -56,7 +68,11 @@ public static class Njamo {
         mat.SetFloat("_Glossiness", 0);
 
         foreach (var part in bodyParts) {
-            part.sharedMesh.RecalculateNormals();
+            if (part is SkinnedMeshRenderer smr) {
+                smr.sharedMesh.RecalculateNormals();
+            } else if (part is MeshRenderer mr) {
+                mr.GetComponent<MeshFilter>().sharedMesh.RecalculateNormals();
+            }
         }
     }
 }
