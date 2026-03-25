@@ -194,6 +194,7 @@ static class PostProcessing {
         cb.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
 
         foreach (var billboard in SpecialDraw.activeBillboards) {
+            if (billboard == null) continue;
             var mesh = billboard.GetComponent<MeshFilter>().sharedMesh;
             var matrix = billboard.transform.localToWorldMatrix;
             var material = billboard.mr.sharedMaterial;

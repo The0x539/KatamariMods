@@ -103,7 +103,13 @@ public static class SkipIntro {
         while (SceneManager.GetActiveScene().name != "GameMain") {
             yield return new WaitForEndOfFrame();
         }
-        // If this scene is left around, the underwater ball indicator doesn't show up.
-        yield return SceneManager.UnloadSceneAsync("GameStart");
+
+        foreach (var cam in Camera.allCameras) {
+            if (cam.name == "LoadingScreen Camera") {
+                // If left around, this camera, which is tagged as MainCamera, stops KatamriMarkBillboard from following the actual main camera.
+                UnityObject.Destroy(cam.gameObject);
+                break;
+            }
+        }
     }
 }
