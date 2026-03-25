@@ -288,6 +288,8 @@ public sealed class Plugin : BaseUnityPlugin {
             .Repeat(cm => cm
                 .Advance(2)
                 .Insert(new(OpCodes.Call, getDeltaTime),
+                        new(OpCodes.Mul),
+                        new(OpCodes.Ldc_R4, 30f),
                         new(OpCodes.Mul)))
             .Instructions();
     }
