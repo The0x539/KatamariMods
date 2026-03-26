@@ -1,5 +1,6 @@
 <Project>
 	<PropertyGroup>
+		<VersionPrefix>1.0.1</VersionPrefix>
 		<LangVersion>latest</LangVersion>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
