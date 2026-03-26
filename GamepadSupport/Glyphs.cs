@@ -1,4 +1,5 @@
-﻿using GamepadSupport.SteamInput;
+﻿using GamepadSupport.SDL3;
+using GamepadSupport.SteamInput;
 
 using HarmonyLib;
 
@@ -240,7 +241,12 @@ public static class Glyphs {
     }
 
     public static Texture2D LoadGlyph(InputPadSDL3 sdl, XboxOrigin xboxOrigin) {
-        var actionOrigin = sdl.Inner.Steam.GetActionOriginFromXboxOrigin(xboxOrigin);
+        ActionOrigin actionOrigin;
+        if (sdl.Inner.Steam.IsValid) {
+            actionOrigin = sdl.Inner.Steam.GetActionOriginFromXboxOrigin(xboxOrigin);
+        } else {
+            actionOrigin = ISteamInput.Instance.TranslateActionOrigin(MapGamepadType(sdl.Inner.GamepadType), MapOrigin(xboxOrigin));
+        }
         return LoadGlyphFile(actionOrigin, GlyphSize.Large);
     }
 
@@ -362,4 +368,48 @@ public static class Glyphs {
             icons[i].SetActive(i == idx);
         }
     }
+
+    private static ActionOrigin MapOrigin(XboxOrigin origin) => origin switch {
+        XboxOrigin.A => ActionOrigin.A,
+        XboxOrigin.B => ActionOrigin.B,
+        XboxOrigin.X => ActionOrigin.X,
+        XboxOrigin.Y => ActionOrigin.Y,
+        XboxOrigin.LeftBumper => ActionOrigin.L1,
+        XboxOrigin.RightBumper => ActionOrigin.R1,
+        XboxOrigin.Menu => ActionOrigin.Menu,
+        XboxOrigin.View => ActionOrigin.View,
+        XboxOrigin.LeftTriggerPull => ActionOrigin.L2Soft,
+        XboxOrigin.RightTriggerPull => ActionOrigin.R2Soft,
+        XboxOrigin.LeftTriggerClick => ActionOrigin.L2,
+        XboxOrigin.RightTriggerClick => ActionOrigin.R2,
+        XboxOrigin.LeftStickMove => ActionOrigin.LeftStickMove,
+        XboxOrigin.RightStickMove => ActionOrigin.RightStickMove,
+        XboxOrigin.LeftStickNorth => ActionOrigin.LeftStickNorth,
+        XboxOrigin.LeftStickSouth => ActionOrigin.LeftStickSouth,
+        XboxOrigin.LeftStickEast => ActionOrigin.LeftStickEast,
+        XboxOrigin.LeftStickWest => ActionOrigin.LeftStickWest,
+        XboxOrigin.RightStickNorth => ActionOrigin.RightStickNorth,
+        XboxOrigin.RightStickSouth => ActionOrigin.RightStickSouth,
+        XboxOrigin.RightStickEast => ActionOrigin.RightStickEast,
+        XboxOrigin.RightStickWest => ActionOrigin.RightStickWest,
+        XboxOrigin.DPadNorth => ActionOrigin.DPadNorth,
+        XboxOrigin.DPadSouth => ActionOrigin.DPadSouth,
+        XboxOrigin.DPadEast => ActionOrigin.DPadEast,
+        XboxOrigin.DPadWest => ActionOrigin.DPadWest,
+        _ => ActionOrigin.None,
+    };
+
+    private static InputType MapGamepadType(GamepadType type) => type switch {
+        GamepadType.Standard => InputType.SteamDeck,
+        GamepadType.Xbox360 => InputType.Xbox360,
+        GamepadType.XboxOne => InputType.XboxOne,
+        GamepadType.PS3 => InputType.PS3,
+        GamepadType.PS4 => InputType.PS4,
+        GamepadType.PS5 => InputType.PS5,
+        GamepadType.SwitchPro => InputType.SwitchPro,
+        GamepadType.SwitchJoyConLeft or GamepadType.SwitchJoyConRight => InputType.SwitchJoyConSingle,
+        GamepadType.SwitchJoyConPair => InputType.SwitchJoyConPair,
+        GamepadType.GameCube => InputType.Unknown, // Hoping Steam adds a GameCube controller type in a newer SDK
+        _ => InputType.Unknown,
+    };
 }
