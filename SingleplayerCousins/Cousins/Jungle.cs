@@ -109,13 +109,16 @@ public static class Jungle {
         public Camera? target = null;
 
         public void LateUpdate() {
-            var target = this.target ?? Camera.main;
-            if (target != null) {
-                if (this.gameObject.scene.name == "UI_HUD") {
-                    this.transform.LookAt(this.transform.position with { z = -target.transform.position.z });
+            if (this.target == null) {
+                if (this.gameObject.scene.name.Contains("HUD")) {
+                    this.target = GlobalWork.Instance.camUI;
                 } else {
-                    this.transform.LookAt(target.transform);
+                    this.target = Camera.main;
                 }
+            }
+
+            if (this.target != null) {
+                this.transform.LookAt(this.target.transform);
             }
         }
     }
@@ -125,9 +128,7 @@ public static class Jungle {
     public static void FixEarlyBillboardUpdate(Player __instance) {
         var billboard = __instance.objBillboard;
         if (billboard == null) return;
-
-        var faceCamera = billboard.GetComponent<FaceCamera>() ?? billboard.AddComponent<FaceCamera>();
-        faceCamera.target = __instance.gWork.camGame[__instance.playerNo];
+        _ = billboard.GetComponent<FaceCamera>() ?? billboard.AddComponent<FaceCamera>();
     }
 
     [HarmonyTranspiler]
