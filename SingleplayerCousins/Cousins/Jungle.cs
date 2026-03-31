@@ -109,7 +109,7 @@ public static class Jungle {
         public Camera? target = null;
 
         public void LateUpdate() {
-            if (this.target == null) {
+            if (this.target == null || this.target.name == "LoadingScreen Camera") {
                 if (this.gameObject.scene.name.Contains("HUD")) {
                     this.target = GlobalWork.Instance.camUI;
                 } else {
