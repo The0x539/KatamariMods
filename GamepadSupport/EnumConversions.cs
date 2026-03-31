@@ -55,6 +55,8 @@ public static class EnumConversions {
         XboxOrigin.RightTriggerClick => ActionOrigin.R2,
         XboxOrigin.LeftStickMove => ActionOrigin.LeftStickMove,
         XboxOrigin.RightStickMove => ActionOrigin.RightStickMove,
+        XboxOrigin.LeftStickClick => ActionOrigin.L3,
+        XboxOrigin.RightStickClick => ActionOrigin.R3,
         XboxOrigin.LeftStickNorth => ActionOrigin.LeftStickNorth,
         XboxOrigin.LeftStickSouth => ActionOrigin.LeftStickSouth,
         XboxOrigin.LeftStickEast => ActionOrigin.LeftStickEast,
