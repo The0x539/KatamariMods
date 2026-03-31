@@ -109,12 +109,13 @@ public static class Jungle {
         public Camera? target = null;
 
         public void LateUpdate() {
+            if (this.gameObject.scene.name.Contains("HUD")) {
+                this.transform.rotation = Quaternion.Euler(0, 180, 0); // Note the use of rotation rather than localRotation
+                return;
+            }
+
             if (this.target == null || this.target.name == "LoadingScreen Camera") {
-                if (this.gameObject.scene.name.Contains("HUD")) {
-                    this.target = GlobalWork.Instance.camUI;
-                } else {
-                    this.target = Camera.main;
-                }
+                this.target = Camera.main;
             }
 
             if (this.target != null) {
