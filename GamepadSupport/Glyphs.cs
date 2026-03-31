@@ -175,6 +175,10 @@ public static class Glyphs {
         }
 
         string path = steam.GetGlyphPNGForActionOrigin(origin, size, forceStyle ?? style);
+        if (forceStyle == null && SceneManager.GetActiveScene().name == "Title2" && path.Contains("light") && !path.Contains("color")) {
+            path = steam.GetGlyphPNGForActionOrigin(origin, size, GlyphStyle.Dark);
+        }
+
         if (glyphCache.TryGetValue(path, out var existing)) return existing;
 
         var tex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap: true) {
