@@ -61,6 +61,7 @@ public static class AnisotropicGround {
         if (name.Contains("patrn")) return true;
         if (name.Contains("obj_st3_ground")) return true;
         if (name.Contains("obj_st3_concr")) return true;
+        if (name.Contains("obj_st1_earthColor")) return true;
         if (name.Contains("obj_earthColor")) return true;
         if (name.Contains("obj_ground")) return true;
         if (name.Contains("obj_gravel")) return true;
