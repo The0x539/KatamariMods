@@ -174,8 +174,15 @@ static class PostProcessing {
         Graphics.SetRenderTarget(source.colorBuffer, srcDepth.depthBuffer);
         RedrawJungle();
         RedrawClouds();
-        RedrawSmoke(ctx, source);
 
+        // Unlike meshes, Unity doesn't provide any simple way to manually draw a particle system.
+        // Instead, we need to use a separate camera that keeps the existing buffers but draws only the particles.
+        // This comes with some added manipulation of of target buffers. Annoying!
+        RedrawSmoke(ctx, source, srcDepth);
+
+        // Finally, now that Jungle, clouds, and smoke have been written to "GameDepthTexture0",
+        // we can copy its contents over to "Camera DepthTexture".
+        RenderTexture.active = dstDepth;
         blitToDepth.SetTexture("_MainTex", srcDepth);
         GraphicsUtils.Blit(blitToDepth, 0);
     }
@@ -235,10 +242,12 @@ static class PostProcessing {
         }
     }
 
-    private static readonly int smokeLayerMask = LayerMask.GetMask("TransparentFX");
+    private static readonly int
+        smokeLayerMask = LayerMask.GetMask("TransparentFX"),
+        smokeLayer = LayerMask.NameToLayer("TransparentFX");
 
     private static Camera smokeCamera = null!;
-    private static void RedrawSmoke(PostProcessingContext ctx, RenderTexture target) {
+    private static void RedrawSmoke(PostProcessingContext ctx, RenderTexture targetColor, RenderTexture targetDepth) {
         if (smokeCamera == null) {
             smokeCamera = new GameObject("Smoke Camera").AddComponent<Camera>();
             smokeCamera.enabled = false;
@@ -247,8 +256,23 @@ static class PostProcessing {
         smokeCamera.CopyFrom(ctx.camera);
         smokeCamera.clearFlags = CameraClearFlags.Nothing;
         smokeCamera.cullingMask = smokeLayerMask;
-        smokeCamera.targetTexture = target;
+        smokeCamera.SetTargetBuffers(targetColor.colorBuffer, targetDepth.depthBuffer);
         smokeCamera.Render();
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
+    public static void FixSmokestacksPre(AttachableProp __instance, out bool __state) => __state = __instance.isSetup;
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(AttachableProp), nameof(AttachableProp.UpdateMono))]
+    public static void FixSmokestacks(AttachableProp __instance, bool __state) {
+        if (__state) return;
+        if (__instance.u16MonoNameIdx is not (Define.MONO_IDX_FACTORY02_G or Define.MONO_IDX_SENTO02_G)) return;
+
+        foreach (var particleSystem in __instance.GetComponentsInChildren<ParticleSystem>(includeInactive: true)) {
+            particleSystem.gameObject.layer = smokeLayer;
+        }
     }
 
     // I don't quite understand why patching SetShaderSimple to not set the shader
