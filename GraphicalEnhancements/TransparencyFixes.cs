@@ -50,6 +50,7 @@ public static class TransparencyFixes {
         if (self.isShaderTransparent && self.f32AlphaRatio == 1) {
             if (self.GetComponent<TransparencyFixState>() is TransparencyFixState state) {
                 self.monoMaterial = [.. state.opaqueMaterials];
+                self.isChangeMaterial = true;
             }
         }
     }
