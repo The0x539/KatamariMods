@@ -39,6 +39,8 @@ public static class TransparencyFixes {
                 self.isChangeMaterial = true;
             }
         }
+
+        self.SetMeshMaterial(self.activeScene, self.mRenderers, self.smRenderers);
     }
 
     [HarmonyPrefix]
