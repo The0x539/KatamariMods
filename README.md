@@ -54,6 +54,7 @@ Features:
     - Correct "Stationary" to "Stationery"
     - Refer to "the North Star" as "Polaris" (selectively), because it fits better with the constellation names and sounds cooler.
     - Rename Colombo to Njamo, to match W❤️KR
+  - `LessAlarm`: Allow decreasing the frequency, time threshold, and/or volume of the 30-second timer warning alarm.
   - Minor bug fixes:
     - On startup, the game tries to change its window title, but if you switch to another window before that happens, it will instead rename *that window* to `Katamari Damacy Reroll`.
     - If you press START while a "non-blocking message" is present (e.g. toggling vibration, or "BA" "NA" "NA" from Make A Star 7), the game will "buffer" the input and automatically skip the *next blocking message*.
