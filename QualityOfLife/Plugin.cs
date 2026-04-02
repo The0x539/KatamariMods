@@ -32,6 +32,7 @@ public class Plugin : BaseUnityPlugin {
         //Harmony.CreateAndPatchAll(typeof(VersusOnEarth));
         Harmony.CreateAndPatchAll(typeof(LocalizationTweaks));
         Harmony.CreateAndPatchAll(typeof(EarlyOptions));
+        Harmony.CreateAndPatchAll(typeof(LessAlarm));
 
         if (this.Config.Bind("Intro", "Skip", false).Value) {
             Harmony.CreateAndPatchAll(typeof(SkipIntro));
