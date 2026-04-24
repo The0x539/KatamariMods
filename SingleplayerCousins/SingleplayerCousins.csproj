@@ -5,6 +5,7 @@
 		<PackageReference Include="BepInEx.Core" />
 		<PackageReference Include="BepInEx.PluginInfoProps" />
 		<PackageReference Include="IsExternalInit" />
+		<PackageReference Include="SimpleJson" />
 		<PackageReference Include="UnityEngine.Modules" />
 		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" />
 	</ItemGroup>

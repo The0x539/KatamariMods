@@ -1,46 +1,47 @@
 <Project>
-	<PropertyGroup>
-		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-		<RestoreAdditionalProjectSources>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <RestoreAdditionalProjectSources>
 			https://nuget.bepinex.dev/v3/index.json
 		</RestoreAdditionalProjectSources>
-	</PropertyGroup>
-	<ItemGroup>
-		<PackageVersion Include="AssimpNet" Version="4.1.0" />
-		<PackageVersion Include="BepInEx.Analyzers" Version="1.0.8" />
-		<PackageVersion Include="BepInEx.Core" Version="5.4.21" />
-		<PackageVersion Include="BepInEx.Preloader.Core" Version="6.0.0-pre.1" />
-		<PackageVersion Include="BepInEx.PluginInfoProps" Version="2.1.0" />
-		<PackageVersion Include="IsExternalInit" Version="1.0.3" />
-		<PackageVersion Include="UnityEngine.Modules" Version="2018.1.9" />
-		<PackageVersion Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" />
-		<PackageVersion Include="Mono.Cecil" Version="0.10.4" />
-		<PackageVersion Include="KatamariDamacyReroll.GameLibs" Version="1.0.0-v20251222" />
-	</ItemGroup>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="AssimpNet" Version="4.1.0" />
+    <PackageVersion Include="BepInEx.Analyzers" Version="1.0.8" />
+    <PackageVersion Include="BepInEx.Core" Version="5.4.21" />
+    <PackageVersion Include="BepInEx.Preloader.Core" Version="6.0.0-pre.1" />
+    <PackageVersion Include="BepInEx.PluginInfoProps" Version="2.1.0" />
+    <PackageVersion Include="IsExternalInit" Version="1.0.3" />
+    <PackageVersion Include="SimpleJson" Version="0.38.0" />
+    <PackageVersion Include="UnityEngine.Modules" Version="2018.1.9" />
+    <PackageVersion Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" />
+    <PackageVersion Include="Mono.Cecil" Version="0.10.4" />
+    <PackageVersion Include="KatamariDamacyReroll.GameLibs" Version="1.0.0-v20251222" />
+  </ItemGroup>
 
-	<PropertyGroup>
-		<GameDir>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL</GameDir>
-	</PropertyGroup>
+  <PropertyGroup>
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\Katamari Damacy REROLL</GameDir>
+  </PropertyGroup>
 	
-	<!-- If the game isn't installed, use stripped assemblies published to nuget.org -->
-	<ItemGroup Condition="!Exists($(GameDir))">
-		<PackageReference Include="KatamariDamacyReroll.GameLibs" />
-	</ItemGroup>
+  <!-- If the game isn't installed, use stripped assemblies published to nuget.org -->
+  <ItemGroup Condition="!Exists($(GameDir))">
+    <PackageReference Include="KatamariDamacyReroll.GameLibs" />
+  </ItemGroup>
 
-	<!-- If the game IS installed, reference its assemblies instead -->
-	<ItemGroup Condition="Exists($(GameDir))">
-		<Reference Include="Katamari">
-			<HintPath>$(GameDir)\katamari_Data\Managed\Assembly-CSharp.dll</HintPath>
-			<Publicize>True</Publicize>
-		</Reference>
-		<Reference Include="firstpass">
-			<HintPath>$(GameDir)\katamari_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UI">
-			<HintPath>$(GameDir)\katamari_Data\Managed\UnityEngine.UI.dll</HintPath>
-		</Reference>
-		<Reference Include="Rewired_Core">
-			<HintPath>$(GameDir)\katamari_Data\Managed\Rewired_Core.dll</HintPath>
-		</Reference>
-	</ItemGroup>
+  <!-- If the game IS installed, reference its assemblies instead -->
+  <ItemGroup Condition="Exists($(GameDir))">
+    <Reference Include="Katamari">
+      <HintPath>$(GameDir)\katamari_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Publicize>True</Publicize>
+    </Reference>
+    <Reference Include="firstpass">
+      <HintPath>$(GameDir)\katamari_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(GameDir)\katamari_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Rewired_Core">
+      <HintPath>$(GameDir)\katamari_Data\Managed\Rewired_Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>
