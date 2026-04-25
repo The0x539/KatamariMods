@@ -45,6 +45,13 @@ internal static class Extensions {
     public static Matrix4x4 ToUnity(this Assimp.Matrix4x4 v) => new(new(v.A1, v.B1, v.C1, v.D1), new(v.A2, v.B2, v.C2, v.D2), new(v.A3, v.B3, v.C3, v.D3), new(v.A4, v.B4, v.C4, v.D4));
     public static Quaternion ToUnity(this Assimp.Quaternion v) => new(v.X, v.Y, v.Z, v.W);
 
+    public static TextureWrapMode ToUnity(this Gltf.Sampler.WrapMode m) => m switch {
+        Gltf.Sampler.WrapMode.Mirror => TextureWrapMode.Mirror,
+        Gltf.Sampler.WrapMode.Clamp => TextureWrapMode.Clamp,
+        Gltf.Sampler.WrapMode.Repeat => TextureWrapMode.Repeat,
+        _ => throw new InvalidOperationException(),
+    };
+
     public static BoneWeight AddWeight(this BoneWeight self, int idx, float weight) {
         if (self.weight0 == 0) {
             self.boneIndex0 = idx;
@@ -151,8 +158,6 @@ internal static class Extensions {
                     ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<uint>(binary, idxOffset, s.count));
                     break;
             }
-
-            Console.WriteLine($"Applied {s.count} sparse elements!");
         }
     }
 

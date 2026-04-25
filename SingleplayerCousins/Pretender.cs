@@ -25,6 +25,8 @@ public sealed class Pretender {
 
     public static int MaxID => maxID;
 
+    private const string extension = "glb";
+
     static Pretender() {
         pretenders = [];
 
@@ -35,8 +37,8 @@ public sealed class Pretender {
 
         var dynamicId = (int)PretenderId.DYNAMIC;
         foreach (var path in items) {
-            if (Path.GetExtension(path) != ".glb") continue;
-            if (path.EndsWith(".ball.glb")) continue;
+            if (Path.GetExtension(path) != $".{extension}") continue;
+            if (path.EndsWith($".ball.{extension}")) continue;
 
             int id;
 
@@ -57,7 +59,7 @@ public sealed class Pretender {
     private static void Register(int id, string name, string path) {
         maxID = Math.Max(maxID, id);
 
-        var ballPath = path.Replace(".glb", ".ball.glb");
+        var ballPath = path.Replace($".{extension}", $".ball.{extension}");
         if (!File.Exists(ballPath)) ballPath = null;
 
         var p = new Pretender { Id = id, Name = name, FilePath = path, BallFilePath = ballPath };
@@ -657,7 +659,7 @@ internal static class PretenderLoader {
                         metadata.preventArmatureExplosion = true;
                         break;
                     case "adjustment":
-                        metadata.position = (child.translation ?? Vector3.zero) / 100;
+                        metadata.position = child.translation ?? Vector3.zero;
                         var scale = child.scale ?? Vector3.one;
                         metadata.scale = scale;
                         if (scale.x != scale.y || scale.y != scale.z) {
@@ -707,8 +709,9 @@ internal static class PretenderLoader {
             bodyPart.hideFlags = HideFlags.HideAndDontSave;
 
             var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
-            renderer.sharedMesh = LoadMesh(file, gMesh, binary, skinned: true);
-            renderer.materials = gMesh.primitives
+            var mesh = LoadMesh(file, gMesh, binary, skinned: true);
+            renderer.sharedMesh = mesh;
+            renderer.sharedMaterials = gMesh.primitives
                 .Select(p => p.material ?? 0)
                 .Select(i => uMaterials[(int)i])
                 .ToArray();
@@ -717,7 +720,6 @@ internal static class PretenderLoader {
                 var skin = file.skins[iSkin];
                 renderer.rootBone = bones["JNT_root"];
 
-                // TODO: the bone array needs to match the vanilla list, which means we also need to remap the indices
                 renderer.bones = skin.joints.Select(iJoint => {
                     var joint = file.nodes[iJoint];
                     if (joint.name == null) throw new Exception($"Skin {skin.name} references nameless bone #{iJoint}");
@@ -728,6 +730,18 @@ internal static class PretenderLoader {
                         return bones["JNT_root"];
                     }
                 }).ToArray();
+
+                if (skin.inverseBindMatrices is uint iBinds) {
+                    var accessor = file.accessors[iBinds];
+                    var bindposes = accessor.CopyOut<Matrix4x4>(file, binary);
+                    for (var i = 0; i < bindposes.Length; i++) {
+                        //bindposes[i] = bindposes[i].transpose;
+                    }
+                    mesh.bindposes = bindposes;
+                } else {
+                    Plugin.logger.LogWarning($"Skin {skin.name} has no inverse bind matrices.");
+                    mesh.bindposes = skin.joints.Select(_ => Matrix4x4.identity).ToArray();
+                }
             }
 
             // TODO: bindposes
@@ -894,18 +908,8 @@ internal static class PretenderLoader {
 
         if (tex.sampler is uint iSampler) {
             var sampler = file.samplers[iSampler];
-            uTex.wrapModeU = sampler.wrapS switch {
-                Gltf.Sampler.WrapMode.Clamp => TextureWrapMode.Clamp,
-                Gltf.Sampler.WrapMode.Mirror => TextureWrapMode.Mirror,
-                Gltf.Sampler.WrapMode.Repeat => TextureWrapMode.Repeat,
-                _ => TextureWrapMode.Repeat,
-            };
-            uTex.wrapModeV = sampler.wrapT switch {
-                Gltf.Sampler.WrapMode.Clamp => TextureWrapMode.Clamp,
-                Gltf.Sampler.WrapMode.Mirror => TextureWrapMode.Mirror,
-                Gltf.Sampler.WrapMode.Repeat => TextureWrapMode.Repeat,
-                _ => TextureWrapMode.Repeat,
-            };
+            uTex.wrapModeU = sampler.wrapS.ToUnity();
+            uTex.wrapModeV = sampler.wrapT.ToUnity();
         }
 
         return uTex;
@@ -949,6 +953,19 @@ internal static class PretenderLoader {
             file.accessors[primitive.attributes["POSITION"]].CopyOut(file, binary, verts, vertIdx);
             file.accessors[primitive.attributes["NORMAL"]].CopyOut(file, binary, normals, vertIdx);
             file.accessors[primitive.attributes["TEXCOORD_0"]].CopyOut(file, binary, uvs, vertIdx);
+            vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
+        }
+
+        for (ulong i = 0; i < numVerts; i++) {
+            var vert = verts[i];
+            var normal = normals[i];
+            var uv = uvs[i];
+            //vert.x *= -1;
+            //normal.x *= -1;
+            uv.y = 1 - uv.y;
+            verts[i] = vert;
+            normals[i] = normal;
+            uvs[i] = uv;
         }
 
         uMesh.vertices = verts;
@@ -977,19 +994,21 @@ internal static class PretenderLoader {
             uMesh.boneWeights = boneWeights;
         }
 
+        int baseIndex = 0;
         var submesh = 0;
+        uMesh.subMeshCount = gMesh.primitives.Length;
         foreach (var primitive in gMesh.primitives) {
             if (primitive.indices is not uint iIndices) throw new Exception($"Mesh {gMesh.name} is using non-indexed geometry");
             var accessor = file.accessors[iIndices];
 
             var indices = accessor.componentType switch {
-                Gltf.Accessor.ComponentType.U8 => accessor.CopyOut<byte>(file, binary).Select(x => (int)x),
-                Gltf.Accessor.ComponentType.U16 => accessor.CopyOut<ushort>(file, binary).Select(x => (int)x),
-                Gltf.Accessor.ComponentType.U32 => accessor.CopyOut<uint>(file, binary).Select(x => (int)x),
+                Gltf.Accessor.ComponentType.U8 => accessor.CopyOut<byte>(file, binary).Select(x => baseIndex + x),
+                Gltf.Accessor.ComponentType.U16 => accessor.CopyOut<ushort>(file, binary).Select(x => baseIndex + x),
+                Gltf.Accessor.ComponentType.U32 => accessor.CopyOut<uint>(file, binary).Select(x => baseIndex + (int)x),
                 _ => throw new Exception(),
             };
-            uMesh.SetIndices([.. indices], MeshTopology.Triangles, submesh++);
-            break;
+            uMesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, submesh++);
+            baseIndex += (int)file.accessors[primitive.attributes["POSITION"]].count;
         }
 
         uMesh.UploadMeshData(markNoLongerReadable: false); // TODO: mark true
