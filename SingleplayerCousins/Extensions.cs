@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 using UnityEngine;
 
@@ -61,4 +63,127 @@ internal static class Extensions {
         }
         return self;
     }
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
+    public static unsafe byte[] CopyOut(this Gltf.BufferView view, byte[] binary) {
+        var dstBuf = new byte[view.byteLength];
+        fixed (byte* src = &binary[view.byteOffset], dst = dstBuf) {
+            Unity.Collections.LowLevel.Unsafe.UnsafeUtility.MemCpy(dst, src, view.byteLength);
+        }
+        return dstBuf;
+    }
+
+    public static unsafe T[] CopyOut<T>(
+        this Gltf.BufferView view,
+        byte[] binary,
+        long srcOffset,
+        long count
+    ) where T : struct {
+        srcOffset += view.byteOffset;
+        long elemSize = Marshal.SizeOf(typeof(T));
+        long copySize = elemSize * count;
+        if (srcOffset + copySize > binary.LongLength) throw new IndexOutOfRangeException();
+
+        var dstBuf = new T[count];
+        fixed (void* src = &binary[srcOffset], dst = dstBuf) {
+            Unity.Collections.LowLevel.Unsafe.UnsafeUtility.MemCpy(dst, src, copySize);
+        }
+        return dstBuf;
+    }
+
+    public static T[] CopyOut<T>(
+        this Gltf.Accessor accessor,
+        Gltf.AssetFile file,
+        byte[] srcBuf
+    ) where T : struct {
+        var dstBuf = new T[accessor.count];
+        accessor.CopyOut(file, srcBuf, dstBuf, 0);
+        return dstBuf;
+    }
+
+    public static unsafe void CopyOut<T>(
+        this Gltf.Accessor accessor,
+        Gltf.AssetFile file,
+        byte[] binary,
+        T[] dstBuf,
+        ulong dstIdx = 0
+    ) where T : struct {
+        if (dstIdx + accessor.count > (ulong)dstBuf.LongLength) throw new IndexOutOfRangeException();
+
+        var valSize = Marshal.SizeOf(typeof(T));
+        if (accessor.Size() != valSize) throw new Exception();
+        var byteLength = valSize * accessor.count;
+
+        if (accessor.bufferView == null) {
+            fixed (void* dst = &dstBuf[dstIdx]) {
+                Unity.Collections.LowLevel.Unsafe.UnsafeUtility.MemClear(dst, byteLength);
+            }
+        } else {
+            var view = file.bufferViews[accessor.bufferView.Value];
+            if (view.buffer != 0) throw new Exception();
+            if (view.byteStride != null) throw new Exception();
+
+            var srcOffset = view.byteOffset + accessor.byteOffset;
+            if (srcOffset + byteLength > binary.LongLength) throw new IndexOutOfRangeException();
+
+            fixed (void* src = &binary[srcOffset], dst = &dstBuf[dstIdx]) {
+                Unity.Collections.LowLevel.Unsafe.UnsafeUtility.MemCpy(dst, src, byteLength);
+            }
+        }
+
+        if (accessor.sparse is Gltf.Accessor.Sparse s) {
+            var valsView = file.bufferViews[s.values.bufferView];
+            var valsOffset = valsView.byteOffset + s.values.byteOffset;
+            var vals = valsView.CopyOut<T>(binary, valsOffset, s.count);
+
+            var idxView = file.bufferViews[s.indices.bufferView];
+            var idxOffset = idxView.byteOffset + s.indices.byteOffset;
+
+            switch (s.indices.componentType) {
+                case Gltf.Accessor.ComponentType.U8:
+                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<byte>(binary, idxOffset, s.count));
+                    break;
+                case Gltf.Accessor.ComponentType.U16:
+                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<ushort>(binary, idxOffset, s.count));
+                    break;
+                case Gltf.Accessor.ComponentType.U32:
+                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<uint>(binary, idxOffset, s.count));
+                    break;
+            }
+
+            Console.WriteLine($"Applied {s.count} sparse elements!");
+        }
+    }
+
+    private static void ApplySparse<T>(T[] src, T[] dst, ulong baseIndex, byte[] indices) {
+        for (var i = 0; i < src.Length; i++) dst[baseIndex + indices[i]] = src[i];
+    }
+
+    private static void ApplySparse<T>(T[] src, T[] dst, ulong baseIndex, ushort[] indices) {
+        for (var i = 0; i < src.Length; i++) dst[baseIndex + indices[i]] = src[i];
+    }
+
+    private static void ApplySparse<T>(T[] src, T[] dst, ulong baseIndex, uint[] indices) {
+        for (var i = 0; i < src.Length; i++) dst[baseIndex + indices[i]] = src[i];
+    }
+
+    public static long Size(this Gltf.Accessor.ComponentType ty) => ty switch {
+        Gltf.Accessor.ComponentType.U8 or Gltf.Accessor.ComponentType.I8 => 1,
+        Gltf.Accessor.ComponentType.U16 or Gltf.Accessor.ComponentType.I16 => 2,
+        Gltf.Accessor.ComponentType.U32 or Gltf.Accessor.ComponentType.F32 => 4,
+        _ => 0,
+    };
+
+    public static long Size(this Gltf.Accessor.Shape sh) => sh switch {
+        Gltf.Accessor.Shape.SCALAR => 1,
+        Gltf.Accessor.Shape.VEC2 => 2,
+        Gltf.Accessor.Shape.VEC3 => 3,
+        Gltf.Accessor.Shape.VEC4 or Gltf.Accessor.Shape.MAT2 => 4,
+        Gltf.Accessor.Shape.MAT3 => 9,
+        Gltf.Accessor.Shape.MAT4 => 16,
+        _ => 0,
+    };
+
+    public static long Size(this Gltf.Accessor a) => a.componentType.Size() * a.type.Size();
 }

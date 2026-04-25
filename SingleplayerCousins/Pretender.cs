@@ -15,6 +15,8 @@ using System.Reflection.Emit;
 
 using UnityEngine;
 
+using Json = SimpleJson.SimpleJson;
+
 namespace SingleplayerCousins;
 
 public sealed class Pretender {
@@ -33,8 +35,8 @@ public sealed class Pretender {
 
         var dynamicId = (int)PretenderId.DYNAMIC;
         foreach (var path in items) {
-            if (Path.GetExtension(path) != ".fbx") continue;
-            if (path.EndsWith(".ball.fbx")) continue;
+            if (Path.GetExtension(path) != ".glb") continue;
+            if (path.EndsWith(".ball.glb")) continue;
 
             int id;
 
@@ -55,7 +57,7 @@ public sealed class Pretender {
     private static void Register(int id, string name, string path) {
         maxID = Math.Max(maxID, id);
 
-        var ballPath = path.Replace(".fbx", ".ball.fbx");
+        var ballPath = path.Replace(".glb", ".ball.glb");
         if (!File.Exists(ballPath)) ballPath = null;
 
         var p = new Pretender { Id = id, Name = name, FilePath = path, BallFilePath = ballPath };
@@ -389,15 +391,28 @@ internal static class PretenderLoader {
 
     private static readonly Dictionary<string, Assimp.Scene> sceneCache = new();
 
-    public static Assimp.Scene LoadFile(string path) {
+    public static Assimp.Scene LoadFbx(string path) {
         if (sceneCache.TryGetValue(path, out var existing)) return existing;
         var scene = ctx.ImportFile(path);
         sceneCache[path] = scene;
         return scene;
     }
 
-    public static void ApplyModel(GameObject ouji, string path) => ApplyModel(ouji, LoadFile(path));
-    public static void ApplyBallModel(GameObject ball, string path) => ApplyBallModel(ball, LoadFile(path));
+    public static void ApplyModel(GameObject ouji, string path) {
+        if (path.EndsWith(".glb")) {
+            Gltf.UnityJsonSerializerStrategy.Register();
+            // TODO: cache the JSON and binary like with FBX
+            var file = File.OpenRead(path);
+            var reader = new BinaryReader(file);
+            Gltf.Glb.Parse(reader, out var json, out var binary);
+            var asset = Json.DeserializeObject<Gltf.AssetFile>(json)!;
+            ApplyModel(ouji, asset, binary);
+        } else {
+            ApplyModel(ouji, LoadFbx(path));
+        }
+    }
+
+    public static void ApplyBallModel(GameObject ball, string path) => ApplyBallModel(ball, LoadFbx(path));
 
     private sealed class ImportMetadata {
         public bool preventArmatureExplosion = false;
@@ -588,6 +603,153 @@ internal static class PretenderLoader {
         }
     }
 
+    public static void ApplyModel(GameObject ouji, Gltf.AssetFile file, byte[] binary) {
+        if (file.scene is not uint iScene) {
+            throw new Exception("glTF file has no default scene!");
+        }
+
+        var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
+            .ToDictionary(c => c.gameObject.name);
+
+        var bones = ouji.GetComponentsInChildren<Transform>(includeInactive: true)
+            .ToDictionary(c => c.gameObject.name);
+
+        var body_m = bodyParts["body_m"];
+        var body_root = body_m.transform.parent;
+
+        var nodes = new Stack<Gltf.Node>();
+        foreach (var iRoot in file.scenes[iScene].nodes) {
+            nodes.Push(file.nodes[iRoot]);
+        }
+
+        var metadata = new ImportMetadata();
+        var newBones = new List<Gltf.Node>();
+        var meshNodes = new List<Gltf.Node>();
+        var parents = new Dictionary<Gltf.Node, Gltf.Node>();
+        while (nodes.Count > 0) {
+            var node = nodes.Pop();
+            if (node.name == null) continue;
+            if (bones.TryGetValue(node.name, out var bone)) {
+                bone.localPosition = node.translation ?? Vector3.zero;
+                bone.localRotation = node.rotation ?? Quaternion.identity;
+                bone.localScale = node.scale ?? Vector3.one;
+            } else if (node.name.StartsWith("JNT_")) {
+                newBones.Add(node);
+            }
+
+            if (node.mesh != null) {
+                meshNodes.Add(node);
+            }
+
+            if (node.name != "METADATA") {
+                foreach (var iChild in node.children) {
+                    var child = file.nodes[iChild];
+                    parents.Add(child, node);
+                    nodes.Push(child);
+                }
+                continue;
+            }
+
+            foreach (var iChild in node.children) {
+                var child = file.nodes[iChild];
+                switch (child.name?.ToLower()) {
+                    case "prevent armature explosion":
+                        metadata.preventArmatureExplosion = true;
+                        break;
+                    case "adjustment":
+                        metadata.position = (child.translation ?? Vector3.zero) / 100;
+                        var scale = child.scale ?? Vector3.one;
+                        metadata.scale = scale;
+                        if (scale.x != scale.y || scale.y != scale.z) {
+                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-uniform scale adjustment. Import results may be dubious.");
+                        }
+                        if (scale.x <= 0 || scale.y <= 0 || scale.z <= 0) {
+                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-positive scale adjustment. Import results may be dubious.");
+                        }
+                        break;
+                    case "mipmap":
+                        metadata.mipmap = true;
+                        break;
+                }
+            }
+        }
+
+        foreach (var node in newBones) {
+            var bone = new GameObject(node.name);
+            // This hideFlags is load-bearing for e.g. Dega's tail
+            bone.hideFlags = HideFlags.HideAndDontSave;
+            bones.Add(bone.name, bone.transform);
+        }
+        foreach (var node in newBones) {
+            var bone = bones[node.name!];
+            bone.SetParent(bones[parents[node].name!]);
+            bone.localPosition = node.translation ?? Vector3.zero;
+            bone.localRotation = node.rotation ?? Quaternion.identity;
+            bone.localScale = node.scale ?? Vector3.one;
+        }
+
+        var uMaterials = new List<Material>();
+        foreach (var gMat in file.materials) {
+            var uMat = UnityObject.Instantiate(body_m.material);
+            uMat.name = gMat.name;
+            if (LoadTexture(file, gMat, binary, metadata.mipmap) is Texture2D uTex) {
+                uMat.mainTexture = uTex;
+            }
+            uMaterials.Add(uMat);
+        }
+
+        foreach (var node in meshNodes) {
+            var gMesh = file.meshes[node.mesh!.Value];
+            if (gMesh.name == null) continue;
+
+            var bodyPart = new GameObject(gMesh.name);
+            bodyPart.transform.SetParent(body_root);
+            bodyPart.hideFlags = HideFlags.HideAndDontSave;
+
+            var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
+            renderer.sharedMesh = LoadMesh(file, gMesh, binary, skinned: true);
+            renderer.materials = gMesh.primitives
+                .Select(p => p.material ?? 0)
+                .Select(i => uMaterials[(int)i])
+                .ToArray();
+
+            if (node.skin is uint iSkin) {
+                var skin = file.skins[iSkin];
+                renderer.rootBone = bones["JNT_root"];
+
+                // TODO: the bone array needs to match the vanilla list, which means we also need to remap the indices
+                renderer.bones = skin.joints.Select(iJoint => {
+                    var joint = file.nodes[iJoint];
+                    if (joint.name == null) throw new Exception($"Skin {skin.name} references nameless bone #{iJoint}");
+
+                    if (bones.TryGetValue(joint.name, out var bone)) {
+                        return bone;
+                    } else {
+                        return bones["JNT_root"];
+                    }
+                }).ToArray();
+            }
+
+            // TODO: bindposes
+            // TODO: face parts
+        }
+
+        foreach (var part in bodyParts.Values) {
+            part.enabled = false;
+        }
+        bones["JNT_antenna"].GetChild(0).gameObject.SetActive(false);
+
+        if (metadata.position != Vector3.zero || metadata.scale != Vector3.one) {
+            var root = bones["JNT_root"];
+            root.transform.localPosition = Vector3.Scale(metadata.position, metadata.scale);
+            root.transform.localScale = metadata.scale;
+        }
+
+        if (metadata.preventArmatureExplosion) {
+            ouji.AddComponent<PreventArmatureExplosion>();
+        }
+    }
+
     public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
         if (scene.MeshCount > 1) {
             ApplyMultiBallModel(ball, scene);
@@ -693,6 +855,146 @@ internal static class PretenderLoader {
             uTex.filterMode = FilterMode.Point;
         }
         return uTex;
+    }
+
+    private static Texture2D? LoadTexture(Gltf.AssetFile file, Gltf.Material mat, byte[] binary, bool mipmap) {
+        if (mat.pbrMetallicRoughness?.baseColorTexture?.index is not uint iTex) {
+            Plugin.logger.LogWarning($"Material {mat.name} has no texture index.");
+            return null;
+        }
+
+        var tex = file.textures[iTex];
+        if (tex.source is not uint iImg) {
+            Plugin.logger.LogWarning($"Texture {tex.name} has no image source index.");
+            return null;
+        }
+
+        var img = file.images[iImg];
+        if (img.bufferView is not uint iView) {
+            Plugin.logger.LogWarning($"Image {img.name} does not point to a buffer view.");
+            return null;
+        }
+
+        var view = file.bufferViews[iView];
+        if (view.buffer != 0) {
+            Plugin.logger.LogWarning($"Buffer view {view.name} points to buffer #{view.buffer}.");
+            return null;
+        }
+
+        var data = view.CopyOut(binary);
+        var uTex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap);
+        ImageConversion.LoadImage(uTex, data, markNonReadable: true);
+
+        if (mipmap) {
+            uTex.anisoLevel = 16;
+            uTex.filterMode = FilterMode.Trilinear;
+        } else {
+            uTex.filterMode = FilterMode.Point;
+        }
+
+        if (tex.sampler is uint iSampler) {
+            var sampler = file.samplers[iSampler];
+            uTex.wrapModeU = sampler.wrapS switch {
+                Gltf.Sampler.WrapMode.Clamp => TextureWrapMode.Clamp,
+                Gltf.Sampler.WrapMode.Mirror => TextureWrapMode.Mirror,
+                Gltf.Sampler.WrapMode.Repeat => TextureWrapMode.Repeat,
+                _ => TextureWrapMode.Repeat,
+            };
+            uTex.wrapModeV = sampler.wrapT switch {
+                Gltf.Sampler.WrapMode.Clamp => TextureWrapMode.Clamp,
+                Gltf.Sampler.WrapMode.Mirror => TextureWrapMode.Mirror,
+                Gltf.Sampler.WrapMode.Repeat => TextureWrapMode.Repeat,
+                _ => TextureWrapMode.Repeat,
+            };
+        }
+
+        return uTex;
+    }
+
+    struct Vector4Byte { public byte x, y, z, w; }
+
+    private static Mesh LoadMesh(Gltf.AssetFile file, Gltf.Mesh gMesh, byte[] binary, bool skinned) {
+        var uMesh = new Mesh() { name = gMesh.name };
+
+        ulong numVerts = 0;
+
+        foreach (var primitive in gMesh.primitives) {
+            void expect(string attribute, Gltf.Accessor.ComponentType e_ct, Gltf.Accessor.Shape e_ty) {
+                var accessor = file.accessors[primitive.attributes[attribute]];
+                var ct = accessor.componentType;
+                var ty = accessor.type;
+                if (ct != e_ct || ty != e_ty) throw new Exception($"Vertex {attribute} accessor is {ty}/{ct} (expected {e_ty}/{e_ct})");
+            }
+
+            expect("POSITION", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC3);
+            expect("NORMAL", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC3);
+            expect("TEXCOORD_0", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC2);
+
+            if (skinned) {
+                expect("JOINTS_0", Gltf.Accessor.ComponentType.U8, Gltf.Accessor.Shape.VEC4);
+                expect("WEIGHTS_0", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC4);
+            }
+
+            var pm = primitive.mode;
+            if (pm != Gltf.Mesh.Primitive.Mode.Triangles) throw new Exception($"Mesh {gMesh.name} is using primitive mode {pm} (expected TRIANGLES)");
+
+            numVerts += file.accessors[primitive.attributes["POSITION"]].count;
+        }
+
+        var verts = new Vector3[numVerts];
+        var normals = new Vector3[numVerts];
+        var uvs = new Vector2[numVerts];
+        ulong vertIdx = 0;
+        foreach (var primitive in gMesh.primitives) {
+            file.accessors[primitive.attributes["POSITION"]].CopyOut(file, binary, verts, vertIdx);
+            file.accessors[primitive.attributes["NORMAL"]].CopyOut(file, binary, normals, vertIdx);
+            file.accessors[primitive.attributes["TEXCOORD_0"]].CopyOut(file, binary, uvs, vertIdx);
+        }
+
+        uMesh.vertices = verts;
+        uMesh.normals = normals;
+        uMesh.uv = uvs;
+
+        if (skinned) {
+            vertIdx = 0;
+            var joints = new Vector4Byte[numVerts];
+            var weights = new Vector4[numVerts];
+            foreach (var primitive in gMesh.primitives) {
+                file.accessors[primitive.attributes["JOINTS_0"]].CopyOut(file, binary, joints, vertIdx);
+                file.accessors[primitive.attributes["WEIGHTS_0"]].CopyOut(file, binary, weights, vertIdx);
+                vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
+            }
+
+            var boneWeights = new BoneWeight[numVerts];
+            for (ulong i = 0; i < numVerts; i++) {
+                Vector4Byte b = joints[i];
+                Vector4 w = weights[i];
+                boneWeights[i] = new BoneWeight {
+                    boneIndex0 = b.x, boneIndex1 = b.y, boneIndex2 = b.z, boneIndex3 = b.w,
+                    weight0 = w.x, weight1 = w.y, weight2 = w.z, weight3 = w.w,
+                };
+            }
+            uMesh.boneWeights = boneWeights;
+        }
+
+        var submesh = 0;
+        foreach (var primitive in gMesh.primitives) {
+            if (primitive.indices is not uint iIndices) throw new Exception($"Mesh {gMesh.name} is using non-indexed geometry");
+            var accessor = file.accessors[iIndices];
+
+            var indices = accessor.componentType switch {
+                Gltf.Accessor.ComponentType.U8 => accessor.CopyOut<byte>(file, binary).Select(x => (int)x),
+                Gltf.Accessor.ComponentType.U16 => accessor.CopyOut<ushort>(file, binary).Select(x => (int)x),
+                Gltf.Accessor.ComponentType.U32 => accessor.CopyOut<uint>(file, binary).Select(x => (int)x),
+                _ => throw new Exception(),
+            };
+            uMesh.SetIndices([.. indices], MeshTopology.Triangles, submesh++);
+            break;
+        }
+
+        uMesh.UploadMeshData(markNoLongerReadable: false); // TODO: mark true
+
+        return uMesh;
     }
 
     private static void LoadVertices(Assimp.Mesh aMesh, Mesh uMesh) {

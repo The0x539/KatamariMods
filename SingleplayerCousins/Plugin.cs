@@ -10,6 +10,8 @@ using SingleplayerCousins.Cousins;
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -51,6 +53,25 @@ public sealed class Plugin : BaseUnityPlugin {
                 }
             }
         };
+    }
+
+    // Not actually necessary since we never re-serialize the glTF, but it's fun
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(SimpleJson.PocoJsonSerializerStrategy), nameof(SimpleJson.PocoJsonSerializerStrategy.TrySerializeUnknownTypes))]
+    public static IL OmitNullFromJson(IL il) {
+        MethodInfo original = Member.Method((IDictionary<string, object> d) => d.Add("", "")),
+                   replacement = Member.Method((IDictionary<string, object> d) => AddIfNotNull(d, "", ""));
+
+        return new CodeMatcher(il)
+            .MatchForward(false, [new(OpCodes.Callvirt, original)])
+            .SetOperandAndAdvance(replacement)
+            .Instructions();
+    }
+
+    private static void AddIfNotNull(IDictionary<string, object> obj, string key, object? value) {
+        if (value != null) {
+            obj.Add(key, value);
+        }
     }
 
     [HarmonyPrefix]
