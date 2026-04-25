@@ -694,7 +694,7 @@ internal static class PretenderLoader {
         foreach (var gMat in file.materials) {
             var uMat = UnityObject.Instantiate(body_m.material);
             uMat.name = gMat.name;
-            if (LoadTexture(file, gMat, binary, metadata.mipmap) is Texture2D uTex) {
+            if (Gltf.Loader.LoadTexture(file, gMat, binary, metadata.mipmap) is Texture2D uTex) {
                 uMat.mainTexture = uTex;
             }
             uMaterials.Add(uMat);
@@ -709,7 +709,7 @@ internal static class PretenderLoader {
             bodyPart.hideFlags = HideFlags.HideAndDontSave;
 
             var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
-            var mesh = LoadMesh(file, gMesh, binary, skinned: true);
+            var mesh = Gltf.Loader.LoadMesh(file, gMesh, binary, skinned: true);
             renderer.sharedMesh = mesh;
             renderer.sharedMaterials = gMesh.primitives
                 .Select(p => p.material ?? 0)
@@ -869,151 +869,6 @@ internal static class PretenderLoader {
             uTex.filterMode = FilterMode.Point;
         }
         return uTex;
-    }
-
-    private static Texture2D? LoadTexture(Gltf.AssetFile file, Gltf.Material mat, byte[] binary, bool mipmap) {
-        if (mat.pbrMetallicRoughness?.baseColorTexture?.index is not uint iTex) {
-            Plugin.logger.LogWarning($"Material {mat.name} has no texture index.");
-            return null;
-        }
-
-        var tex = file.textures[iTex];
-        if (tex.source is not uint iImg) {
-            Plugin.logger.LogWarning($"Texture {tex.name} has no image source index.");
-            return null;
-        }
-
-        var img = file.images[iImg];
-        if (img.bufferView is not uint iView) {
-            Plugin.logger.LogWarning($"Image {img.name} does not point to a buffer view.");
-            return null;
-        }
-
-        var view = file.bufferViews[iView];
-        if (view.buffer != 0) {
-            Plugin.logger.LogWarning($"Buffer view {view.name} points to buffer #{view.buffer}.");
-            return null;
-        }
-
-        var data = view.CopyOut(binary);
-        var uTex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap);
-        ImageConversion.LoadImage(uTex, data, markNonReadable: true);
-
-        if (mipmap) {
-            uTex.anisoLevel = 16;
-            uTex.filterMode = FilterMode.Trilinear;
-        } else {
-            uTex.filterMode = FilterMode.Point;
-        }
-
-        if (tex.sampler is uint iSampler) {
-            var sampler = file.samplers[iSampler];
-            uTex.wrapModeU = sampler.wrapS.ToUnity();
-            uTex.wrapModeV = sampler.wrapT.ToUnity();
-        }
-
-        return uTex;
-    }
-
-    struct Vector4Byte { public byte x, y, z, w; }
-
-    private static Mesh LoadMesh(Gltf.AssetFile file, Gltf.Mesh gMesh, byte[] binary, bool skinned) {
-        var uMesh = new Mesh() { name = gMesh.name };
-
-        ulong numVerts = 0;
-
-        foreach (var primitive in gMesh.primitives) {
-            void expect(string attribute, Gltf.Accessor.ComponentType e_ct, Gltf.Accessor.Shape e_ty) {
-                var accessor = file.accessors[primitive.attributes[attribute]];
-                var ct = accessor.componentType;
-                var ty = accessor.type;
-                if (ct != e_ct || ty != e_ty) throw new Exception($"Vertex {attribute} accessor is {ty}/{ct} (expected {e_ty}/{e_ct})");
-            }
-
-            expect("POSITION", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC3);
-            expect("NORMAL", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC3);
-            expect("TEXCOORD_0", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC2);
-
-            if (skinned) {
-                expect("JOINTS_0", Gltf.Accessor.ComponentType.U8, Gltf.Accessor.Shape.VEC4);
-                expect("WEIGHTS_0", Gltf.Accessor.ComponentType.F32, Gltf.Accessor.Shape.VEC4);
-            }
-
-            var pm = primitive.mode;
-            if (pm != Gltf.Mesh.Primitive.Mode.Triangles) throw new Exception($"Mesh {gMesh.name} is using primitive mode {pm} (expected TRIANGLES)");
-
-            numVerts += file.accessors[primitive.attributes["POSITION"]].count;
-        }
-
-        var verts = new Vector3[numVerts];
-        var normals = new Vector3[numVerts];
-        var uvs = new Vector2[numVerts];
-        ulong vertIdx = 0;
-        foreach (var primitive in gMesh.primitives) {
-            file.accessors[primitive.attributes["POSITION"]].CopyOut(file, binary, verts, vertIdx);
-            file.accessors[primitive.attributes["NORMAL"]].CopyOut(file, binary, normals, vertIdx);
-            file.accessors[primitive.attributes["TEXCOORD_0"]].CopyOut(file, binary, uvs, vertIdx);
-            vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
-        }
-
-        for (ulong i = 0; i < numVerts; i++) {
-            var vert = verts[i];
-            var normal = normals[i];
-            var uv = uvs[i];
-            //vert.x *= -1;
-            //normal.x *= -1;
-            uv.y = 1 - uv.y;
-            verts[i] = vert;
-            normals[i] = normal;
-            uvs[i] = uv;
-        }
-
-        uMesh.vertices = verts;
-        uMesh.normals = normals;
-        uMesh.uv = uvs;
-
-        if (skinned) {
-            vertIdx = 0;
-            var joints = new Vector4Byte[numVerts];
-            var weights = new Vector4[numVerts];
-            foreach (var primitive in gMesh.primitives) {
-                file.accessors[primitive.attributes["JOINTS_0"]].CopyOut(file, binary, joints, vertIdx);
-                file.accessors[primitive.attributes["WEIGHTS_0"]].CopyOut(file, binary, weights, vertIdx);
-                vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
-            }
-
-            var boneWeights = new BoneWeight[numVerts];
-            for (ulong i = 0; i < numVerts; i++) {
-                Vector4Byte b = joints[i];
-                Vector4 w = weights[i];
-                boneWeights[i] = new BoneWeight {
-                    boneIndex0 = b.x, boneIndex1 = b.y, boneIndex2 = b.z, boneIndex3 = b.w,
-                    weight0 = w.x, weight1 = w.y, weight2 = w.z, weight3 = w.w,
-                };
-            }
-            uMesh.boneWeights = boneWeights;
-        }
-
-        int baseIndex = 0;
-        var submesh = 0;
-        uMesh.subMeshCount = gMesh.primitives.Length;
-        foreach (var primitive in gMesh.primitives) {
-            if (primitive.indices is not uint iIndices) throw new Exception($"Mesh {gMesh.name} is using non-indexed geometry");
-            var accessor = file.accessors[iIndices];
-
-            var indices = accessor.componentType switch {
-                Gltf.Accessor.ComponentType.U8 => accessor.CopyOut<byte>(file, binary).Select(x => baseIndex + x),
-                Gltf.Accessor.ComponentType.U16 => accessor.CopyOut<ushort>(file, binary).Select(x => baseIndex + x),
-                Gltf.Accessor.ComponentType.U32 => accessor.CopyOut<uint>(file, binary).Select(x => baseIndex + (int)x),
-                _ => throw new Exception(),
-            };
-            uMesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, submesh++);
-            baseIndex += (int)file.accessors[primitive.attributes["POSITION"]].count;
-        }
-
-        uMesh.UploadMeshData(markNoLongerReadable: false); // TODO: mark true
-
-        return uMesh;
     }
 
     private static void LoadVertices(Assimp.Mesh aMesh, Mesh uMesh) {
