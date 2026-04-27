@@ -374,6 +374,17 @@ public static class PretenderPatches {
                 "UI_SYS_002" => __result.Replace("Kata", "Rrata"),
                 _ => __result,
             };
+        } else if (Plugin.OujiId == (int)PretenderId.Mint) {
+            __result = id switch {
+                "OT_OBJ_0504" => "Duawg",
+                "OT_OBJ_0505" => "Duawg With Fleas",
+                "OT_OBJ_0506" => "Bullduawg",
+                "OT_OBJ_0527" => "Toy Duawg",
+                _ => __result,
+            };
+            if (id.StartsWith("KG_C_VRG") || id.StartsWith("KG_O_SLC") || id.StartsWith("KG_O_RSL")) {
+                __result = __result.Replace("maiden", "broad").Replace("Maiden", "Broad");
+            }
         }
     }
 }

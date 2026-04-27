@@ -33,6 +33,7 @@ public enum PretenderId {
     Colonq = 27,
     Soyo = 28,
     Vanta = 29,
+    Mint = 30,
 
     DYNAMIC = 40,
 }
