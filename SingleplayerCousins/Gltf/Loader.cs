@@ -10,7 +10,7 @@ namespace SingleplayerCousins.Gltf;
 struct Vector4Byte { public byte x, y, z, w; }
 
 public static class Loader {
-    public static UMesh LoadMesh(AssetFile file, Mesh gMesh, byte[] binary, bool skinned) {
+    public static UMesh LoadMesh(AssetFile file, Mesh gMesh, byte[] binary, bool skinned, bool morph) {
         var uMesh = new UMesh() { name = gMesh.name };
 
         ulong numVerts = 0;
@@ -64,25 +64,11 @@ public static class Loader {
         uMesh.uv = uvs;
 
         if (skinned) {
-            vertIdx = 0;
-            var joints = new Vector4Byte[numVerts];
-            var weights = new Vector4[numVerts];
-            foreach (var primitive in gMesh.primitives) {
-                file.accessors[primitive.attributes["JOINTS_0"]].CopyOut(file, binary, joints, vertIdx);
-                file.accessors[primitive.attributes["WEIGHTS_0"]].CopyOut(file, binary, weights, vertIdx);
-                vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
-            }
+            uMesh.boneWeights = LoadBoneWeights(file, gMesh, binary, numVerts);
+        }
 
-            var boneWeights = new BoneWeight[numVerts];
-            for (ulong i = 0; i < numVerts; i++) {
-                Vector4Byte b = joints[i];
-                Vector4 w = weights[i];
-                boneWeights[i] = new BoneWeight {
-                    boneIndex0 = b.x, boneIndex1 = b.y, boneIndex2 = b.z, boneIndex3 = b.w,
-                    weight0 = w.x, weight1 = w.y, weight2 = w.z, weight3 = w.w,
-                };
-            }
-            uMesh.boneWeights = boneWeights;
+        if (morph) {
+            LoadMorphTargets(file, gMesh, binary, uMesh);
         }
 
         int baseIndex = 0;
@@ -105,6 +91,58 @@ public static class Loader {
         uMesh.UploadMeshData(markNoLongerReadable: false); // TODO: mark true
 
         return uMesh;
+    }
+
+    public static BoneWeight[] LoadBoneWeights(AssetFile file, Mesh gMesh, byte[] binary, ulong numVerts) {
+        ulong vertIdx = 0;
+        var joints = new Vector4Byte[numVerts];
+        var weights = new Vector4[numVerts];
+        foreach (var primitive in gMesh.primitives) {
+            file.accessors[primitive.attributes["JOINTS_0"]].CopyOut(file, binary, joints, vertIdx);
+            file.accessors[primitive.attributes["WEIGHTS_0"]].CopyOut(file, binary, weights, vertIdx);
+            vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
+        }
+
+        var boneWeights = new BoneWeight[numVerts];
+        for (ulong i = 0; i < numVerts; i++) {
+            Vector4Byte b = joints[i];
+            Vector4 w = weights[i];
+            boneWeights[i] = new BoneWeight {
+                boneIndex0 = b.x, boneIndex1 = b.y, boneIndex2 = b.z, boneIndex3 = b.w,
+                weight0 = w.x, weight1 = w.y, weight2 = w.z, weight3 = w.w,
+            };
+        }
+        return boneWeights;
+    }
+
+    public static void LoadMorphTargets(AssetFile file, Mesh gMesh, byte[] binary, UMesh uMesh) {
+        var numVerts = uMesh.vertexCount;
+
+        if (gMesh.primitives[0].targets?.Length is not int numTargets) return;
+        foreach (var p in gMesh.primitives) {
+            if (p.targets == null || p.targets.Length != numTargets) {
+                throw new Exception("Mesh primitives don't have matching morph target arrays.");
+            }
+        }
+
+        // Reuse the same arrays for a slight bit of efficiency
+        var deltaVertices = new Vector3[numVerts];
+        var deltaNormals = new Vector3[numVerts];
+
+        gMesh.TryGetExtra("targetNames", out string[]? targetNames);
+
+        for (var i = 0; i < numTargets; i++) {
+            ulong vertIdx = 0;
+            foreach (var primitive in gMesh.primitives) {
+                file.accessors[primitive.targets![i]["POSITION"]].CopyOut(file, binary, deltaVertices, vertIdx);
+                file.accessors[primitive.targets![i]["NORMAL"]].CopyOut(file, binary, deltaNormals, vertIdx);
+                vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
+            }
+
+            var name = targetNames?[i] ?? $"morph_{i}";
+            uMesh.AddBlendShapeFrame(name, frameWeight: 1, deltaVertices, deltaNormals, null);
+        }
+        // TODO: Set "initial" blend shape weights based on the gMesh.weights array if present
     }
 
     public static Texture2D? LoadTexture(AssetFile file, Material mat, byte[] binary, bool mipmap) {

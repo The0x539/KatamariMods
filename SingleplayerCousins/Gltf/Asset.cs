@@ -8,6 +8,26 @@ using Unknown = SimpleJson.JsonObject;
 
 public abstract class Base {
     public Unknown? extensions, extras;
+
+    public bool TryGetExtension<T>(string key, out T value) where T : class? => TryGet(this.extensions, key, out value);
+    public bool TryGetExtra<T>(string key, out T value) where T : class? => TryGet(this.extras, key, out value);
+
+    private static bool TryGet<T>(Unknown? dict, string key, out T value) where T : class? {
+        value = null!;
+        if (dict == null) return false;
+
+        if (!dict.TryGetValue(key, out var raw)) return false;
+
+        object untyped;
+        try {
+            untyped = SimpleJson.SimpleJson.CurrentJsonSerializerStrategy.DeserializeObject(raw, typeof(T));
+        } catch {
+            return false;
+        }
+
+        value = (T)untyped;
+        return true;
+    }
 }
 
 public abstract class Named : Base {
@@ -193,7 +213,7 @@ public sealed class Mesh : Named {
         public Dictionary<string, uint> attributes = [];
         public uint? indices, material;
         public Mode mode = Mode.Triangles;
-        public Dictionary<string, uint>? targets;
+        public Dictionary<string, uint>[]? targets;
 
         public enum Mode {
             Points,
@@ -218,7 +238,7 @@ public sealed class Sampler : Named {
     public Filter? magFilter, minFilter;
     public WrapMode wrapS = WrapMode.Repeat, wrapT = WrapMode.Repeat;
 
-    public enum Filter { 
+    public enum Filter {
         Nearest = 9728,
         Linear = 9729,
         NearestMipmapNearest = 9984,

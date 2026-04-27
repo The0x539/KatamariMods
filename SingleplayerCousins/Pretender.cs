@@ -709,7 +709,7 @@ internal static class PretenderLoader {
             bodyPart.hideFlags = HideFlags.HideAndDontSave;
 
             var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
-            var mesh = Gltf.Loader.LoadMesh(file, gMesh, binary, skinned: true);
+            var mesh = Gltf.Loader.LoadMesh(file, gMesh, binary, skinned: true, morph: true);
             renderer.sharedMesh = mesh;
             renderer.sharedMaterials = gMesh.primitives
                 .Select(p => p.material ?? 0)
@@ -734,9 +734,6 @@ internal static class PretenderLoader {
                 if (skin.inverseBindMatrices is uint iBinds) {
                     var accessor = file.accessors[iBinds];
                     var bindposes = accessor.CopyOut<Matrix4x4>(file, binary);
-                    for (var i = 0; i < bindposes.Length; i++) {
-                        //bindposes[i] = bindposes[i].transpose;
-                    }
                     mesh.bindposes = bindposes;
                 } else {
                     Plugin.logger.LogWarning($"Skin {skin.name} has no inverse bind matrices.");

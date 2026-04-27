@@ -64,7 +64,16 @@ public sealed class UnityJsonSerializerStrategy : PocoJsonSerializerStrategy {
                 return Enum.ToObject(type, value);
             }
         } else {
-            return base.DeserializeObject(value, type);
+            var obj = base.DeserializeObject(value, type);
+            if (value is JsonObject raw && obj is Base b) {
+                if (raw.TryGetValue("extras", out var extras)) {
+                    b.extras = (JsonObject)extras;
+                }
+                if (raw.TryGetValue("extensions", out var extensions)) {
+                    b.extensions = (JsonObject)extensions;
+                }
+            }
+            return obj;
         }
     }
 

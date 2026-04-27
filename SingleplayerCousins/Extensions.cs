@@ -141,21 +141,18 @@ internal static class Extensions {
 
         if (accessor.sparse is Gltf.Accessor.Sparse s) {
             var valsView = file.bufferViews[s.values.bufferView];
-            var valsOffset = valsView.byteOffset + s.values.byteOffset;
-            var vals = valsView.CopyOut<T>(binary, valsOffset, s.count);
+            var vals = valsView.CopyOut<T>(binary, s.values.byteOffset, s.count);
 
             var idxView = file.bufferViews[s.indices.bufferView];
-            var idxOffset = idxView.byteOffset + s.indices.byteOffset;
-
             switch (s.indices.componentType) {
                 case Gltf.Accessor.ComponentType.U8:
-                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<byte>(binary, idxOffset, s.count));
+                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<byte>(binary, s.indices.byteOffset, s.count));
                     break;
                 case Gltf.Accessor.ComponentType.U16:
-                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<ushort>(binary, idxOffset, s.count));
+                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<ushort>(binary, s.indices.byteOffset, s.count));
                     break;
                 case Gltf.Accessor.ComponentType.U32:
-                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<uint>(binary, idxOffset, s.count));
+                    ApplySparse(vals, dstBuf, dstIdx, idxView.CopyOut<uint>(binary, s.indices.byteOffset, s.count));
                     break;
             }
         }
