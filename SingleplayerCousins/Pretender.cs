@@ -425,7 +425,19 @@ internal static class PretenderLoader {
         }
     }
 
-    public static void ApplyBallModel(GameObject ball, string path) => ApplyBallModel(ball, LoadFbx(path));
+    public static void ApplyBallModel(GameObject ball, string path) {
+        if (path.EndsWith(".glb")) {
+            Gltf.UnityJsonSerializerStrategy.Register();
+            // TODO: cache the JSON and binary like with FBX
+            var file = File.OpenRead(path);
+            var reader = new BinaryReader(file);
+            Gltf.Glb.Parse(reader, out var json, out var binary);
+            var asset = Json.DeserializeObject<Gltf.AssetFile>(json)!;
+            ApplyBallModel(ball, asset, binary);
+        } else {
+            ApplyBallModel(ball, LoadFbx(path));
+        }
+    }
 
     private sealed class ImportMetadata {
         public bool preventArmatureExplosion = false;
@@ -701,15 +713,7 @@ internal static class PretenderLoader {
             bone.localScale = node.scale ?? Vector3.one;
         }
 
-        var uMaterials = new List<Material>();
-        foreach (var gMat in file.materials) {
-            var uMat = UnityObject.Instantiate(body_m.material);
-            uMat.name = gMat.name;
-            if (Gltf.Loader.LoadTexture(file, gMat, binary, metadata.mipmap) is Texture2D uTex) {
-                uMat.mainTexture = uTex;
-            }
-            uMaterials.Add(uMat);
-        }
+        var uMaterials = LoadMaterials(file, body_m.sharedMaterial, binary, metadata);
 
         foreach (var node in meshNodes) {
             var gMesh = file.meshes[node.mesh!.Value];
@@ -799,6 +803,45 @@ internal static class PretenderLoader {
 
         filter.sharedMesh = uMesh;
         renderer.sharedMaterial = uMaterial;
+    }
+
+    public static void ApplyBallModel(GameObject ball, Gltf.AssetFile file, byte[] binary) {
+        if (file.scene is not uint iScene) {
+            throw new Exception("glTF file has no default scene!");
+        }
+
+        var filter = ball.GetComponent<MeshFilter>();
+        var renderer = ball.GetComponent<MeshRenderer>();
+
+        var nodes = new Stack<Gltf.Node>();
+        foreach (var iRoot in file.scenes[iScene].nodes) {
+            nodes.Push(file.nodes[iRoot]);
+        }
+
+        var meshNodes = new List<Gltf.Node>();
+        var parents = new Dictionary<Gltf.Node, Gltf.Node>();
+        while (nodes.Count > 0) {
+            var node = nodes.Pop();
+            if (node.name == null) continue;
+            if (node.mesh != null) {
+                meshNodes.Add(node);
+            }
+        }
+
+        var uMaterials = LoadMaterials(file, renderer.sharedMaterial, binary, new ImportMetadata());
+
+        // TODO: don't just assume it's a single gltf mesh lol? can we combine somehow
+        var gMesh = file.meshes[meshNodes[0].mesh!.Value];
+        Console.WriteLine($"Ball model: {meshNodes[0].name}");
+
+        var uMesh = Gltf.Loader.LoadMesh(file, gMesh, binary, skinned: false, morph: false, scale: 0.01f);
+        var materials = gMesh.primitives
+            .Select(p => p.material ?? 0)
+            .Select(i => uMaterials[(int)i])
+            .ToArray();
+
+        filter.sharedMesh = uMesh;
+        renderer.sharedMaterials = materials;
     }
 
     private static void ApplyMultiBallModel(GameObject ball, Assimp.Scene scene) {
@@ -926,5 +969,18 @@ internal static class PretenderLoader {
         foreach (var child in node.Children) {
             PrintNode(scene, child, depth + 1);
         }
+    }
+
+    private static List<Material> LoadMaterials(Gltf.AssetFile file, Material origMat, byte[] binary, ImportMetadata metadata) {
+        var uMaterials = new List<Material>();
+        foreach (var gMat in file.materials) {
+            var uMat = UnityObject.Instantiate(origMat);
+            uMat.name = gMat.name;
+            if (Gltf.Loader.LoadTexture(file, gMat, binary, metadata.mipmap) is Texture2D uTex) {
+                uMat.mainTexture = uTex;
+            }
+            uMaterials.Add(uMat);
+        }
+        return uMaterials;
     }
 }

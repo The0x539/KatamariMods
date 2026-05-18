@@ -10,7 +10,7 @@ namespace SingleplayerCousins.Gltf;
 struct Vector4Byte { public byte x, y, z, w; }
 
 public static class Loader {
-    public static UMesh LoadMesh(AssetFile file, Mesh gMesh, byte[] binary, bool skinned, bool morph) {
+    public static UMesh LoadMesh(AssetFile file, Mesh gMesh, byte[] binary, bool skinned, bool morph, float scale = 1.0f) {
         var uMesh = new UMesh() { name = gMesh.name };
 
         ulong numVerts = 0;
@@ -51,6 +51,12 @@ public static class Loader {
             file.accessors[primitive.attributes["NORMAL"]].CopyOut(file, binary, normals, vertIdx);
             file.accessors[primitive.attributes["TEXCOORD_0"]].CopyOut(file, binary, uvs, vertIdx);
             vertIdx += file.accessors[primitive.attributes["POSITION"]].count;
+        }
+
+        if (scale != 1.0f) {
+            for (var i = 0; i < verts.Length; i++) {
+                verts[i] = verts[i] * scale;
+            }
         }
 
         for (ulong i = 0; i < numVerts; i++) {
