@@ -390,53 +390,24 @@ public static class PretenderPatches {
 }
 
 internal static class PretenderLoader {
-    internal static readonly Assimp.AssimpContext ctx;
-
-    static PretenderLoader() {
-        var platformHelper = Type.GetType("Assimp.Unmanaged.PlatformHelper, AssimpNet, Version=4.1.0.0, Culture=neutral, PublicKeyToken=0d51b391f59f42a6");
-        var targetMethod = AccessTools.Method(platformHelper, "GetAppBaseDirectory");
-        var patchMethod = AccessTools.Method(typeof(PretenderLoader), nameof(StupidHack));
-        new Harmony("Stupid hack").Patch(targetMethod, postfix: new(patchMethod));
-        ctx = new();
-    }
-
-    private static void StupidHack(ref string __result) => __result = "./katamari_Data/Plugins";
-
-    private static readonly Dictionary<string, Assimp.Scene> sceneCache = new();
-
-    public static Assimp.Scene LoadFbx(string path) {
-        if (sceneCache.TryGetValue(path, out var existing)) return existing;
-        var scene = ctx.ImportFile(path);
-        sceneCache[path] = scene;
-        return scene;
-    }
-
     public static void ApplyModel(GameObject ouji, string path) {
-        if (path.EndsWith(".glb")) {
-            Gltf.UnityJsonSerializerStrategy.Register();
-            // TODO: cache the JSON and binary like with FBX
-            var file = File.OpenRead(path);
-            var reader = new BinaryReader(file);
-            Gltf.Glb.Parse(reader, out var json, out var binary);
-            var asset = Json.DeserializeObject<Gltf.AssetFile>(json)!;
-            ApplyModel(ouji, asset, binary);
-        } else {
-            ApplyModel(ouji, LoadFbx(path));
-        }
+        Gltf.UnityJsonSerializerStrategy.Register();
+        // TODO: cache the JSON and binary like with FBX
+        var file = File.OpenRead(path);
+        var reader = new BinaryReader(file);
+        Gltf.Glb.Parse(reader, out var json, out var binary);
+        var asset = Json.DeserializeObject<Gltf.AssetFile>(json)!;
+        ApplyModel(ouji, asset, binary);
     }
 
     public static void ApplyBallModel(GameObject ball, string path) {
-        if (path.EndsWith(".glb")) {
-            Gltf.UnityJsonSerializerStrategy.Register();
-            // TODO: cache the JSON and binary like with FBX
-            var file = File.OpenRead(path);
-            var reader = new BinaryReader(file);
-            Gltf.Glb.Parse(reader, out var json, out var binary);
-            var asset = Json.DeserializeObject<Gltf.AssetFile>(json)!;
-            ApplyBallModel(ball, asset, binary);
-        } else {
-            ApplyBallModel(ball, LoadFbx(path));
-        }
+        Gltf.UnityJsonSerializerStrategy.Register();
+        // TODO: cache the JSON and binary like with FBX
+        var file = File.OpenRead(path);
+        var reader = new BinaryReader(file);
+        Gltf.Glb.Parse(reader, out var json, out var binary);
+        var asset = Json.DeserializeObject<Gltf.AssetFile>(json)!;
+        ApplyBallModel(ball, asset, binary);
     }
 
     private sealed class ImportMetadata {
@@ -449,183 +420,6 @@ internal static class PretenderLoader {
         // so it's preferable to just disable mipmaps altogether for pixel art character textures.
         public bool mipmap = false;
         public bool alpha = false;
-    }
-
-    public static void ApplyModel(GameObject ouji, Assimp.Scene scene) {
-        var bodyParts = ouji.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
-            .ToDictionary(x => x.gameObject.name);
-
-        var bones = new Dictionary<string, Transform>();
-        foreach (var bone in ouji.GetComponentsInChildren<Transform>(true)) {
-            bones[bone.name] = bone;
-        }
-
-        var body_m = bodyParts["body_m"];
-        var body_root = body_m.transform.parent;
-
-        var metadata = new ImportMetadata();
-
-        var nodes = new Stack<Assimp.Node>();
-        var newBones = new List<Assimp.Node>();
-        nodes.Push(scene.RootNode);
-        while (nodes.Count > 0) {
-            var node = nodes.Pop();
-            if (bones.TryGetValue(node.Name, out var bone)) {
-                node.Transform.Decompose(out var scale, out var rotation, out var position);
-                bone.transform.localPosition = position.ToUnity();
-                bone.transform.localRotation = rotation.ToUnity();
-                bone.transform.localScale = scale.ToUnity();
-            } else if (node.Name.StartsWith("JNT_")) {
-                newBones.Add(node);
-            }
-
-            if (node.Parent?.Name == "METADATA") {
-                switch (node.Name.ToLower()) {
-                    case "prevent armature explosion":
-                        metadata.preventArmatureExplosion = true;
-                        break;
-                    case "adjustment":
-                        node.Transform.Decompose(out var scale, out _, out var position);
-                        metadata.position = position.ToUnity() / 100;
-                        metadata.scale = scale.ToUnity();
-                        if (scale.X != scale.Y || scale.Y != scale.Z) {
-                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-uniform scale adjustment. Import results may be dubious.");
-                        }
-                        if (scale.X <= 0 || scale.Y <= 0 || scale.Z <= 0) {
-                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-positive scale adjustment. Import results may be dubious.");
-                        }
-                        break;
-                    case "mipmap": metadata.mipmap = true; break;
-                    case "alpha": metadata.alpha = true; break;
-                }
-            }
-
-            foreach (var child in node.Children) {
-                nodes.Push(child);
-            }
-        }
-
-        foreach (var node in newBones) {
-            var bone = new GameObject(node.Name);
-            // This hideFlags is load-bearing for e.g. Dega's tail
-            bone.hideFlags = HideFlags.HideAndDontSave;
-            bones.Add(bone.name, bone.transform);
-        }
-        foreach (var node in newBones) {
-            var bone = bones[node.Name];
-            bone.SetParent(bones[node.Parent.Name]);
-            node.Transform.Decompose(out var scale, out var rotation, out var position);
-            bone.transform.localPosition = position.ToUnity();
-            bone.transform.localRotation = rotation.ToUnity();
-            bone.transform.localScale = scale.ToUnity();
-        }
-
-        var uMaterials = new List<Material?>();
-        foreach (var aMat in scene.Materials) {
-            Texture2D uTex;
-            try {
-                uTex = LoadTexture(scene, aMat, metadata.mipmap);
-            } catch (Exception ex) {
-                Console.WriteLine($"Texture {aMat.Name} has no filepath: {ex}");
-                uMaterials.Add(null);
-                continue;
-            }
-
-            var uMat = UnityObject.Instantiate(body_m.material);
-            if (aMat.Name == "FaceTexture") {
-                uMat.EnableKeyword("_ALPHATEST_ON");
-                uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
-            }
-
-            // This name is absolutely not guaranteed to be unique across different characters.
-            // Not sure how much of an issue that's going to be.
-            uMat.name = uTex.name = aMat.Name;
-            uMat.mainTexture = uTex;
-            uMaterials.Add(uMat);
-        }
-
-        foreach (var aMesh in scene.Meshes) {
-            var bodyPart = new GameObject(aMesh.Name);
-            bodyPart.transform.SetParent(body_root);
-            // This hideFlags is load-bearing for all custom-model pretenders (everyone except Vanta at the time of writing)
-            bodyPart.hideFlags = HideFlags.HideAndDontSave;
-
-            var renderer = bodyPart.AddComponent<SkinnedMeshRenderer>();
-            var uMesh = new Mesh() { name = aMesh.Name };
-
-            LoadVertices(aMesh, uMesh);
-            LoadIndices(aMesh, uMesh);
-            LoadUVs(aMesh, uMesh);
-
-            var uBoneWeights = new BoneWeight[aMesh.VertexCount];
-            var uBindposes = new List<Matrix4x4> { Matrix4x4.identity };
-            var uBones = new List<Transform> { bones["JNT_root"] };
-
-            foreach (var aBone in aMesh.Bones) {
-                int boneIdx;
-                if (bones.TryGetValue(aBone.Name, out var bone)) {
-                    boneIdx = uBones.Count;
-                    uBones.Add(bone);
-                    uBindposes.Add(aBone.OffsetMatrix.ToUnity());
-                } else {
-                    boneIdx = 0;
-                }
-
-                foreach (var aWeight in aBone.VertexWeights) {
-                    if (aWeight.Weight == 0) continue;
-                    uBoneWeights[aWeight.VertexID] = uBoneWeights[aWeight.VertexID].AddWeight(boneIdx, aWeight.Weight);
-                }
-            }
-
-            renderer.bones = uBones.ToArray();
-            uMesh.bindposes = uBindposes.ToArray();
-            uMesh.boneWeights = uBoneWeights;
-
-            LoadNormals(aMesh, uMesh);
-
-            uMesh.UploadMeshData(markNoLongerReadable: true);
-
-            renderer.rootBone = bones["JNT_root"];
-            renderer.sharedMesh = uMesh;
-            if (uMaterials[aMesh.MaterialIndex] is Material mat) {
-                renderer.sharedMaterial = mat;
-            }
-
-            foreach (var groupName in new[] { "eye", "face", "mouth", "parts" }) {
-                if (!aMesh.Name.StartsWith(groupName + "[")) continue;
-
-                var chop1 = aMesh.Name.Substring(groupName.Length + 1);
-                var chop2 = chop1.Substring(0, chop1.IndexOf(']'));
-                var idx = int.Parse(chop2) - 1;
-
-                var parent = ouji.transform.Find("face_root/" + groupName);
-
-                var replaced = parent.GetChild(idx);
-                replaced.SetAsLastSibling();
-                UnityObject.Destroy(replaced.gameObject);
-
-                renderer.transform.SetParent(parent);
-                renderer.transform.SetSiblingIndex(idx);
-                renderer.gameObject.SetActive(false);
-
-                break;
-            }
-        }
-
-        foreach (var part in bodyParts.Values) {
-            part.enabled = false;
-        }
-        bones["JNT_antenna"].GetChild(0).gameObject.SetActive(false);
-
-        if (metadata.position != Vector3.zero || metadata.scale != Vector3.one) {
-            var root = bones["JNT_root"];
-            root.transform.localPosition = Vector3.Scale(metadata.position, metadata.scale);
-            root.transform.localScale = metadata.scale;
-        }
-
-        if (metadata.preventArmatureExplosion) {
-            ouji.AddComponent<PreventArmatureExplosion>();
-        }
     }
 
     public static void ApplyModel(GameObject ouji, Gltf.AssetFile file, byte[] binary) {
@@ -754,35 +548,6 @@ internal static class PretenderLoader {
         }
     }
 
-    public static void ApplyBallModel(GameObject ball, Assimp.Scene scene) {
-        if (scene.MeshCount > 1) {
-            ApplyMultiBallModel(ball, scene);
-            return;
-        }
-
-        var filter = ball.GetComponent<MeshFilter>();
-        var renderer = ball.GetComponent<MeshRenderer>();
-
-        var aMat = scene.Materials[0];
-        var uTex = LoadTexture(scene, aMat, mipmap: true);
-        var uMaterial = UnityObject.Instantiate(renderer.material);
-        uMaterial.name = uTex.name = aMat.Name;
-        uMaterial.mainTexture = uTex;
-
-        var aMesh = scene.Meshes[0];
-        var uMesh = new Mesh() { name = aMesh.Name };
-
-        LoadVertices(aMesh, uMesh);
-        LoadIndices(aMesh, uMesh);
-        LoadUVs(aMesh, uMesh);
-        LoadNormals(aMesh, uMesh);
-
-        uMesh.UploadMeshData(markNoLongerReadable: true);
-
-        filter.sharedMesh = uMesh;
-        renderer.sharedMaterial = uMaterial;
-    }
-
     public static void ApplyBallModel(GameObject ball, Gltf.AssetFile file, byte[] binary) {
         if (file.scene is not uint iScene) {
             throw new Exception("glTF file has no default scene!");
@@ -851,133 +616,6 @@ internal static class PretenderLoader {
             }
         }
         return metadata;
-    }
-
-    private static void ApplyMultiBallModel(GameObject ball, Assimp.Scene scene) {
-        var filter = ball.GetComponent<MeshFilter>();
-        var renderer = ball.GetComponent<MeshRenderer>();
-
-        var allMaterials = new List<Material>();
-        foreach (var aMat in scene.Materials) {
-            var uTex = LoadTexture(scene, aMat, mipmap: true);
-            var uMaterial = UnityObject.Instantiate(renderer.material);
-            uMaterial.name = uTex.name = aMat.Name;
-            uMaterial.mainTexture = uTex;
-            allMaterials.Add(uMaterial);
-        }
-
-        var vertices = new List<Vector3>();
-        var indices = new List<int[]>();
-        var topologies = new List<MeshTopology>();
-        var uvs = new List<Vector2>();
-        var normals = new List<Vector3>();
-        var materials = new List<Material>();
-
-        foreach (var aMesh in scene.Meshes) {
-            vertices.AddRange(aMesh.Vertices.Select(v => v.ToUnity()));
-            indices.Add(aMesh.Faces.SelectMany(f => f.Indices).Select(i => i).ToArray());
-            uvs.AddRange(aMesh.TextureCoordinateChannels[0].Select(v => v.ToUnityVec2()));
-            normals.AddRange(aMesh.Normals.Select(v => v.ToUnity()));
-            materials.Add(allMaterials[aMesh.MaterialIndex]);
-
-            topologies.Add(aMesh.Faces[0].IndexCount switch {
-                3 => MeshTopology.Triangles,
-                4 => MeshTopology.Quads,
-                _ => throw new InvalidOperationException(),
-            });
-        }
-
-        var uMesh = new Mesh() { name = scene.Meshes[0].Name, subMeshCount = indices.Count };
-        uMesh.SetVertices(vertices);
-
-        var baseVertex = 0;
-        for (var i = 0; i < indices.Count; i++) {
-            uMesh.SetIndices(indices[i], topologies[i], submesh: i, calculateBounds: true, baseVertex);
-            baseVertex += scene.Meshes[i].VertexCount;
-        }
-
-        uMesh.SetUVs(0, uvs);
-        uMesh.SetNormals(normals);
-
-        uMesh.UploadMeshData(markNoLongerReadable: true);
-
-        filter.sharedMesh = uMesh;
-        renderer.sharedMaterials = materials.ToArray();
-    }
-
-    private static Texture2D LoadTexture(Assimp.Scene scene, Assimp.Material aMat, bool mipmap) {
-        var path = aMat.TextureDiffuse.FilePath;
-
-        byte[] data;
-
-        if (path.StartsWith("*")) {
-            var i = int.Parse(path.Substring(1));
-            data = scene.Textures[i].CompressedData;
-        } else if (path == null) {
-            throw new Exception($"FBX material {aMat.Name} has no texture");
-        } else {
-            data = File.ReadAllBytes(path);
-        }
-
-        var uTex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap);
-        ImageConversion.LoadImage(uTex, data, markNonReadable: true);
-
-        if (mipmap) {
-            uTex.anisoLevel = 16;
-            uTex.filterMode = FilterMode.Trilinear;
-        } else {
-            uTex.filterMode = FilterMode.Point;
-        }
-        return uTex;
-    }
-
-    private static void LoadVertices(Assimp.Mesh aMesh, Mesh uMesh) {
-        var vertices = aMesh.Vertices.Select(v => v.ToUnity()).ToList();
-        uMesh.SetVertices(vertices);
-    }
-
-    private static void LoadIndices(Assimp.Mesh aMesh, Mesh uMesh) {
-        var topo = aMesh.Faces[0].IndexCount switch {
-            3 => MeshTopology.Triangles,
-            4 => MeshTopology.Quads,
-            _ => throw new InvalidOperationException(),
-        };
-        var indices = new List<int>(3 * aMesh.FaceCount);
-        foreach (var face in aMesh.Faces) indices.AddRange(face.Indices);
-        //indices.Reverse(); // I still need to figure out exactly what's going on but this is sensitive to winding order.
-        uMesh.SetIndices(indices.ToArray(), topo, 0);
-    }
-
-    private static void LoadUVs(Assimp.Mesh aMesh, Mesh uMesh) {
-        var uvs = aMesh.TextureCoordinateChannels[0].Select(v => v.ToUnityVec2()).ToList();
-        uMesh.SetUVs(0, uvs);
-    }
-
-    private static void LoadNormals(Assimp.Mesh aMesh, Mesh uMesh) {
-        if (aMesh.HasNormals) {
-            var normals = aMesh.Normals.Select(n => n.ToUnity()).ToList();
-            uMesh.SetNormals(normals);
-        } else {
-            uMesh.RecalculateNormals();
-        }
-    }
-
-    private static void PrintNode(Assimp.Scene scene, Assimp.Node node, int depth = 0) {
-        var indent = "";
-        for (var i = 0; i < depth; i++) indent += "  ";
-
-        Console.WriteLine(indent + node.Name);
-        node.Transform.Decompose(out var size, out var rot, out var pos);
-        Console.WriteLine(indent + rot);
-        Console.WriteLine(indent + pos);
-        Console.WriteLine(indent + size);
-
-        foreach (var meshIdx in node.MeshIndices) {
-            Console.WriteLine(indent + "  * " + scene.Meshes[meshIdx].Name);
-        }
-        foreach (var child in node.Children) {
-            PrintNode(scene, child, depth + 1);
-        }
     }
 
     private static List<Material> LoadMaterials(Gltf.AssetFile file, Material origMat, byte[] binary, ImportMetadata metadata) {

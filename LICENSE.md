@@ -12,10 +12,8 @@ This is an unmodified copy of a proprietary shared library published by Valve Co
 This library is a runtime dependency, replacing an older version of the same shared library included as part of the base game.
 It is included in the .zip file for end-user convenience and is not part of the work covered by the GNU GPL.
 
-Parts of this project depend on *AssimpNet*, a .NET wrapper for the Open Asset Import Library ("Assimp").
-Packaged releases of this software may include an unmodified binary form of these libraries.
-AssimpNet is licensed under the MIT license. Assimp is licensed under the 3-clause BSD license.
-Both libraries' licenses should be distributed along with this software, in a "licenses" folder.
+Parts of this project depend on *SimpleJson*, published under the MIT license.
+This library's license should be distributed along with this software, in a "licenses" folder.
 
 Parts of this project depend on SDL 3.x, published under the zlib license.
 Packaged releases of this software may include an unmodified binary form of this library.

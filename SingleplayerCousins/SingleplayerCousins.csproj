@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
-		<PackageReference Include="AssimpNet" />
 		<PackageReference Include="BepInEx.Analyzers" />
 		<PackageReference Include="BepInEx.Core" />
 		<PackageReference Include="BepInEx.PluginInfoProps" />

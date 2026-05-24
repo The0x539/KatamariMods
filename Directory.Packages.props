@@ -6,7 +6,6 @@
 		</RestoreAdditionalProjectSources>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AssimpNet" Version="4.1.0" />
     <PackageVersion Include="BepInEx.Analyzers" Version="1.0.8" />
     <PackageVersion Include="BepInEx.Core" Version="5.4.21" />
     <PackageVersion Include="BepInEx.Preloader.Core" Version="6.0.0-pre.1" />
