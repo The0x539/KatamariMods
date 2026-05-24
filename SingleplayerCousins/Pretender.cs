@@ -389,7 +389,7 @@ public static class PretenderPatches {
                 "OT_OBJ_0527" => "Toy Duawg",
                 _ => __result,
             };
-            if (id.StartsWith("KG_C_VRG") || id.StartsWith("KG_O_SLC") || id.StartsWith("KG_O_RSL")) {
+            if (id.StartsWith("KG_C_VRG") || id.StartsWith("KG_O_SLC") || id.StartsWith("KG_O_RSL") || id.StartsWith("KG_O_GMO")) {
                 __result = __result.Replace("maiden", "broad").Replace("Maiden", "Broad");
             }
         }
