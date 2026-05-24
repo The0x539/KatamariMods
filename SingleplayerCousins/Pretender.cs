@@ -84,18 +84,25 @@ public sealed class Pretender {
             PretenderLoader.ApplyModel(ouji, this.FilePath);
         }
 
+        HandFix handFix;
         switch ((PretenderId)this.Id) {
             case PretenderId.Dega:
                 ouji.AddComponent<Dega>();
                 break;
             case PretenderId.Soyo:
-                var handFix = ouji.AddComponent<HandFix>();
+                handFix = ouji.AddComponent<HandFix>();
                 handFix.handAngle = new(0, 0, 20);
                 // okay it's kinda bad that the camera counter-angle messes with these axes,
                 // but seriously why is the held camera not just parented to the hand in the original player model?
                 handFix.cameraPosition = new(0.13f, 0, 0.1f);
                 handFix.cameraCounterAngle = new(-25, 0, 90);
                 handFix.cameraScale = 1;
+                break;
+            case PretenderId.Mint:
+                handFix = ouji.AddComponent<HandFix>();
+                handFix.cameraPosition = new(0.13f, 0.02f, 0.12f);
+                handFix.elbowAngle = new(-90, 28, 0);
+                handFix.cameraCounterAngle = new(-30, 0, 90);
                 break;
         }
 

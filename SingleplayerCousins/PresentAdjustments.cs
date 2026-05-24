@@ -418,6 +418,55 @@ static class PresentAdjustments {
                 Scale(0.6, 0.6, 0.6),
             ],
         },
+        [PretenderId.Mint] = {
+            [Present.Apron] = Scale(1.6, 1.6, 1.6),
+            //[Present.RunningTop] = [],
+            [Present.Mawashi] = [
+                Translate(y: 0.07),
+                Scale(1.3, 1.3, 1.3),
+            ],
+            [Present.CoolMask] = [
+                Translate(y: 0.1, z: 0.05),
+                Rotate(x: 25),
+                Scale(0.8, 0.8, 0.8),
+            ],
+            [Present.ChefHat] = [
+                Translate(y: 0.2),
+                Rotate(x: 10),
+            ],
+            [Present.Headphones] = [
+                Translate(y: 0.3),
+                Scale(0.6, 0.6, 0.6),
+            ],
+            [Present.ChampBelt] = Scale(1.3, 1.3, 1.3),
+            [Present.WhiteGuitar] = [
+                Translate(z: 0.1).On(WAIST),
+                Translate(z: 0.3).On(SPINE1), // whatever
+                Translate(y: 0.1, z: -0.04).On(SPINE2),
+                Scale(1.3, 1.3, 1.3),
+            ],
+            [Present.AlohaSet] = [
+                Scale(1.4, 1.4, 1.4).On(WAIST),
+                Scale(2, 2, 2).On(SPINE1),
+                Scale(2, 2, 2).On(SPINE2),
+            ],
+            [Present.SuperheroScarf] = [
+                Translate(y: 0.18, z: -0.1),
+                Scale(z: 2),
+            ],
+            [Present.WinterScarf] = Translate(y: 0.2),
+            [Present.Crown] = [
+                Translate(y: 0.2),
+                Scale(0.8, 0.8, 0.8),
+            ],
+            [Present.Camera] = Translate(z: 0.1),
+            [Present.Ducky] = Scale(1.5, 1.5, 1.5),
+            [Present.Snorkel] = [
+                Translate(y: 0.1, z: 0.02),
+                Rotate(x: 40),
+                Scale(0.9, 0.9, 0.9),
+            ],
+        },
     };
 
     private sealed class OuterDict : Dictionary<Cousin, InnerDict> {

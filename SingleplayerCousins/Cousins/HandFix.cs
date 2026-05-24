@@ -35,7 +35,9 @@ public sealed class HandFix : MonoBehaviour {
         var anim = this.animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
         if (anim == photoUpHash || anim == surpriseHash || anim == selectHash) {
             this.elbows[0].Rotate(this.elbowAngle);
-            this.elbows[1].Rotate(this.elbowAngle);
+            var v = this.elbowAngle;
+            v.Scale(new(1, -1, 1));
+            this.elbows[1].Rotate(v);
             this.hands[0].Rotate(this.handAngle);
             this.hands[1].Rotate(-this.handAngle);
             if (this.hands[1].Find("pre_13(Clone)/pre_root") is Transform camera) {
