@@ -81,8 +81,9 @@ Jungle and Njamo are also subject to some minor graphical enhancements.
 ## Pretenders
 Additionally, this mod introduces *Pretenders* to the Throne of All Cosmos: you can supply a model for a custom player character by placing it in the `Pretenders` folder created in the game's install directory.
 
-The models must use the FBX format, should have textures packed within the file, and the rigging is expected to conform to a particular structure. The structure is not yet documented, but for the most part, the skeleton should be set up like a player model ripped from the game, with matching bone names.
-If the model is accompanied by a matching `.ball` file (e.g. `Soyo.fbx` and `Soyo.ball.fbx`), it will be used as that character's katamari skin.
+The models must use the glTF 2.0 binary format, should have textures packed within the file, and the rigging is expected to conform to a particular structure.
+The structure is not yet documented, but for the most part, the skeleton should be set up like a player model ripped from the game, with matching bone names.
+If the model is accompanied by a matching `.ball` file (e.g. `Soyo.glb` and `Soyo.ball.glb`), it will be used as that character's katamari skin.
 
 Out of the box, the mod will add my OC, **Vanta**, to the Space Mushroom. Vanta serves as a sort of tech demo and proof of concept for custom visual effects on pretenders.
 
