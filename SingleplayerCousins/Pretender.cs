@@ -159,7 +159,7 @@ public static class PretenderPatches {
                 _ => -1,
             };
             if (mission == -1) {
-                Console.WriteLine($"Warning: Unknown mission `{word.Trim()}`. Ignoring.");
+                Plugin.logger.LogWarning($"Unknown mission `{word.Trim()}`. Ignoring.");
                 continue;
             }
             ret.Add((GAMEINFO_MIS)mission);
@@ -448,6 +448,7 @@ internal static class PretenderLoader {
         // As demonstrated with my work on terrain textures, this produces awful results,
         // so it's preferable to just disable mipmaps altogether for pixel art character textures.
         public bool mipmap = false;
+        public bool alpha = false;
     }
 
     public static void ApplyModel(GameObject ouji, Assimp.Scene scene) {
@@ -494,9 +495,8 @@ internal static class PretenderLoader {
                             Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-positive scale adjustment. Import results may be dubious.");
                         }
                         break;
-                    case "mipmap":
-                        metadata.mipmap = true;
-                        break;
+                    case "mipmap": metadata.mipmap = true; break;
+                    case "alpha": metadata.alpha = true; break;
                 }
             }
 
@@ -666,35 +666,13 @@ internal static class PretenderLoader {
                 meshNodes.Add(node);
             }
 
-            if (node.name != "METADATA") {
+            if (node.name == "METADATA") {
+                metadata = ScanMetadata(node, file);
+            } else {
                 foreach (var iChild in node.children) {
                     var child = file.nodes[iChild];
                     parents.Add(child, node);
                     nodes.Push(child);
-                }
-                continue;
-            }
-
-            foreach (var iChild in node.children) {
-                var child = file.nodes[iChild];
-                switch (child.name?.ToLower()) {
-                    case "prevent armature explosion":
-                        metadata.preventArmatureExplosion = true;
-                        break;
-                    case "adjustment":
-                        metadata.position = child.translation ?? Vector3.zero;
-                        var scale = child.scale ?? Vector3.one;
-                        metadata.scale = scale;
-                        if (scale.x != scale.y || scale.y != scale.z) {
-                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-uniform scale adjustment. Import results may be dubious.");
-                        }
-                        if (scale.x <= 0 || scale.y <= 0 || scale.z <= 0) {
-                            Plugin.logger.LogWarning($"Pretender {ouji.name} has a non-positive scale adjustment. Import results may be dubious.");
-                        }
-                        break;
-                    case "mipmap":
-                        metadata.mipmap = true;
-                        break;
                 }
             }
         }
@@ -820,19 +798,24 @@ internal static class PretenderLoader {
 
         var meshNodes = new List<Gltf.Node>();
         var parents = new Dictionary<Gltf.Node, Gltf.Node>();
+        var metadata = new ImportMetadata();
+
         while (nodes.Count > 0) {
             var node = nodes.Pop();
             if (node.name == null) continue;
             if (node.mesh != null) {
                 meshNodes.Add(node);
             }
+            if (node.name == "METADATA") {
+                metadata = ScanMetadata(node, file);
+            }
+            // Ball models aren't expected to be complex enough to need child traversal.
         }
 
-        var uMaterials = LoadMaterials(file, renderer.sharedMaterial, binary, new ImportMetadata());
+        var uMaterials = LoadMaterials(file, renderer.sharedMaterial, binary, metadata);
 
         // TODO: don't just assume it's a single gltf mesh lol? can we combine somehow
         var gMesh = file.meshes[meshNodes[0].mesh!.Value];
-        Console.WriteLine($"Ball model: {meshNodes[0].name}");
 
         var uMesh = Gltf.Loader.LoadMesh(file, gMesh, binary, skinned: false, morph: false, scale: 0.01f);
         var materials = gMesh.primitives
@@ -842,6 +825,32 @@ internal static class PretenderLoader {
 
         filter.sharedMesh = uMesh;
         renderer.sharedMaterials = materials;
+    }
+
+    private static ImportMetadata ScanMetadata(Gltf.Node node, Gltf.AssetFile file) {
+        var metadata = new ImportMetadata();
+        foreach (var iChild in node.children) {
+            var child = file.nodes[iChild];
+            switch (child.name?.ToLower()) {
+                case "prevent armature explosion":
+                    metadata.preventArmatureExplosion = true;
+                    break;
+                case "adjustment":
+                    metadata.position = child.translation ?? Vector3.zero;
+                    var scale = child.scale ?? Vector3.one;
+                    metadata.scale = scale;
+                    if (scale.x != scale.y || scale.y != scale.z) {
+                        Plugin.logger.LogWarning("Custom model has a non-uniform scale adjustment. Import results may be dubious.");
+                    }
+                    if (scale.x <= 0 || scale.y <= 0 || scale.z <= 0) {
+                        Plugin.logger.LogWarning("Custom model has a non-positive scale adjustment. Import results may be dubious.");
+                    }
+                    break;
+                case "mipmap": metadata.mipmap = true; break;
+                case "alpha": metadata.alpha = true; break;
+            }
+        }
+        return metadata;
     }
 
     private static void ApplyMultiBallModel(GameObject ball, Assimp.Scene scene) {
@@ -978,6 +987,13 @@ internal static class PretenderLoader {
             uMat.name = gMat.name;
             if (Gltf.Loader.LoadTexture(file, gMat, binary, metadata.mipmap) is Texture2D uTex) {
                 uMat.mainTexture = uTex;
+            }
+            if (metadata.alpha) {
+                Console.WriteLine("Metadata asks for alpha mode");
+                uMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                uMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                uMat.EnableKeyword("_ALPHATEST_ON");
+                uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
             }
             uMaterials.Add(uMat);
         }

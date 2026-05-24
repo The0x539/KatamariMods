@@ -178,6 +178,7 @@ public static class Loader {
         var data = view.CopyOut(binary);
         var uTex = new Texture2D(0, 0, TextureFormat.RGBA32, mipmap);
         ImageConversion.LoadImage(uTex, data, markNonReadable: true);
+        uTex.name = tex.name ?? img.name;
 
         if (mipmap) {
             uTex.anisoLevel = 16;
