@@ -35,6 +35,7 @@ jobs:
       - name: Assemble final directory structure
         run: |
           mkdir -p ./artifact/BepInEx/plugins
+          mkdir -p ./artifact/katamari_Data/Plugins
 
           $managed = "FramerateUncap",
                      "GamepadSupport",
