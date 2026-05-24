@@ -627,11 +627,13 @@ internal static class PretenderLoader {
                 uMat.mainTexture = uTex;
             }
             if (metadata.alpha) {
-                Console.WriteLine("Metadata asks for alpha mode");
                 uMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 uMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 uMat.EnableKeyword("_ALPHATEST_ON");
                 uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            } else if (uMat.name?.Contains("transparent") ?? false) {
+                uMat.EnableKeyword("_ALPHATEST_ON");
+                uMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             }
             uMaterials.Add(uMat);
         }
