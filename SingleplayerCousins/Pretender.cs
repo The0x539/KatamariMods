@@ -393,6 +393,9 @@ public static class PretenderPatches {
             if (id.StartsWith("KG_C_VRG") || id.StartsWith("KG_O_SLC") || id.StartsWith("KG_O_RSL") || id.StartsWith("KG_O_GMO")) {
                 __result = __result.Replace("maiden", "broad").Replace("Maiden", "Broad");
             }
+            if (__result.Contains("Prince") && !__result.Contains("a Prince") && !__result.Contains("he Prince" /* `the` or `The` */)) {
+                __result = __result.Replace("Prince", "Oomfie");
+            }
         }
     }
 }
