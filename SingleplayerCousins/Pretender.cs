@@ -103,6 +103,7 @@ public sealed class Pretender {
                 handFix.cameraPosition = new(0.13f, 0.02f, 0.12f);
                 handFix.elbowAngle = new(-90, 28, 0);
                 handFix.cameraCounterAngle = new(-30, 0, 90);
+                ouji.AddComponent<Mint>();
                 break;
         }
 
