@@ -66,14 +66,21 @@ public sealed class Mint : MonoBehaviour {
     private class Face {
         public float A, E, I, O, U;
         public float Blink;
-        public float Angry, Surprise, Blushed, Worried;
-        public float CheekPuff;
+        public float Angry, Surprise, Blushed, Worried, Happy, Depressed, HappyNerfed, Excited;
+        public float CheekPuff, BrowsDown, BrowsUp;
     };
 
-    private static readonly Face defaultFace = new() { O = 0.75f };
-    private static readonly Face highEffortFace = new() { Angry = 1, CheekPuff = 1 };
-    private static readonly Face mediumEffortFace = new() { E = 0.5f, U = 0.25f, Worried = 1 };
+    private static readonly Face
+        defaultFace = new() { O = 0.75f },
+        highEffortFace = new() { Angry = 1, CheekPuff = 1 },
+        //mediumEffortFace = new() { E = 0.5f, U = 0.25f, Angry = 0.75f }, // Not super confident about Worried being the thing to use here.
+        mediumEffortFace = new() { O = 1, Angry = 0.5f, BrowsDown = 1 };
 
+    // There's definitely a better way to do this based on which face parts are shown,
+    // instead of based on which overall animation is in use, but for some reason,
+    // I can't wrap my head around how to go about implementing that.
+    //
+    // Patches welcome‽
     private static readonly Dictionary<string, Face> faces = new() {
         ["stop1"] = defaultFace,
         ["lookaround"] = defaultFace,
@@ -101,6 +108,18 @@ public sealed class Mint : MonoBehaviour {
         ["turn_r"] = mediumEffortFace,
         ["turn_l_fast"] = mediumEffortFace,
         ["turn_r_fast"] = mediumEffortFace,
+        ["walk_f_fast"] = mediumEffortFace,
+        ["walk_b_fast"] = mediumEffortFace,
+        ["walk_r_side_fast"] = mediumEffortFace,
+        ["walk_l_side_fast"] = mediumEffortFace,
+
+        ["surprise"] = new() { E = 1, Happy = 1 },
+        ["dash"] = new() { E = 1, HappyNerfed = 1, Excited = 1 },
+        ["dash_start"] = new() { O = 1, Angry = 1 },
+
+        ["shock"] = new() { BrowsDown = 1, A = 0.5f, Surprise = 1, Worried = 1 },
+        ["shock_stay"] = new() { Depressed = 1, Blushed = 0.5f, Surprise = 1 },
+        ["hang"] = new() { Depressed = 1, Blushed = 0.5f, Surprise = 1 },
     };
 
     private SkinnedMeshRenderer smr = new();
@@ -148,7 +167,13 @@ public sealed class Mint : MonoBehaviour {
         this.SetWeight("Surprise", face.Surprise);
         this.SetWeight("Blushed", face.Blushed);
         this.SetWeight("Worried", face.Worried);
+        this.SetWeight("Happy", face.Happy);
+        this.SetWeight("Depressed", face.Depressed);
         this.SetWeight("CheekPuff", face.CheekPuff);
+        this.SetWeight("Brows down", face.BrowsDown);
+        this.SetWeight("Brows up", face.BrowsUp);
+        this.SetWeight("Happy nerfed", face.HappyNerfed);
+        this.SetWeight("Excited", face.Excited);
     }
 
     public void Awake() {
