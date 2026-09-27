@@ -66,7 +66,7 @@ public sealed class Mint : MonoBehaviour {
     private class Face {
         public float A, E, I, O, U;
         public float Blink;
-        public float Angry, Surprise, Blushed, Worried, Happy, Depressed, HappyNerfed, Excited;
+        public float Angry, Surprise, Blushed, Worried, Happy, Depressed, HappyNerfed, Excited, Smug;
         public float CheekPuff, BrowsDown, BrowsUp;
     };
 
@@ -115,11 +115,16 @@ public sealed class Mint : MonoBehaviour {
 
         ["surprise"] = new() { E = 1, Happy = 1 },
         ["dash"] = new() { E = 1, HappyNerfed = 1, Excited = 1 },
+        ["attack"] = new() { E = 1, HappyNerfed = 1, Excited = 1 },
         ["dash_start"] = new() { O = 1, Angry = 1 },
 
         ["shock"] = new() { BrowsDown = 1, A = 0.5f, Surprise = 1, Worried = 1 },
         ["shock_stay"] = new() { Depressed = 1, Blushed = 0.5f, Surprise = 1 },
         ["hang"] = new() { Depressed = 1, Blushed = 0.5f, Surprise = 1 },
+
+        ["restive"] = new() { O = 1, Angry = 1 }, // VS captured
+        ["plesure"] = new() { E = 0.5f, O = 0.5f, Smug = 1 }, // VS victory
+        ["vex"] = new() { Angry = 1 }, // VS defeat (barely visible. whatever)
     };
 
     private SkinnedMeshRenderer smr = new();
@@ -172,6 +177,7 @@ public sealed class Mint : MonoBehaviour {
         this.SetWeight("CheekPuff", face.CheekPuff);
         this.SetWeight("Brows down", face.BrowsDown);
         this.SetWeight("Brows up", face.BrowsUp);
+        this.SetWeight("Smug", face.Smug);
         this.SetWeight("Happy nerfed", face.HappyNerfed);
         this.SetWeight("Excited", face.Excited);
     }
