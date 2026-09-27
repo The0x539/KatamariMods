@@ -19,6 +19,8 @@ public class Plugin : BaseUnityPlugin {
     public void Awake() {
         configFile = this.Config;
 
+        var boring = configFile.Bind("Pedantry", "I am very boring and have an extremely precise notion of a ‘vanilla experience’ that I want to preserve", false);
+
         Application.runInBackground = true;
 
         Harmony.CreateAndPatchAll(this.GetType());
@@ -26,11 +28,16 @@ public class Plugin : BaseUnityPlugin {
         IngameOptions.AddListener();
         Harmony.CreateAndPatchAll(typeof(IngameOptions));
 
-        Harmony.CreateAndPatchAll(typeof(FrustrationMusic));
+        if (!boring.Value) {
+            Harmony.CreateAndPatchAll(typeof(FrustrationMusic));
+        }
         Harmony.CreateAndPatchAll(typeof(DebugMenu));
         Harmony.CreateAndPatchAll(typeof(HideCursor));
         //Harmony.CreateAndPatchAll(typeof(VersusOnEarth));
-        Harmony.CreateAndPatchAll(typeof(LocalizationTweaks));
+
+        if (!boring.Value) {
+            Harmony.CreateAndPatchAll(typeof(LocalizationTweaks));
+        }
         Harmony.CreateAndPatchAll(typeof(EarlyOptions));
         Harmony.CreateAndPatchAll(typeof(LessAlarm));
 

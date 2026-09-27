@@ -31,6 +31,8 @@ public static class Glyphs {
             rt.sizeDelta = new(160, 160);
         } else if (rt.sizeDelta == new Vector2(120, 60)) {
             rt.sizeDelta = new(60, 60);
+        } else if (rt.sizeDelta == new Vector2(90, 45)) {
+            rt.sizeDelta = new(45, 45);
         } else if (rt.sizeDelta == new Vector2(88.84f, 44.42f)) {
             rt.sizeDelta = new(44.42f, 44.42f);
         } else if (rt.sizeDelta == new Vector2(85, 101)) {
