@@ -153,13 +153,9 @@ public sealed class Mint : MonoBehaviour {
         }
     }
 
-    private int GetIndex(string name) {
-        return this.smr.sharedMesh.GetBlendShapeIndex(name);
-    }
-
-    private void SetWeight(string name, float weight) {
-        this.smr.SetBlendShapeWeight(this.GetIndex(name), weight);
-    }
+    private int GetIndex(string name) => this.smr.sharedMesh.GetBlendShapeIndex(name);
+    private float GetWeight(string name) => this.smr.GetBlendShapeWeight(this.GetIndex(name));
+    private void SetWeight(string name, float weight) => this.smr.SetBlendShapeWeight(this.GetIndex(name), weight);
 
     private void Apply(Face face) {
         this.SetWeight("vrc.v_a", face.A);
@@ -191,12 +187,14 @@ public sealed class Mint : MonoBehaviour {
 
     public void Update() {
         this.CurrentAnimHash = this.anim.GetCurrentAnimatorStateInfo(0).shortNameHash;
-        if (this.eyes[1].activeSelf) {
-            this.SetWeight("vrc.blink_both", 0.5f);
-        } else if (this.eyes[2].activeSelf) {
-            this.SetWeight("vrc.blink_both", 1f);
-        } else {
-            this.SetWeight("vrc.blink_both", 0f);
+        float blink = 0f;
+        if (this.GetWeight("Happy") == 0f && this.GetWeight("Smug") == 0f) {
+            if (this.eyes[1].activeSelf) {
+                blink = 0.5f;
+            } else if (this.eyes[2].activeSelf) {
+                blink = 1f;
+            }
         }
+        this.SetWeight("vrc.blink_both", blink);
     }
 }
