@@ -374,7 +374,12 @@ public static class PretenderPatches {
     public static void OverrideLocalization(string id, int local, ref string __result) {
         if (local != (int)LANGUAGE.ENGLISH) return;
 
-        if (Plugin.OujiId == (int)PretenderId.Dega) {
+        string? nickname = null;
+
+        if (Plugin.OujiId == (int)PretenderId.Soyo) {
+            nickname = "Deer";
+        } else if (Plugin.OujiId == (int)PretenderId.Dega) {
+            nickname = "Rrat";
             __result = id switch {
                 "OT_OBJ_0512" => "Bud",
                 "OT_OBJ_1365" => "Bodega, Japan",
@@ -383,19 +388,22 @@ public static class PretenderPatches {
                 _ => __result,
             };
         } else if (Plugin.OujiId == (int)PretenderId.Mint) {
+            nickname = "Oomfie";
             __result = id switch {
                 "OT_OBJ_0504" => "Duawg",
                 "OT_OBJ_0505" => "Duawg With Fleas",
                 "OT_OBJ_0506" => "Bullduawg",
                 "OT_OBJ_0527" => "Toy Duawg",
+                "UI_SYS_002" => __result.Replace("Kata", "Awawa").Replace("Dama", "Duawga"),
                 _ => __result,
             };
             if (id.StartsWith("KG_C_VRG") || id.StartsWith("KG_O_SLC") || id.StartsWith("KG_O_RSL") || id.StartsWith("KG_O_GMO")) {
                 __result = __result.Replace("maiden", "broad").Replace("Maiden", "Broad");
             }
-            if (__result.Contains("Prince") && !__result.Contains("a Prince") && !__result.Contains("he Prince" /* `the` or `The` */)) {
-                __result = __result.Replace("Prince", "Oomfie");
-            }
+        }
+
+        if (nickname != null && __result.Contains("Prince") && !__result.Contains("a Prince") && !__result.Contains("he Prince" /* `the` or `The` */)) {
+            __result = __result.Replace("Prince", nickname);
         }
     }
 }
